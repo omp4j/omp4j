@@ -34,7 +34,7 @@ Where `<args>` are passed arguments.
 
 ### Deployment
 ```
-$ stb assembly
+$ sbt assembly
 ```
 This command creates `.jar` package in `target/scala-<version>/`. One can simply run it on any regular JVM (even without installed scala!) using `java -jar <generated-package.jar>`. This package is ready for deployment as has no further dependencies.
 
