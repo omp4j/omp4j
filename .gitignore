@@ -35,3 +35,4 @@ hs_err_pid*
 # ANTLR generated grammars
 src/main/java/grammar/*.java
 src/main/java/grammar/*.class
+src/main/java/grammar/*.tokens
