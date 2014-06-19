@@ -37,19 +37,23 @@
 	[
 		{
 			"name": "Build",
-			"shell_cmd": "sbt compile"
+			"shell_cmd": "sbt compile -no-colors"
+		},
+		{
+			"name": "Realtime build",
+			"shell_cmd": "sbt ~compile -no-colors"
 		},
 		{
 			"name": "Run",
-			"shell_cmd": "sbt run example/*.java"
+			"shell_cmd": "sbt run example/*.java -no-colors"
 		},
 		{
 			"name": "Deploy",
-			"shell_cmd": "sbt assembly"
+			"shell_cmd": "sbt assembly -no-colors"
 		},
 		{
 			"name": "Doc",
-			"shell_cmd": "sbt doc"
+			"shell_cmd": "sbt doc -no-colors"
 		}
 	]
 
