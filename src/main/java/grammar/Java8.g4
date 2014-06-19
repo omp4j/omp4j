@@ -48,6 +48,11 @@ Total lexer+parser time 384ms.
  */
 grammar Java8;
 
+// single-line comment channel
+@lexer::members {
+    public static final int COMMENTS = 1;
+}
+
 // starting point for parsing a java file
 compilationUnit
     :   packageDeclaration? importDeclaration* typeDeclaration* EOF
@@ -1023,6 +1028,7 @@ COMMENT
     :   '/*' .*? '*/' -> skip
     ;
 
+// single-line comments goes to special channel
 LINE_COMMENT
-    :   '//' ~[\r\n]* -> skip
+    :   '//' ~[\r\n]* -> channel(COMMENTS)
     ;
