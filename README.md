@@ -20,6 +20,7 @@ The described method is for UNIX-like systems. Microsoft Windows are supported t
 ### Fetching code
 1. `$ git clone git@github.com:omp4j/omp4j.git`
 2. download [ANTLR runtime](http://www.antlr.org/download/antlr-runtime-4.2.2.jar) into `lib/` directory
+3. compile grammar in `src/main/java/grammar` using command `$ antlr4 Java8.g4`. Please read [this site](https://theantlrguy.atlassian.net/wiki/display/ANTLR4/Getting+Started+with+ANTLR+v4) in order to get familiar with setting up and using `antlr4` command.
 
 ### Compilation
 ```
