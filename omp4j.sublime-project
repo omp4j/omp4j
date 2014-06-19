@@ -1,0 +1,56 @@
+// Sublime Text 3 project file
+{
+	"folders":	// top dirs shortcuts
+	[
+		{
+			"path": ".",
+			"name": "Root"
+		},
+		{
+			"path": "src/main/scala",
+			"name": "Scala src"
+		},
+		{
+			"path": "src/main/java",
+			"name": "Java src"
+		},
+		{
+			"path": "src/main/java/grammar",
+			"name": "Grammars",
+			"file_exclude_patterns": ["*.java", "*.tokens", "*.class"]
+		},
+		{
+			"path": "example",
+			"name": "Examples"
+		},
+		{
+			"path": "lib",
+			"name": "3rd party libs"
+		},
+		{
+			"path": "project",
+			"name": "Project"
+		}
+	],
+
+	"build_systems":	// sbt required
+	[
+		{
+			"name": "Build",
+			"shell_cmd": "sbt compile"
+		},
+		{
+			"name": "Run",
+			"shell_cmd": "sbt run example/*.java"
+		},
+		{
+			"name": "Deploy",
+			"shell_cmd": "sbt assembly"
+		},
+		{
+			"name": "Doc",
+			"shell_cmd": "sbt doc"
+		}
+	]
+
+}

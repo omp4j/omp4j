@@ -35,3 +35,6 @@ hs_err_pid*
 src/main/java/grammar/*.java
 src/main/java/grammar/*.class
 src/main/java/grammar/*.tokens
+
+# Sublime Text projects
+*.sublime-workspace
