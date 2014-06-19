@@ -38,6 +38,12 @@ $ sbt assembly
 ```
 This command creates `.jar` package in `target/scala-<version>/`. One can simply run it on any regular JVM (even without installed scala!) using `java -jar <generated-package.jar>`. This package is ready for deployment as has no further dependencies.
 
+### API reference
+```
+$ sbt doc
+```
+This command creates directory `target/scala-<version>/api/` including file `index.html`. One can simply open it in web browser in order to browse API reference.
+
 Authors
 -------
 - Lead programmer - [Petr Bělohlávek](https://github.com/petrbel)
