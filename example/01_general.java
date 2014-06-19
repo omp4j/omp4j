@@ -11,13 +11,17 @@ class General {
 		b = a + var1;
 		Item var2;
 
-		// print
+		// print;
 		System.out.println(b);
 
 		// for
 		for (int i = 0; i < b; i++) {
 			System.out.println(i);
 		}
+	}
+
+	public int foo (char c, Item i) {
+		return var1 + 38;
 	}
 
 	// members
