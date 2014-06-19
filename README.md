@@ -16,6 +16,9 @@ The described method is for UNIX-like systems. Microsoft Windows are supported t
 - Scala (tested version `2.9.2`)
 - sbt (tested version `0.13.5`
 - git
+- ANTLRv4 with properly set shell alias `antlr4`
+
+Note: after assemblation only JRE is required to run `.jar` as all dependencies are packed.
 
 ### Fetching code
 1. `$ git clone git@github.com:omp4j/omp4j.git`
