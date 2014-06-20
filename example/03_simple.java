@@ -1,11 +1,10 @@
 class Simple {
 	public static void main(String[] args) {
-		// 1
+		// omp parallel for
 		for (int i = 0; i < 5; i++) {
-			// 2
+			// omp parallel
 			System.out.println("hello");
 		}
-		// 3
 		int a; // 4
 
 		int c; // 5
@@ -13,10 +12,15 @@ class Simple {
 		// 6
 		// 7
 
-		// 8
+		// omp sections
 		{
 			int b = a+4;
 			System.out.println(b);
+		}
+
+		// unmatched comment
+		{
+			int x;
 		}
 	}
 }
