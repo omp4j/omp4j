@@ -11,4 +11,7 @@ package org.omp4j {
 package org.omp4j.preprocessor {
 	/** Auto-generated grammar classes by ANTLRv4 such as Parser, Lexer, etc. */
 	package object grammar {}
+
+	/** Various exceptions */
+	package object exception {}
 }
