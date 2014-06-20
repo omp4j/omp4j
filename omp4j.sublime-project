@@ -1,39 +1,5 @@
-// Sublime Text 3 project file
 {
-	"folders":	// top dirs shortcuts
-	[
-		{
-			"path": ".",
-			"name": "Root"
-		},
-		{
-			"path": "src/main/scala",
-			"name": "Scala src"
-		},
-		{
-			"path": "src/main/java",
-			"name": "Java src"
-		},
-		{
-			"path": "src/main/java/grammar",
-			"name": "Grammars",
-			"file_exclude_patterns": ["*.java", "*.tokens", "*.class"]
-		},
-		{
-			"path": "example",
-			"name": "Examples"
-		},
-		{
-			"path": "lib",
-			"name": "3rd party libs"
-		},
-		{
-			"path": "project",
-			"name": "Project"
-		}
-	],
-
-	"build_systems":	// sbt required
+	"build_systems":
 	[
 		{
 			"name": "Build",
@@ -55,6 +21,49 @@
 			"name": "Doc",
 			"shell_cmd": "sbt doc -no-colors"
 		}
+	],
+	"folders":
+	[
+		{
+			"follow_symlinks": true,
+			"name": "Root",
+			"path": "."
+		},
+		{
+			"follow_symlinks": true,
+			"name": "Scala src",
+			"path": "src/main/scala"
+		},
+		{
+			"follow_symlinks": true,
+			"name": "Java src",
+			"path": "src/main/java"
+		},
+		{
+			"file_exclude_patterns":
+			[
+				"*.java",
+				"*.tokens",
+				"*.class"
+			],
+			"follow_symlinks": true,
+			"name": "Grammars",
+			"path": "src/main/java/grammar"
+		},
+		{
+			"follow_symlinks": true,
+			"name": "Examples",
+			"path": "example"
+		},
+		{
+			"follow_symlinks": true,
+			"name": "3rd party libs",
+			"path": "lib"
+		},
+		{
+			"follow_symlinks": true,
+			"name": "Project",
+			"path": "project"
+		}
 	]
-
 }
