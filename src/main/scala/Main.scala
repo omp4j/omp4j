@@ -1,7 +1,6 @@
+package org.omp4j
 
 import org.omp4j.preprocessor.Preprocessor
-
-package org.omp4j {
 
 /** The omp4j preprocessor entry point.
   *
@@ -15,5 +14,3 @@ object Main {
 	}
 	
 }
-
-}	// package
