@@ -1,5 +1,9 @@
 grammar OMP;
 
+@header {
+package org.omp4j.preprocessor.grammar;
+}
+
 // PARSER RULES
 ompUnit : OMP (
                ompParallel    |
@@ -7,16 +11,16 @@ ompUnit : OMP (
                ompFor         |
                ompSections    |
                ompSection
-          ) EOF ;
+          ) ;
 
-ompParallel    : PARALLEL ompSchedule? ompModifier*     ;
+ompParallel    : PARALLEL     ompSchedule? ompModifier* ;
 ompParallelFor : PARALLEL FOR ompSchedule? ompModifier* ;
-ompFor         : FOR ompSchedule? ompModifier*          ;
+ompFor         : FOR          ompSchedule? ompModifier* ;
 ompSections    : SECTIONS                               ;
 ompSection     : SECTION                                ;
 ompModifier    : ( PUBLIC | PRIVATE ) '(' ompVars ')'   ;
 ompVars        : ( ompVar | ( ompVar ',' )+ ompVar )    ;
-ompVar         : VAR          ;
+ompVar         : VAR                                    ;
 ompSchedule    : SCHEDULE ( STATIC | DYNAMIC )          ;
 
 // LEXER RULES
@@ -35,6 +39,7 @@ DYNAMIC   : 'dynamic'  ;
 
 VAR : JavaLetter JavaLetterOrDigit* ;
 WS  : [ \t\r\n\u000C]+ -> skip      ;
+EOL : ( '\r'? '\n' )+               ;
 
 // following code was taken from:
 // https://github.com/antlr/grammars-v4/blob/master/java8/Java8.g4
