@@ -38,7 +38,7 @@ class DirectiveListener(tokens: CommonTokenStream, parser: Java8Parser) extends 
 	def getOmpBlocks() = {
 		for {
 			(cmt, ctx) <- commentedBlocks
-			ompLexer  = new OMPLexer(new ANTLRInputStream(new java.io.StringReader(cmt.substring(2))))
+			ompLexer  = new OMPLexer(new ANTLRInputStream(cmt.substring(2)))
 			ompTokens = new CommonTokenStream(ompLexer)
 			ompParser = new OMPParser(ompTokens)
 
