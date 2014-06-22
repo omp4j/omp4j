@@ -46,17 +46,49 @@ class Preprocessor(filesStrs: Array[String]) {
 		val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath()))
 		val tokens = new CommonTokenStream(lexer)
 		val parser = new Java8Parser(tokens)
-		val t: ParserRuleContext = parser.compilationUnit()
+		val t: Java8Parser.CompilationUnitContext = parser.compilationUnit()
 
-		// t.inspect(parser);	// display gui tree
+		t.inspect(parser);	// display gui tree
 		
 		val walker = new ParseTreeWalker()
 		val dl = new DirectiveListener(tokens, parser)
 		walker.walk(dl, t)
 
-		for ((cmtTree, ctx) <- dl.getOmpBlocks()) {
-			// println(cmtTree.toStringTree() + " ... " + ctx.toStringTree())
-		}
+		val ompBlocks = dl.getOmpBlocks()
+
+		// ompBlocks.foreach(d => println(d + "\n"))
+		// println("-----------------")
+
+		val f = new OMPFile(t, parser)
+
+
+		// for ((cmtTree, ctx) <- dl.getOmpBlocks()) {
+		// 	// println(cmtTree.toStringTree() + " ... " + ctx.toStringTree())
+		// }
+
+		// val walker2 = new ParseTreeWalker()
+		// val smtl = new SubtreeMatchListener(parser, ompBlocks)
+		// walker2.walk(smtl, t)
+
 
 	}
 }
+
+// class SubtreeMatchListener(parser: Java8Parser, ompBlocks: List[Directive]) extends Java8BaseListener {
+// 	override def enterStatement(ctx: Java8Parser.StatementContext) = {
+
+// 		val candidates = ompBlocks.filter(_.ctx == ctx)
+// 		candidates.size match {
+// 			case 0 => {}
+// 			case 1 => translate(candidates.head)
+// 			case _ => throw new ParseException("Err1")
+// 		}
+// 		// for (d <- ompBlocks) {
+// 		// 	if (d.ctx == ctx) println(d)
+// 		// }
+// 	}
+
+// 	def translate(d: Directive) = {
+// 		println(d)
+// 	}
+// }

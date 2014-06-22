@@ -35,20 +35,29 @@ class DirectiveListener(tokens: CommonTokenStream, parser: Java8Parser) extends 
 	}
 
 	/** Get list of tuples (ompParseTree, statementContext) */
-	def getOmpBlocks() = {
-		for {
+	def getOmpBlocks(): List[Directive] = {
+		val transformated: ListBuffer[Directive] = for {
 			(cmt, ctx) <- commentedBlocks
 			ompLexer  = new OMPLexer(new ANTLRInputStream(cmt.substring(2)))
 			ompTokens = new CommonTokenStream(ompLexer)
 			ompParser = new OMPParser(ompTokens)
 
 			ompCtx = ompParser.ompUnit()
+		} yield new Directive(ompCtx, ompParser, ctx, parser)
 
-			// println(cmt)
-			// println(cmt.substring(2))
-			// println(ompCtx.toStringTree(ompParser))
-			// println(ctx.toStringTree(parser))
-			// println()
-		} yield (ompCtx, ctx)
+		transformated.toList
+	}
+}
+
+case class Directive(
+	ompCtx: OMPParser.OmpUnitContext,
+	ompParser: OMPParser,
+	ctx: Java8Parser.StatementContext,
+	parser: Java8Parser
+) {
+	override def toString() = {
+		ompCtx.toStringTree(ompParser) +
+		"\n" +
+		ctx.toStringTree(parser)
 	}
 }
