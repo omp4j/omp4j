@@ -1,15 +1,8 @@
 package org.omp4j.preprocessor
 
-import org.antlr.v4.runtime.ANTLRFileStream;
-import org.antlr.v4.runtime.BailErrorStrategy;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.DiagnosticErrorListener;
-import org.antlr.v4.runtime.Lexer;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.atn.LexerATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionMode;
+import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
-import scala.collection.mutable.ListBuffer
+import org.antlr.v4.runtime._
 
 import org.omp4j.preprocessor.grammar._
 
