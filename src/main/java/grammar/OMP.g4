@@ -15,7 +15,7 @@ ompUnit : OMP (
 
 ompParallel    : PARALLEL     ompSchedule? ompModifier* ;
 ompParallelFor : PARALLEL FOR ompSchedule? ompModifier* ;
-ompFor         : FOR          ompSchedule? ompModifier* ;
+ompFor         :          FOR ompSchedule? ompModifier* ;
 ompSections    : SECTIONS                               ;
 ompSection     : SECTION                                ;
 ompModifier    : ( PUBLIC | PRIVATE ) '(' ompVars ')'   ;
@@ -39,7 +39,6 @@ DYNAMIC   : 'dynamic'  ;
 
 VAR : JavaLetter JavaLetterOrDigit* ;
 WS  : [ \t\r\n\u000C]+ -> skip      ;
-EOL : ( '\r'? '\n' )+               ;
 
 // following code was taken from:
 // https://github.com/antlr/grammars-v4/blob/master/java8/Java8.g4
