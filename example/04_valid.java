@@ -14,6 +14,12 @@ class Simple {
 			int x;
 		}
 		int c;
+
+		// omp parallel
+		a++;
+
+		// omp parallel
+		this.fooMethod(c);
 	}
 
 	private void fooMethod(int tmpParam) {
