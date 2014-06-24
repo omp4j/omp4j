@@ -55,6 +55,7 @@ package org.omp4j.preprocessor.grammar;
 // single-line comment channel
 @lexer::members {
     public static final int COMMENTS = 1;
+    public static final int OTHER = 2;
 }
 
 // starting point for parsing a java file
@@ -1025,11 +1026,14 @@ ELLIPSIS : '...';
 // Whitespace and comments
 //
 
-WS  :  [ \t\r\n\u000C]+ -> skip
+WS
+    :  [ \t\r\n\u000C]+ -> channel(OTHER)
+//    :  [ \t\r\n\u000C]+ -> skip
     ;
 
 COMMENT
-    :   '/*' .*? '*/' -> skip
+    :   '/*' .*? '*/' -> channel(OTHER)
+//    :   '/*' .*? '*/' -> skip
     ;
 
 // single-line comments goes to special channel
