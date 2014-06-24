@@ -1,14 +1,8 @@
 package org.omp4j.preprocessor
 
-import org.antlr.v4.runtime.ANTLRFileStream;
-import org.antlr.v4.runtime.BailErrorStrategy;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.DiagnosticErrorListener;
-import org.antlr.v4.runtime.Lexer;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.atn.LexerATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionMode;
+import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
+import org.antlr.v4.runtime._
 
 import java.io._
 import org.omp4j.preprocessor.grammar._
@@ -48,47 +42,14 @@ class Preprocessor(filesStrs: Array[String]) {
 		val parser = new Java8Parser(tokens)
 		val t: Java8Parser.CompilationUnitContext = parser.compilationUnit()
 
-		t.inspect(parser);	// display gui tree
-		
-		val walker = new ParseTreeWalker()
-		val dl = new DirectiveListener(tokens, parser)
-		walker.walk(dl, t)
+		// t.inspect(parser);	// display gui tree
 
-		val ompBlocks = dl.getOmpBlocks()
+		val ompFile = new OMPFile(t, parser)
+		val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
 
-		// ompBlocks.foreach(d => println(d + "\n"))
-		// println("-----------------")
+		// directives.foreach(d => println(d + "\n"))
 
-		val f = new OMPFile(t, parser)
-
-
-		// for ((cmtTree, ctx) <- dl.getOmpBlocks()) {
-		// 	// println(cmtTree.toStringTree() + " ... " + ctx.toStringTree())
-		// }
-
-		// val walker2 = new ParseTreeWalker()
-		// val smtl = new SubtreeMatchListener(parser, ompBlocks)
-		// walker2.walk(smtl, t)
-
-
+		val translator = new Translator(directives, tokens, t, ompFile)
+		println(translator.translate())
 	}
 }
-
-// class SubtreeMatchListener(parser: Java8Parser, ompBlocks: List[Directive]) extends Java8BaseListener {
-// 	override def enterStatement(ctx: Java8Parser.StatementContext) = {
-
-// 		val candidates = ompBlocks.filter(_.ctx == ctx)
-// 		candidates.size match {
-// 			case 0 => {}
-// 			case 1 => translate(candidates.head)
-// 			case _ => throw new ParseException("Err1")
-// 		}
-// 		// for (d <- ompBlocks) {
-// 		// 	if (d.ctx == ctx) println(d)
-// 		// }
-// 	}
-
-// 	def translate(d: Directive) = {
-// 		println(d)
-// 	}
-// }
