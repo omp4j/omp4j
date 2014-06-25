@@ -9,8 +9,14 @@ class Simple {
 
 		int c; // 5
 
-		// 6
-		// 7
+		// I like omp
+		c += (4 * 5) - a * 6;
+
+		// This is not omp example
+		int cvb = 42;
+
+		// omp-astic comment
+		cvb++;
 
 		// omp sections
 		{
@@ -19,8 +25,6 @@ class Simple {
 		}
 
 		// unmatched comment
-		{
-			int x;
-		}
+		int x = c + c * 8;
 	}
 }
