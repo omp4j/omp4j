@@ -1,5 +1,7 @@
 package org.omp4j.preprocessor
 
+import scala.io.Source
+
 import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
@@ -44,12 +46,18 @@ class Translator(directives: List[Directive], tokens: TokenStream, ctx: Java8Par
 
 		/** For now only add simple comment at the beginning -> insert context */
 		private def addDirectiveHead(ctx: SC) = {
-			rewriter.insertBefore(ctx.start, "/* start */ ");
+			val source = Source.fromURL(getClass.getResource("/head.in"))
+			val head = source.getLines mkString "\n"
+
+			rewriter.insertBefore(ctx.start, head);
 		}
 
 		/** For now only add simple comment at the end */
 		private def addDirectiveTail(ctx: SC) = {
-			rewriter.insertAfter(ctx.stop, " /* end */");
+			val source = Source.fromURL(getClass.getResource("/tail.in"))
+			val tail = source.getLines mkString "\n"
+
+			rewriter.insertAfter(ctx.stop, tail);
 		}
 	}
 }
