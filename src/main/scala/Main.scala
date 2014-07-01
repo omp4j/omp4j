@@ -10,39 +10,40 @@ import org.omp4j.compiler.Compiler
 /** The omp4j preprocessor entry point.
   *
   * Handle flags and start preprocessing the files passed as program parametr.
-  * javac [ options ] [ sourcefiles ] [ classes ] [ @argfiles ]
-  * @param args Files and flags as Strings
+  * @param args Same as javac = [ options ] [ sourcefiles ] [ classes ] [ @argfiles ]
   */
 object Main extends App {
-	try {
-		// working directory, free to do anything
-		val workDir: File = createWorkingDir
-		// println(workDir.getAbsolutePath())
+	// pass config to all classes implicitelly
+	implicit var conf: Config = new Config
 
-		// handle flags
-		val (flags, fileNames) = splitArgs(args)
-		// opened files
-		val files = openFiles(fileNames)
+	try {
+		
+		val workDir: File = createWorkingDir	// working directory, free to do anything
+
+		val (flags, fileNames) = splitArgs(args)	// handle flags
+		val files = openFiles(fileNames)	// opened files
+
+		// prepare jar-file
+		val jar = new File(workDir.getAbsolutePath() + "/output.jar")
+
+		// save config
+		conf.store(workDir, flags, files, jar)	// TODO: another -d
 
 		// compilation before preprocessing
-		val compiler = new Compiler(flags++Array("-d", workDir.getAbsolutePath()), files, null, null) // TODO
-		compiler.run
+		val compiler = new Compiler
+		compiler.compile
+		compiler.jar
 
-		val jar = new File(workDir.getAbsolutePath() + "/output.jar")
-		val classFiles = workDir.list(
-			new FilenameFilter() { def accept(dir: File, name: String) = name.endsWith(".class") }
-		).map{f => new File(workDir.getAbsolutePath() + "/" + f) }
-		compiler.jar(jar, classFiles)
-		
 		// preprocessing
 		val preprocessor = new Preprocessor(files)
-		// preprocessor.run
+		preprocessor.run
 
 		// result compilation
 		// TODO
 
 		// cleanup
-		// workDir.delete()
+		recusiveDelete(workDir)
+
 	} catch {
 		case e: IllegalArgumentException => println(e.getMessage())
 		case e: CompilationException => println(e.getMessage() + ": " + e.getCause().getMessage())
@@ -75,7 +76,7 @@ object Main extends App {
 		files
 	}
 
-	/** Creates unique tmp directory
+	/** Create unique tmp directory
 	  * @throws RuntimeException When either property 'java.io.tmpdir' does not exist or is invalid
 	  * @return Tmp directory
 	  */
@@ -89,6 +90,17 @@ object Main extends App {
 
 		val tmpPath = Files.createTempDirectory(tmpRootFile.toPath(), "omp4j-")
 		tmpPath.toFile()
+	}
+
+	/** Delete file recursively
+	  * @param f file to delete
+	  */
+	private def recusiveDelete(f: File): Unit = {
+		if (f.isFile()) f.delete()
+		else if (f.isDirectory()) {
+			f.list().foreach{ g => recusiveDelete(new File(f.getAbsolutePath() + "/" + g)) }
+			f.delete()
+		}
 	}
 
 }
