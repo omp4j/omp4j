@@ -9,24 +9,21 @@ import org.omp4j.preprocessor.grammar._
 import org.omp4j.preprocessor.exception._
 
 /** Class representing the preprocessor itself.
-  * @constructor Create preprocessor for files given.
-  * @param fileStrs Relative paths to files to be parsed.
+  * @constructor Create preprocessor for given files.
+  * @param Files to be parsed
+  * @throws ParseException TODO
   */
-class Preprocessor(filesStrs: Array[String]) {
+class Preprocessor(files: Array[File]) {
 
 	/** Start parsing file by file
 	  * @throws IllegalArgumentException when non-existing file is passed.
 	  * @throws ParseException when some parse error occures
 	  */
-	def run() = {
-		val files = for (fs <- filesStrs; f = new File(fs)) yield f
-		files.map{ f => if (!f.exists())
-			throw new IllegalArgumentException("File '" + f.getPath() + "' does not exist")
-		}
-
-		for (f <- files) {
-			try parseFile(f)
-			catch {
+	def run = {
+		files.foreach{ f =>
+			try {
+				parseFile(f)
+			} catch {
 				case e: Exception => throw new ParseException("From file '" + f.getPath() + "'", e)
 			}
 		}
