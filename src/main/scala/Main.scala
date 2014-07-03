@@ -1,12 +1,15 @@
 package org.omp4j
 
+import Array._
+
 import java.io._
 import java.nio.file.Files
+import java.net.MalformedURLException
 
 import org.omp4j.preprocessor.exception._
 import org.omp4j.preprocessor.Preprocessor
 import org.omp4j.compiler.Compiler
-
+import org.omp4j.loader.Loader
 /** The omp4j preprocessor entry point.
   *
   * Handle flags and start preprocessing the files passed as program parametr.
@@ -17,7 +20,6 @@ object Main extends App {
 	implicit var conf: Config = new Config
 
 	try {
-		
 		val workDir: File = createWorkingDir	// working directory, free to do anything
 
 		val (flags, fileNames) = splitArgs(args)	// handle flags
@@ -27,12 +29,19 @@ object Main extends App {
 		val jar = new File(workDir.getAbsolutePath() + "/output.jar")
 
 		// save config
-		conf.store(workDir, flags, files, jar)	// TODO: another -d
+		val tmpFlags = concat(flags, Array("-d", workDir.getAbsolutePath()))
+		conf.store(workDir, tmpFlags, files, jar)	// TODO: another -d
 
 		// compilation before preprocessing
 		val compiler = new Compiler
 		compiler.compile
 		compiler.jar
+
+		// jar loader
+		val loader = new Loader
+
+		// add class loader to configuration
+		conf.classLoader = loader.load(conf.jar)
 
 		// preprocessing
 		val preprocessor = new Preprocessor(files)
@@ -46,9 +55,13 @@ object Main extends App {
 
 	} catch {
 		case e: IllegalArgumentException => println(e.getMessage())
-		case e: CompilationException => println(e.getMessage() + ": " + e.getCause().getMessage())
-		case e: ParseException => ;
-		case e: RuntimeException => println(e.getMessage())
+		case e: MalformedURLException    => println(e.getMessage())
+		case e: SecurityException        => println(e.getMessage())
+		case e: CompilationException     => println(e.getMessage() + ": " + e.getCause().getMessage())
+		case e: ParseException           => println(e.getMessage() + ": " + e.getCause().getMessage())
+		case e: RuntimeException         => println(e.getMessage())
+		// unexpected exception
+		case e: Exception                => e.printStackTrace()
 	}
 
 	/** Split args to list of flags and list of file names
