@@ -6,11 +6,12 @@ import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
+import org.omp4j.Config
 import org.omp4j.preprocessor.grammar._
 import org.omp4j.preprocessor.exception._
 
 /** Translate context given with respect to directives */
-class Translator(directives: List[Directive], tokens: TokenStream, ctx: Java8Parser.CompilationUnitContext, tree: OMPFile) {
+class Translator(directives: List[Directive], tokens: TokenStream, ctx: Java8Parser.CompilationUnitContext, tree: OMPFile)(implicit conf: Config) {
 
 	/** Get translated source code */
 	def translate(): String = {

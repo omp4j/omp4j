@@ -5,6 +5,8 @@ import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
 import java.io._
+
+import org.omp4j.Config
 import org.omp4j.preprocessor.grammar._
 import org.omp4j.preprocessor.exception._
 
@@ -13,7 +15,7 @@ import org.omp4j.preprocessor.exception._
   * @param Files to be parsed
   * @throws ParseException TODO
   */
-class Preprocessor(files: Array[File]) {
+class Preprocessor(files: Array[File])(implicit conf: Config) {
 
 	/** Start parsing file by file
 	  * @throws IllegalArgumentException when non-existing file is passed.
@@ -42,6 +44,14 @@ class Preprocessor(files: Array[File]) {
 		// t.inspect(parser);	// display gui tree
 
 		val ompFile = new OMPFile(t, parser)
+
+		ompFile.classes.foreach{ c =>
+			println(c.name)
+			c.allMethods.foreach{ m =>
+				println("\t" + m.getName())
+			}
+		}
+
 		val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
 
 		// directives.foreach(d => println(d + "\n"))
