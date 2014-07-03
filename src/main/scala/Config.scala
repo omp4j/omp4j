@@ -16,6 +16,9 @@ case class Config {
 	/** tmp JAR file */
 	var jar: File = null
 
+	/** ClassLoader for the jar defined above */
+	var classLoader: ClassLoader = null
+
 	/** Store passed variables */
 	def store(
 		workDirP: File,
