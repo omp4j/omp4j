@@ -3,7 +3,7 @@ package org.omp4j
 import java.io.File
 
 /** Configuration for compiler and other classes. Use implicitally. */
-case class Config {
+class Config {
 	/** working directory */
 	var workDir: File = null
 
