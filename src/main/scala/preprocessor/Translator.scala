@@ -8,8 +8,8 @@ import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
 import org.omp4j.Config
+import org.omp4j.exception._
 import org.omp4j.preprocessor.grammar._
-import org.omp4j.preprocessor.exception._
 
 /** Translate context given with respect to directives */
 class Translator(directives: List[Directive], tokens: TokenStream, ctx: Java8Parser.CompilationUnitContext, tree: OMPFile, parser: Java8Parser)(implicit conf: Config) {

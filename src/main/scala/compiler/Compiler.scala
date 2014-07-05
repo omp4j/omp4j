@@ -6,8 +6,8 @@ import javax.tools._
 import scala.collection.JavaConverters._
 import scala.util.control.Breaks._
 
-import org.omp4j.preprocessor.exception._
 import org.omp4j.Config
+import org.omp4j.exception._
 
 /** Handler for JavaCompiler. All settings are passed (implicitelly) by Config */
 class Compiler(implicit conf: Config) {

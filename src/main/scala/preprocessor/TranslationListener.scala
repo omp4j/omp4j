@@ -8,8 +8,9 @@ import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
 import org.omp4j.Config
+import org.omp4j.exception._
+import org.omp4j.extractor._
 import org.omp4j.preprocessor.grammar._
-import org.omp4j.preprocessor.exception._
 
 /** Listener for directive application */
 class TranslationListener(directives: List[Directive], tokens: TokenStream, tree: OMPFile, parser: Java8Parser) extends Java8BaseListener {

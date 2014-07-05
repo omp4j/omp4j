@@ -9,8 +9,8 @@ import java.util.BitSet
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks._
 
+import org.omp4j.exception._
 import org.omp4j.preprocessor.grammar._
-import org.omp4j.preprocessor.exception._
 
 /** Fetch list of Directives (aka OMPParseTree, corresponding statement and parsers) */
 class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends Java8BaseVisitor[List[Directive]] {

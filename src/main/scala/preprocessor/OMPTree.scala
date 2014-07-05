@@ -11,9 +11,10 @@ import java.lang.reflect.Modifier
 import scala.collection.mutable.ListBuffer
 import Array._
 
-import org.omp4j.preprocessor.grammar._
-import org.omp4j.preprocessor.exception._
 import org.omp4j.Config
+import org.omp4j.exception._
+import org.omp4j.extractor._
+import org.omp4j.preprocessor.grammar._
 
 // TODO: pass `this`
 
