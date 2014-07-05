@@ -1,6 +1,6 @@
 omp4j
 =====
-Lightweight Java OMP preprocessor written in Scala and Java. The input of preprocessor are valid Java source files with proper directives (aka comments). The output are valid paralellized Java source files.
+Lightweight Java OMP preprocessor written in Scala and Java. The input of preprocessor are valid Java source files with proper directives (`// omp ...` comments). One can use omp4j either as "blackbox" compiler (preprocessor using javac) or as pure preprocessor. In latter case the output is valid paralellized Java source files.
 
 Warning
 -------
@@ -14,16 +14,18 @@ The described method is for UNIX-like systems. Microsoft Windows are supported t
 - JRE (tested version `OpenJDK 1.7.0_55`)
 - JDK (tested version `javac 1.7.0_55`)
 - Scala (tested version `2.9.2`)
-- sbt (tested version `0.13.5`
+- sbt (tested version `0.13.5`)
 - git
 - ANTLRv4 with properly set shell alias `antlr4`
 
-Note: after assemblation only JRE is required to run `.jar` as all dependencies are packed.
+**Note:** Even though only `scala 2.9.2` is required to run `sbt` properly, using current ScalaTest determines `sbt` to use `scala 2.10.3`. If you don't have this version installed `sbt` will download it by itself. This scala version will be installed only in project directory and **will not affect** any other project or system itself.
+
+**Note:** After the assemblation, **only proper JRE is required** to run `.jar` as all dependencies are packed into the package. One can distribute `.jar` to machines not having scala/ANTLR/ScalaTest installed at all.
 
 ### Fetching code
 1. `$ git clone git@github.com:omp4j/omp4j.git`
 2. download [ANTLR runtime](http://www.antlr.org/download/antlr-runtime-4.2.2.jar) into `lib/` directory
-3. compile grammar in `src/main/java/grammar` using both commands `$ antlr4 -visitor Java8.g4` and `$ antlr4 -visitor OMP.g4`. Please read [this site](https://theantlrguy.atlassian.net/wiki/display/ANTLR4/Getting+Started+with+ANTLR+v4) in order to get familiar with setting up and using `antlr4` command.
+3. compile grammar in `src/main/java/grammar` using both commands `$ antlr4 -visitor Java8.g4` and `$ antlr4 -visitor OMP.g4`. Please read [getting started](https://theantlrguy.atlassian.net/wiki/display/ANTLR4/Getting+Started+with+ANTLR+v4) in order to get familiar with setting up and using `antlr4` command.
 
 ### Compilation
 ```
@@ -47,6 +49,12 @@ This command creates `.jar` package in `target/scala-<version>/`. One can simply
 $ sbt doc
 ```
 This command creates directory `target/scala-<version>/api/` including file `index.html`. One can simply open it in web browser in order to browse API reference.
+
+### Unit testing
+```
+$ sbt test
+```
+Run ScalaTest unit testing. If ScalaTest isn't installed, it will be downloaded by `sbt` automatically.
 
 Authors
 -------
