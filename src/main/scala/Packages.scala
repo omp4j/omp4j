@@ -15,6 +15,9 @@ package org.omp4j {
 
 	/** Classes used for preprocessor such as various listeners etc. */
 	package object preprocessor {}
+
+	/** Unit testing (using ScalaTest) */
+	package object test {}
 }
 
 package org.omp4j.preprocessor {
