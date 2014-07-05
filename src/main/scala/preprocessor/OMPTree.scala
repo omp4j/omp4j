@@ -29,7 +29,6 @@ class OMPFile(ctx: Java8Parser.CompilationUnitContext, parser: Java8Parser)(impl
 }
 
 /** Class representation containing list of methods, fields and nested classes */
-// TODO: lazy
 class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parser: Java8Parser)(implicit conf: Config) extends OMPBase(ctx, parser) {
 	/** String class name */
 	lazy val name = ctx.Identifier().getText()
@@ -108,7 +107,6 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parser: Java8Parser)(im
 			case e: ClassNotFoundException => throw new ParseException("Class '" + name + "' was not found in generated JAR even though it was found by ANTLR", e)
 		}
 	}
-
 }
 
 

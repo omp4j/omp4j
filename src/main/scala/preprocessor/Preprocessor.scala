@@ -45,18 +45,18 @@ class Preprocessor(files: Array[File])(implicit conf: Config) {
 
 		val ompFile = new OMPFile(t, parser)
 
-		ompFile.classes.foreach{ c =>
-			println(c.name)
-			c.allMethods.foreach{ m =>
-				println("\t" + m.getName())
-			}
-		}
+		// ompFile.classes.foreach{ c =>
+		// 	println(c.name)
+		// 	c.allMethods.foreach{ m =>
+		// 		println("\t" + m.getName())
+		// 	}
+		// }
 
 		val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
 
 		// directives.foreach(d => println(d + "\n"))
 
-		val translator = new Translator(directives, tokens, t, ompFile)
-		println(translator.translate())
+		val translator = new Translator(directives, tokens, t, ompFile, parser)
+		println(translator.translate)
 	}
 }

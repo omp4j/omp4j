@@ -48,3 +48,37 @@ class FieldExtractor extends Java8BaseVisitor[List[Java8Parser.FieldDeclarationC
 	override def defaultResult() = List[FDC]()
 	override def aggregateResult(a: List[FDC], b: List[FDC]) = a ::: b
 }
+
+/** Extracts all local variable declarations from ANTLR4 ParseTree with no statement pass */
+class FirstLevelLocalVariableExtractor extends Java8BaseVisitor[Set[Java8Parser.LocalVariableDeclarationContext]] {
+
+	/** Java8Parser.LocalVariableDeclarationContext typedef */
+	type LVDC = Java8Parser.LocalVariableDeclarationContext
+
+	/** Add local variable declaration context */
+	override def visitLocalVariableDeclaration(variableCtx: LVDC) = Set[LVDC](variableCtx)
+
+	/** Don't get into nested statements */
+	override def visitStatement(c: Java8Parser.StatementContext) = Set[LVDC]()
+	// override def visitBlockStatement(c: Java8Parser.BlockStatementContext) = Set[LVDC]()
+
+	override def defaultResult() = Set[LVDC]()
+	override def aggregateResult(a: Set[LVDC], b: Set[LVDC]) = a ++ b
+}
+
+/** Extracts all local variable declarations from ANTLR4 ParseTree */
+class LocalVariableExtractor extends Java8BaseVisitor[Set[Java8Parser.LocalVariableDeclarationContext]] {
+
+	/** Java8Parser.LocalVariableDeclarationContext typedef */
+	type LVDC = Java8Parser.LocalVariableDeclarationContext
+
+	/** Add local variable declaration context */
+	override def visitLocalVariableDeclaration(variableCtx: LVDC) = Set[LVDC](variableCtx)
+
+	/** Don't get into nested statements */
+	// override def visitStatement(c: Java8Parser.StatementContext) = Set[LVDC]()
+	// override def visitBlockStatement(c: Java8Parser.BlockStatementContext) = Set[LVDC]()
+
+	override def defaultResult() = Set[LVDC]()
+	override def aggregateResult(a: Set[LVDC], b: Set[LVDC]) = a ++ b
+}
