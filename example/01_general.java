@@ -1,5 +1,16 @@
-class Item {}
-class General {
+
+class Item {
+	private void blankMethod1 (int i, String s) {}
+	private void blankMethod2 (int i, String s) {}
+}
+
+class Parent {
+	public void publicInherited() {}
+	protected void protectedInherited() {}
+	private void privateInherited() {}
+}
+
+class General extends Parent {
 	public static void main(String[] args) {
 		General f = new General();
 	}
@@ -23,6 +34,11 @@ class General {
 	public int foo (char c, Item i) {
 		return var1 + 38;
 	}
+
+	public void publicNew() {}
+	protected void protectedNew() {}
+	private void privateNew() {}
+
 
 	// members
 	public int var1 = 4;
