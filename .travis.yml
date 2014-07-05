@@ -4,7 +4,6 @@ scala:
 jdk:
   - oraclejdk8
   - oraclejdk7
-  - openjdk6
   - openjdk7
 sbt_args: -no-colors
 before_script:
