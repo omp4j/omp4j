@@ -8,6 +8,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
+import scala.language.existentials
 import scala.collection.mutable.ListBuffer
 import Array._
 
