@@ -7,3 +7,5 @@ jdk:
   - openjdk6
   - openjdk7
 sbt_args: -no-colors
+before_script:
+  - ./install-dependecies.sh
