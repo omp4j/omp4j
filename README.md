@@ -1,4 +1,4 @@
-omp4j
+omp4j [![Build Status](https://travis-ci.org/omp4j/omp4j.svg?branch=master)](https://travis-ci.org/omp4j/omp4j)
 =====
 Lightweight Java OMP preprocessor written in Scala and Java. The input of preprocessor are valid Java source files with proper directives (`// omp ...` comments). One can use omp4j either as "blackbox" compiler (preprocessor using javac) or as pure preprocessor. In latter case the output is valid paralellized Java source files.
 
@@ -11,12 +11,14 @@ Usage
 The described method is for UNIX-like systems. Microsoft Windows are supported though.
 
 ### Prerequisites
+For Ubuntu users: `$ ./install-system-dependecies.sh`; then [download](http://dl.bintray.com/sbt/debian/sbt-0.13.5.deb) and install sbt.
+
+For other users, this is the list of required software:
 - JRE (tested version `OpenJDK 1.7.0_55`)
 - JDK (tested version `javac 1.7.0_55`)
 - Scala (tested version `2.9.2`)
 - sbt (tested version `0.13.5`)
 - git
-- ANTLRv4 with properly set shell alias `antlr4`
 
 **Note:** Even though only `scala 2.9.2` is required to run `sbt` properly, using current ScalaTest determines `sbt` to use `scala 2.10.3`. If you don't have this version installed `sbt` will download it by itself. This scala version will be installed only in project directory and **will not affect** any other project or system itself.
 
@@ -24,8 +26,13 @@ The described method is for UNIX-like systems. Microsoft Windows are supported t
 
 ### Fetching code
 1. `$ git clone git@github.com:omp4j/omp4j.git`
-2. download [ANTLR runtime](http://www.antlr.org/download/antlr-runtime-4.2.2.jar) into `lib/` directory
-3. compile grammar in `src/main/java/grammar` using both commands `$ antlr4 -visitor Java8.g4` and `$ antlr4 -visitor OMP.g4`. Please read [getting started](https://theantlrguy.atlassian.net/wiki/display/ANTLR4/Getting+Started+with+ANTLR+v4) in order to get familiar with setting up and using `antlr4` command.
+2. `$ cd omp4j & ./install-dependecies.sh`
+ 
+Step 2 alternative:
+
+1. download [ANTLR runtime](http://www.antlr.org/download/antlr-runtime-4.2.2.jar) into `lib/` directory
+2. donwload ANTLRv4 and set shell alias `antlr4`
+2. compile grammar in `src/main/java/grammar` using both commands `$ antlr4 -visitor Java8.g4` and `$ antlr4 -visitor OMP.g4`. Please read [getting started](https://theantlrguy.atlassian.net/wiki/display/ANTLR4/Getting+Started+with+ANTLR+v4) in order to get familiar with setting up and using `antlr4` command.
 
 ### Compilation
 ```
