@@ -40,6 +40,11 @@
 			"path": "src/main/java"
 		},
 		{
+			"follow_symlinks": true,
+			"name": "Scala test",
+			"path": "src/test/scala"
+		},
+		{
 			"file_exclude_patterns":
 			[
 				"*.java",
