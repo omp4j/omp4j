@@ -10,25 +10,23 @@ import org.antlr.v4.runtime._
 import org.omp4j.preprocessor._
 import org.omp4j.preprocessor.grammar._
 
+/** LoadedContext with TranslationListener */
+class LoadedContext(path: String) extends AbstractLoadedContext(path) {
+	/** Return set of string <type> <identifier> such as "int ok1" etc.*/
+	def tranLinAsText = {
+		val inherLocals = (new TranslationListener(directives, tokens, null, parser)).getPossiblyInheritedLocals(directives.head.ctx)
+		inherLocals.map{ l => l.`type`().getText() + " " + l.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText() }
+	}
+}
+
 /** Unit test for TranslationListener */
 class TranslationListenerSpec extends AbstractSpec {
-	private class LoadedContext(path: String) {
-		val file = new File(getClass.getResource(path).toURI().getPath())
-		lazy val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath()))
-		lazy val tokens = new CommonTokenStream(lexer)
-		lazy val parser = new Java8Parser(tokens)
-		lazy val t = parser.compilationUnit()
-		lazy val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
-	
-		def getAsText = {
-			val inherLocals: Set[Java8Parser.LocalVariableDeclarationContext] = (new TranslationListener(directives, tokens, null, parser)).getPossiblyInheritedLocals(directives.head.ctx)
-			inherLocals.map{ l => l.`type`().getText() + " " + l.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText() }
-		}
-	}
 
 	// check inherited vars in block after first and the only directive
-	(new LoadedContext("/inheritedLocals/01.java")).getAsText should contain only ("int ok1", "int ok2", "int ok3")
-	(new LoadedContext("/inheritedLocals/02.java")).getAsText should contain only ("int ok1", "int ok2", "int ok3", "String ok4", "int ok5", "float ok6", "int ok7")
-	// TODO: listener (anonymous class)
-	// TODO: nested class
+	(new LoadedContext("/inheritedLocals/01.java")).tranLinAsText should contain only ("int ok1", "int ok2", "int ok3")
+	(new LoadedContext("/inheritedLocals/02.java")).tranLinAsText should contain only ("int ok1", "int ok2", "int ok3", "String ok4", "int ok5", "float ok6", "int ok7")
+	(new LoadedContext("/inheritedLocals/03.java")).tranLinAsText should contain only ("int ok1", "int ok2")
+	(new LoadedContext("/inheritedLocals/04.java")).tranLinAsText should contain only ("int ok1", "int ok2")
+	(new LoadedContext("/inheritedLocals/05.java")).tranLinAsText should contain only ("int ok1", "int ok2")
+
 }
