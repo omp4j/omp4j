@@ -56,7 +56,7 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 
 				result = List[Directive](new Directive(ompCtx, ompParser, stmtCtx, parser))
 			} catch {
-				case e: SyntaxErrorException => println("Syntax error before line " + stmtCtx.start.getLine() + ": '" + e.getMessage() + "'")	// TODO: log
+				case e: SyntaxErrorException => throw new SyntaxErrorException("Syntax error before line " + stmtCtx.start.getLine() + "': " + e.getMessage() + "'", e)
 				case e: Exception => throw new ParseException("Unexpected exception", e)
 			}
 

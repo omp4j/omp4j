@@ -59,6 +59,7 @@ object Main extends App {
 		case e: SecurityException        => println(e.getMessage())
 		case e: CompilationException     => println(e.getMessage() + ": " + e.getCause().getMessage())
 		case e: ParseException           => println(e.getMessage() + ": " + e.getCause().getMessage())
+		case e: SyntaxErrorException     => println(e.getMessage() + ": " + e.getCause().getMessage())
 		case e: RuntimeException         => println(e.getMessage())
 		// unexpected exception
 		case e: Exception                => e.printStackTrace()

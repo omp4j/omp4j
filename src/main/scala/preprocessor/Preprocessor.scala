@@ -33,7 +33,8 @@ class Preprocessor(files: Array[File])(implicit conf: Config) {
 
 	/** Parse one particular file.
 	  * @param file Valid source file to be parsed
-	  * @throws ParseException TODO
+	  * @throws ParseException Unexpected exception
+	  * @throws SyntaxErrorException If OMP directive has invalid syntax
 	  */
 	private def parseFile(file: File) = {
 		val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath()))
