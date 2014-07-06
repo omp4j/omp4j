@@ -13,11 +13,11 @@ import org.omp4j.preprocessor.grammar._
 /** Loads given file */
 abstract class AbstractLoadedContext(path: String) {
 	val file = new File(getClass.getResource(path).toURI().getPath())
-	lazy val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath()))
-	lazy val tokens = new CommonTokenStream(lexer)
-	lazy val parser = new Java8Parser(tokens)
-	lazy val t = parser.compilationUnit()
-	lazy val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
+	val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath()))
+	val tokens = new CommonTokenStream(lexer)
+	val parser = new Java8Parser(tokens)
+	val t = parser.compilationUnit()
+	val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
 }
 
 

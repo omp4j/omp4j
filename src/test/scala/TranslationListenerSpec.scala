@@ -11,7 +11,8 @@ import org.omp4j.preprocessor._
 import org.omp4j.preprocessor.grammar._
 
 /** LoadedContext with TranslationListener */
-class LoadedContext(path: String) extends AbstractLoadedContext(path) {
+class TLLoadedContext(path: String) extends AbstractLoadedContext(path) {
+
 	/** Return set of string <type> <identifier> such as "int ok1" etc.*/
 	def tranLinAsText = {
 		val inherLocals = (new TranslationListener(directives, tokens, null, parser)).getPossiblyInheritedLocals(directives.head.ctx)
@@ -22,11 +23,11 @@ class LoadedContext(path: String) extends AbstractLoadedContext(path) {
 /** Unit test for TranslationListener */
 class TranslationListenerSpec extends AbstractSpec {
 
-	// check inherited vars in block after first and the only directive
-	(new LoadedContext("/inheritedLocals/01.java")).tranLinAsText should contain only ("int ok1", "int ok2", "int ok3")
-	(new LoadedContext("/inheritedLocals/02.java")).tranLinAsText should contain only ("int ok1", "int ok2", "int ok3", "String ok4", "int ok5", "float ok6", "int ok7")
-	(new LoadedContext("/inheritedLocals/03.java")).tranLinAsText should contain only ("int ok1", "int ok2")
-	(new LoadedContext("/inheritedLocals/04.java")).tranLinAsText should contain only ("int ok1", "int ok2")
-	(new LoadedContext("/inheritedLocals/05.java")).tranLinAsText should contain only ("int ok1", "int ok2")
+	// check inherited vars in block after first (and the only) directive
+	(new TLLoadedContext("/inheritedLocals/01.java")).tranLinAsText should contain only ("int ok1", "int ok2", "int ok3")
+	(new TLLoadedContext("/inheritedLocals/02.java")).tranLinAsText should contain only ("int ok1", "int ok2", "int ok3", "String ok4", "int ok5", "float ok6", "int ok7")
+	(new TLLoadedContext("/inheritedLocals/03.java")).tranLinAsText should contain only ("int ok1", "int ok2")
+	(new TLLoadedContext("/inheritedLocals/04.java")).tranLinAsText should contain only ("int ok1", "int ok2")
+	(new TLLoadedContext("/inheritedLocals/05.java")).tranLinAsText should contain only ("int ok1", "int ok2")
 
 }
