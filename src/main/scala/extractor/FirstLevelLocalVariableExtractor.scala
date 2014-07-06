@@ -17,7 +17,9 @@ class FirstLevelLocalVariableExtractor extends Java8BaseVisitor[Set[Java8Parser.
 
 	/** Don't get into nested statements */
 	override def visitStatement(c: Java8Parser.StatementContext) = Set[LVDC]()
-	// override def visitBlockStatement(c: Java8Parser.BlockStatementContext) = Set[LVDC]()
+
+	/** Don't get into other methods */
+	override def visitMethodDeclaration(c: Java8Parser.MethodDeclarationContext) = Set[LVDC]()
 
 	override def defaultResult() = Set[LVDC]()
 	override def aggregateResult(a: Set[LVDC], b: Set[LVDC]) = a ++ b
