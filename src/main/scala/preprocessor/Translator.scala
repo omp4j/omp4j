@@ -9,16 +9,84 @@ import org.antlr.v4.runtime._
 
 import org.omp4j.Config
 import org.omp4j.exception._
+import org.omp4j.extractor._
 import org.omp4j.preprocessor.grammar._
 
 /** Translate context given with respect to directives */
-class Translator(directives: List[Directive], tokens: TokenStream, ctx: Java8Parser.CompilationUnitContext, tree: OMPFile, parser: Java8Parser)(implicit conf: Config) {
+class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Directive], ompFile: OMPFile)(implicit conf: Config) {
 
-	/** Get translated source code */
-	def translate: String = {
-		val walker = new ParseTreeWalker()
-		val rl = new TranslationListener(directives, tokens, tree, parser)
-		walker.walk(rl, ctx)
-		rl.rewriter.getText()
+	/** Java8Parser.FieldDeclarationContext typedef */
+	type SC = Java8Parser.StatementContext
+
+	/** Java8Parser.LocalVariableDeclarationContext typedef */
+	type LVDC = Java8Parser.LocalVariableDeclarationContext
+
+	/** Translate directive to parallelized String
+	  * @param d Directive to parallelize
+	  * @return Source code String
+	  */
+	def translate(d: Directive): String = {
+		head(d) + tokens.getText(d.ctx) + tail(d)
 	}
+
+	/** For now only add simple comment at the beginning -> insert context */
+	private def head(d: Directive) = {
+		val source = Source.fromURL(getClass.getResource("/head.in"))
+		// source.getLines mkString "\n"
+
+		"/* " +
+		getPossiblyInheritedLocals(d.ctx).map(_.getText()) +
+		"\t" + 
+		getLocals(d.ctx).map(_.getText()) +
+		" */"
+	}
+
+	/** For now only add simple comment at the end */
+	private def tail(d: Directive) = {
+		val source = Source.fromURL(getClass.getResource("/tail.in"))
+
+		source.getLines mkString "\n"
+	}
+
+	/** Get sequence of all (in)direct parents of tree given
+	  * @param pt Tree whose parents are about to be fetched
+	  * @return Set of trees
+	  */
+	def getParentList(t: ParseTree): Seq[ParseTree] = {
+		if (t == null) Seq[ParseTree]()
+		else getParentList(t.getParent()) :+ t
+	}
+
+	/** Get set of variables (their declarations) whose can be reffered
+	  * but are not declared in the tree given
+	  * @param pt Tree whose variable are about to be fetched
+	  * @return Set of variables
+	  */
+	def getPossiblyInheritedLocals(pt: ParseTree): Set[LVDC] = {
+
+		// result set - TODO: rewrite more functionally
+		var result = Set[LVDC]()
+		val neck = getParentList(pt)	// list of parent
+
+		// iterate through the list of tuples (tree-node, follower-in-neck)
+		for {(t, follower) <- (neck zip neck.tail)} {
+			// println("visiting:\t" + t)
+			breakable {
+				// iterate through all children left to the follower
+				for {i <- 0 until t.getChildCount()} {
+					val child = t.getChild(i)
+					if (child == follower) break
+					result = result ++ (new FirstLevelLocalVariableExtractor ).visit(child)
+				}
+			}
+		}
+		result
+	}
+
+	/** Get set of variables (their declarations) that are declared directly
+	  * in the tree given
+	  * @param pt Tree whose variable are about to be fetched
+	  * @return Set of variables
+	  */
+	def getLocals(t: ParseTree): Set[LVDC] = (new LocalVariableExtractor ).visit(t)
 }

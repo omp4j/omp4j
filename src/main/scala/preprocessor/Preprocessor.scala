@@ -36,7 +36,7 @@ class Preprocessor(files: Array[File])(implicit conf: Config) {
 	  * @throws ParseException Unexpected exception
 	  * @throws SyntaxErrorException If OMP directive has invalid syntax
 	  */
-	private def parseFile(file: File) = {
+	private def parseFile(file: File): String = {
 		val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath()))
 		val tokens = new CommonTokenStream(lexer)
 		val parser = new Java8Parser(tokens)
@@ -44,20 +44,9 @@ class Preprocessor(files: Array[File])(implicit conf: Config) {
 
 		// t.inspect(parser);	// display gui tree
 
-		val ompFile = new OMPFile(t, parser)
-
-		// ompFile.classes.foreach{ c =>
-		// 	println(c.name)
-		// 	c.allMethods.foreach{ m =>
-		// 		println("\t" + m.getName())
-		// 	}
-		// }
-
-		val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
-
-		// directives.foreach(d => println(d + "\n"))
-
-		val translator = new Translator(directives, tokens, t, ompFile, parser)
-		println(translator.translate)
+		val transVis = new TranslationVisitor(tokens, parser, t)
+		val res: String = transVis.translate
+		println(res)	// DEBUG
+		res
 	}
 }
