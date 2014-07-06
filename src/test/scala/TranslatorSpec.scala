@@ -15,7 +15,7 @@ class TLLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 	/** Return set of string <type> <identifier> such as "int ok1" etc.*/
 	def tranLinAsText = {
-		val inherLocals = (new TranslationListener(directives, tokens, null, parser)).getPossiblyInheritedLocals(directives.head.ctx)
+		val inherLocals = (new Translator(tokens, parser, directives, null)(null)).getPossiblyInheritedLocals(directives.head.ctx)
 		inherLocals.map{ l => l.`type`().getText() + " " + l.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText() }
 	}
 }
