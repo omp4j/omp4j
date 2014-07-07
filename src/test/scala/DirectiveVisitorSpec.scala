@@ -22,7 +22,7 @@ class DCLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 }
 
-/** Unit test for TranslationListener */
+/** Unit test for DirectiveVisitor */
 class DirectiveVisitorSpec extends AbstractSpec {
 
 	// check count of found valid directives
