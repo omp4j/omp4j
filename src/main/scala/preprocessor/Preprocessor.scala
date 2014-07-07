@@ -15,7 +15,7 @@ import org.omp4j.preprocessor.grammar._
   * @param Files to be parsed
   * @throws ParseException TODO
   */
-class Preprocessor(files: Array[File])(implicit conf: Config) {
+class Preprocessor(files: Iterable[File])(implicit conf: Config) {
 
 	/** Start parsing file by file
 	  * @throws IllegalArgumentException when non-existing file is passed.

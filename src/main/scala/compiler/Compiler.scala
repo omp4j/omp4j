@@ -18,14 +18,15 @@ class Compiler(implicit conf: Config) {
 	  */
 	def compile = {
 		try {
-			val jc	= ToolProvider.getSystemJavaCompiler()
+			val jc = ToolProvider.getSystemJavaCompiler()
 			val fileManager = jc.getStandardFileManager(null, null, null)
 			val units = fileManager.getJavaFileObjectsFromFiles(conf.files.asJava)
 			
+
 			val result = jc.getTask(null, fileManager, null, conf.flags.asJava, null, units).call() // TODO
 			if (!result) throw new CompilationException("Compilation failed")
 		} catch {
-			case e: RuntimeException => throw new CompilationException("Unrecoverable error occurred", e)
+			case e: RuntimeException      => throw new CompilationException("Unrecoverable error occurred", e)
 			case e: IllegalStateException => throw new CompilationException("'call' called more than once", e)
 		}
 	}
