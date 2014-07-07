@@ -26,14 +26,6 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** Rewriter for directive expansions*/
 	private lazy val rewriter = new TokenStreamRewriter(tokens)
 
-	// TODO: OMPFile test
-	// ompFile.classes.foreach{ c =>
-	// 	println(c.name)
-	// 	c.allMethods.foreach{ m =>
-	// 		println("\t" + m.getName())
-	// 	}
-	// }
-
 	// TODO: doc
 	def translate: String = {
 		visit(tree)
