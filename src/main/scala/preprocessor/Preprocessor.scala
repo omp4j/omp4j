@@ -44,6 +44,9 @@ class Preprocessor(files: Iterable[File])(implicit conf: Config) {
 
 		// t.inspect(parser);	// display gui tree
 
+		// val myVis = new MyVisitor(tokens, parser, t)
+		// println(myVis.fetch)
+
 		val transVis = new TranslationVisitor(tokens, parser, t)
 		val res: String = transVis.translate
 		println(res)	// DEBUG

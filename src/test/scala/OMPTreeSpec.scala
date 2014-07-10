@@ -1,6 +1,8 @@
 package org.omp4j.test
 
 import java.io.File
+import scala.collection.mutable.Stack
+
 import org.scalatest._
 
 import org.antlr.v4.runtime.atn._
@@ -26,7 +28,19 @@ class OMPTreeLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 	/** Get field names */
 	def fields(n: Int) = {
-		ompFile.classes(n).allFields.map(_.getName()).toSet
+		ompFile.classes(n).allFields.map(_.name).toSet
+	}
+
+	def nestedClassName(n: Int, m: Int) = {
+		ompFile.classes(n).nestedClasses(m)
+	}
+
+	def getClass(name: String) = {
+		ompFile.getClass(name)
+	}
+
+	def getClass(names: Stack[String]) = {
+		ompFile.getClass(names)
 	}
 
 }
@@ -45,5 +59,21 @@ class OMPTreeSpec extends AbstractSpec {
 	ompT1.fields(0) should contain only ("publicSuperInheritedField", "protectedSuperInheritedField", "privateSuperInheritedField")
 	ompT1.fields(1) should contain only ("publicSuperInheritedField", "protectedSuperInheritedField", "publicInheritedField", "protectedInheritedField", "privateInheritedField")
 	ompT1.fields(2) should contain only ("publicSuperInheritedField", "protectedSuperInheritedField", "publicInheritedField", "protectedInheritedField", "publicNewField", "protectedNewField", "privateNewField")
+
+	val ompT2 = new OMPTreeLoadedContext("/ompTree/02.java")
+	// nested classes
+	ompT2.nestedClassName(0, 0).name should equal ("Middle1")
+	ompT2.nestedClassName(0, 1).name should equal ("Middle2")
+	ompT2.nestedClassName(0, 2).name should equal ("Middle3")
+	ompT2.nestedClassName(0, 1).nestedClasses(1).name should equal ("Bottom22")
+
+	ompT2.getClass("Top").name should equal ("Top")
+	an [IllegalArgumentException] should be thrownBy ompT2.getClass("Middle1")
+	ompT2.getClass(Stack[String]("Middle3", "Top")).name should equal ("Middle3")
+	ompT2.getClass(Stack[String]("Bottom31", "Middle3", "Top")).name should equal ("Bottom31")
+	an [IllegalArgumentException] should be thrownBy ompT2.getClass(Stack[String]("Top", "Middle3"))
+
+	// FQN
+	ompT2.getClass(Stack[String]("Bottom31", "Middle3", "Top")).FQN should equal ("Top$Middle3$Bottom31")
 
 }

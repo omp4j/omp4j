@@ -8,16 +8,15 @@ import java.lang.reflect.Method
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
+import Array._
 import scala.language.existentials
 import scala.collection.mutable.ListBuffer
-import Array._
+import scala.collection.mutable.Stack
 
 import org.omp4j.Config
 import org.omp4j.exception._
 import org.omp4j.extractor._
 import org.omp4j.preprocessor.grammar._
-
-// TODO: pass `this`
 
 abstract class OMPBase(ctx: ParserRuleContext, parser: Java8Parser)(implicit conf: Config) {
 	override def toString() = ctx.toStringTree(parser)
@@ -27,28 +26,69 @@ abstract class OMPBase(ctx: ParserRuleContext, parser: Java8Parser)(implicit con
 class OMPFile(ctx: Java8Parser.CompilationUnitContext, parser: Java8Parser)(implicit conf: Config) extends OMPBase(ctx, parser) {
 
 	/** Classes in file */
-	lazy val classes = (new ClassExtractor ).visit(ctx).map(c => new OMPClass(c, parser))
+	lazy val classes = (new ClassExtractor ).visit(ctx).map(c => new OMPClass(c, null, parser))
+
+	def getClass(name: String): OMPClass = {
+		val filtered = classes.filter(_.name == name)
+		filtered.size match {
+			case 0 => throw new IllegalArgumentException("Class '" + name + "' not found (1)")
+			case 1 => filtered.head
+			case _ => throw new IllegalArgumentException("Class '" + name + "'  found multiple times")
+		} 
+	}
+
+	def getClass(names: Stack[String]): OMPClass = {
+
+		def getClassRec(namesRev: List[String], clazz: OMPClass): OMPClass = {
+			namesRev.size match {
+				case 1 => clazz.getNestedClass(namesRev.head)
+				case _ => getClassRec(namesRev.tail, clazz.getNestedClass(namesRev.head))
+			} 
+		}
+
+		val revNames = names.reverse
+		revNames.size match {
+			case 0 => throw new IllegalArgumentException("Empty stack passed")
+			case 1 => getClass(revNames.head)
+			case _ => getClassRec(revNames.tail.toList, getClass(revNames.head))
+		} 
+	}
+
 }
 
 /** Class representation containing list of methods, fields and nested classes */
-class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parser: Java8Parser)(implicit conf: Config) extends OMPBase(ctx, parser) {
+class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config) extends OMPBase(ctx, parser) {
 	/** String class name */
-	lazy val name = ctx.Identifier().getText()
+	lazy val name: String = ctx.Identifier().getText()
+
+	lazy val FQN: String = parent match {	// TODO package?
+		case null => name
+		case _ => parent.FQN + "$" + name
+	}
 
 	/** List of nested classes */
-	lazy val nestedClasses = (new ClassExtractor ).visit(ctx.classBody()).map(c => new OMPClass(c, parser))
+	lazy val nestedClasses = (new ClassExtractor ).visit(ctx.classBody()).map(c => new OMPClass(c, this, parser))
 
 	/** List of methods directly implemented (or overriden) in the class */
-	lazy val implementedMethods = (new MethodExtractor ).visit(ctx.classBody()).map(c => new OMPMethod(c, parser))
+	// lazy val implementedMethods = (new MethodExtractor ).visit(ctx.classBody()).map(c => new OMPMethod(c, parser))
 
 	/** List of all methods (including inherited ones) */
 	lazy val allMethods: Array[Method] = findAllMethods
 
 	/** List of all fields directly implemented in the class */
-	lazy val implementedFields = (new FieldExtractor ).visit(ctx.classBody()).map(c => new OMPVariable(c.`type`(), c.variableDeclarators(), parser))
+	// lazy val implementedFields = (new FieldExtractor ).visit(ctx.classBody()).map(c => new OMPVariable(c.`type`(), c.variableDeclarators(), parser))
 
-	/** List of all fields (including inherited ones) */
-	lazy val allFields = findAllFields
+	/** Set of all fields (including inherited ones) */
+	lazy val allFields = findAllFields.map(f => new OMPVariable(f.getName(), f.getType().getName())).toSet
+
+	def getNestedClass(name: String) = {
+		val filtered = nestedClasses.filter(_.name == name)
+		filtered.size match {
+			case 0 => throw new IllegalArgumentException("Class '" + name + "' not found (2)")
+			case 1 => filtered.head
+			case _ => throw new IllegalArgumentException("Class '" + name + "'  found multiple times")
+		} 
+	}
 
 	/** Find all methods via reflection (only for field allMethods)
 	  * @param name String name of class
@@ -73,10 +113,10 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parser: Java8Parser)(im
 		}
 
 		try {
-			val cls = conf.classLoader.loadClass(name)
+			val cls = conf.classLoader.loadClass(FQN)
 			findAllMethodsRecursively(cls, true)
 		} catch {
-			case e: ClassNotFoundException => throw new ParseException("Class '" + name + "' was not found in generated JAR even though it was found by ANTLR", e)
+			case e: ClassNotFoundException => throw new ParseException("Class '" + name + "' (" + FQN + ") was not found in generated JAR even though it was found by ANTLR", e)
 		}
 	}
 
@@ -103,10 +143,10 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parser: Java8Parser)(im
 		}
 
 		try {
-			val cls = conf.classLoader.loadClass(name)
+			val cls = conf.classLoader.loadClass(FQN)
 			findAllFieldsRecursively(cls, true)
 		} catch {
-			case e: ClassNotFoundException => throw new ParseException("Class '" + name + "' was not found in generated JAR even though it was found by ANTLR", e)
+			case e: ClassNotFoundException => throw new ParseException("Class '" + name + "' (" + FQN + ") was not found in generated JAR even though it was found by ANTLR", e)
 		}
 	}
 }
@@ -114,15 +154,30 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parser: Java8Parser)(im
 
 // TODO: constructor
 /** Method representation */
-class OMPMethod(ctx: Java8Parser.MethodDeclarationContext, parser: Java8Parser)(implicit conf: Config) {
-	// val tree: OMPTree
-	// val variables: List[OMPVariable] // TODO
+// class OMPMethod(ctx: Java8Parser.MethodDeclarationContext, parser: Java8Parser)(implicit conf: Config) {
+// 	// val tree: OMPTree
+// 	// val variables: List[OMPVariable] // TODO
 
-	override def toString() = ctx.toStringTree(parser)
+// 	override def toString() = ctx.toStringTree(parser)
+// }
+
+// class OMPTree(implicit conf: Config) {}
+
+/** Variable meaning enum  */
+object OMPVariableType extends Enumeration {
+	type OMPVariableType = Value
+	val Local = Value("local")
+	val Field = Value("field")
+	val Class = Value("class")
+	val This  = Value("this")
+	val Liter = Value("liter")
 }
 
-class OMPTree(implicit conf: Config) {}
+import OMPVariableType._
 
 /** Variable representation */
-class OMPVariable(varType: Java8Parser.TypeContext, ctx: Java8Parser.VariableDeclaratorsContext, parser: Java8Parser)(implicit conf: Config) {
+class OMPVariable(_name: String, _varType: String, _meaning: OMPVariableType = OMPVariableType.Class) {
+	lazy val name = _name
+	lazy val varType = _varType
+	lazy val meaning = _meaning
 }
