@@ -11,7 +11,7 @@ Usage
 The described method is for UNIX-like systems. Microsoft Windows are supported though.
 
 ### Prerequisites
-For Ubuntu users: `$ ./install-system-dependecies.sh`; then [download](http://dl.bintray.com/sbt/debian/sbt-0.13.5.deb) and install sbt.
+For Ubuntu users: `$ ./install-system-dependencies.sh`; then [download](http://dl.bintray.com/sbt/debian/sbt-0.13.5.deb) and install sbt.
 
 For other users, this is the list of required software:
 - JRE (tested version `OpenJDK 1.7.0_55`)
@@ -26,7 +26,7 @@ For other users, this is the list of required software:
 
 ### Fetching code
 1. `$ git clone git@github.com:omp4j/omp4j.git`
-2. `$ cd omp4j & ./install-dependecies.sh`
+2. `$ cd omp4j & ./install-dependencies.sh`
  
 Step 2 alternative:
 
