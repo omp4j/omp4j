@@ -34,14 +34,17 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** Stack of nested classes (currently in) */
 	private val clStack = Stack[String]()
 
-	/** Current method*/
-	// private var method = ""
-
 	/** Set of local variables */
 	private var locals = Set[OMPVariable]()
 
 	/** Set of variables to be added to context*/
 	private var captured = Set[OMPVariable]()
+
+	/** Name of OMPContext variable; TODO: unique*/
+	private var contextName = "ompContext"
+
+	/** Name of OMPContext class; TODO: unique*/
+	private var contextClassName = "OMPContext"
 
 	/** Does 'this' keywork appears in parallel statement? */
 	private var capturedThis = false
@@ -76,17 +79,17 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 
 					// parallelize!
 					val first = if (capturedThis) "public " + clStack.head + " THAT;\n" else ""
-					val second = if (capturedThis) "ompcontext.THAT = this;\n" else ""
+					val second = if (capturedThis) contextName + ".THAT = this;\n" else ""
 
 					val toPrepend =
 						"/* === OMP CONTEXT === */\n" + 
-						"class OMPContext {\n" + 
+						"class " + contextClassName + " {\n" + 
 							(for {c <- captured} yield "public " + c.varType + " " + c.meaning + "_" + c.name + ";\n").toList.mkString + 
 							first + 
 						"}\n" +
-						"final OMPContext ompcontext = new OMPContext();\n" + 
+						"final " + contextClassName + " " + contextName + " = new " + contextClassName + "();\n" + 
 						second + 
-						(for {c <- captured} yield "ompcontext." + c.meaning + "_" + c.name + " = " + c.name + ";\n").toList.mkString + 
+						(for {c <- captured} yield contextName + "." + c.meaning + "_" + c.name + " = " + c.name + ";\n").toList.mkString + 
 						"/* === /OMP CONTEXT === */\n"
 
 					rewriter.insertBefore(ctx.start, toPrepend)
@@ -108,42 +111,32 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		clStack.pop()
 	}
 
-	// override def visitMethodDeclaration(ctx: Java8Parser.MethodDeclarationContext) = {
-	// 	method = ctx.Identifier().getText()
-	// 	super.visitMethodDeclaration(ctx)
-	// }
-
 	// TODO: http://docs.oracle.com/javase/tutorial/java/javaOO/anonymousclasses.html
 
 	override def visitPrimary(ctx: Java8Parser.PrimaryContext) = {
-		if (currentDirective == null) {
-			super.visitPrimary(ctx)
-		} else {
+		if (currentDirective == null) super.visitPrimary(ctx)
+		else {
 
-			var typpe = OMPVariableType.Class
-			var classType = "Object"
+			// globals (not actually functional, TODO)
+			var meaning = OMPVariableType.Class	// Primary meaning (class/local/...)
+			var classType = "Object"	// extracted variable type (if really variable)
+			var id = ""	// extracted variable name (if really variable)
 			try {
 				val identifier = ctx.Identifier()
 				if (identifier != null) {
-					val id = identifier.getText()
+					id = identifier.getText()
 					val clazz = ompFile.getClass(clStack)
-
-					val tmpStack = clStack.clone
-					var fields = Set[OMPVariable]()
-					while (!tmpStack.isEmpty) {
-						fields = fields | ompFile.getClass(tmpStack).allFields
-						tmpStack.pop
-					}
+					val fields = clazz.allFields
 
 					(locals find (_.name == id)) match {
 						case Some(v) => {
-							typpe = OMPVariableType.Local
+							meaning = OMPVariableType.Local
 							classType = v.varType;
 						}
 						case None => {
 							(fields find (_.name == id)) match {
 								case Some(v) => {
-									typpe = OMPVariableType.Field
+									meaning = OMPVariableType.Field
 									classType = v.varType;
 								}
 								case None => ;
@@ -152,18 +145,18 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 					}
 				
 				}
-				else if (ctx.getText() == "this") typpe = OMPVariableType.This
-				else typpe = OMPVariableType.Liter
+				else if (ctx.getText() == "this") meaning = OMPVariableType.This
+				else meaning = OMPVariableType.Liter
 
 			} catch {
 				// TODO: exceptions?
 				case e: Exception => println(e.getMessage())
 			} finally {
-				if (typpe == OMPVariableType.Field || typpe == OMPVariableType.Local) {
-					rewriter.insertBefore(ctx.start, "ompcontext." + typpe + "_")
-					captured += new OMPVariable(ctx.Identifier().getText(), classType, typpe)	// TODO type
-				} else if (typpe == OMPVariableType.This) {
-					rewriter.replace(ctx.start, ctx.stop, "ompcontext.THAT")
+				if (meaning == OMPVariableType.Field || meaning == OMPVariableType.Local) {
+					rewriter.insertBefore(ctx.start, contextName + "." + meaning + "_")
+					captured += new OMPVariable(id, classType, meaning)
+				} else if (meaning == OMPVariableType.This) {
+					rewriter.replace(ctx.start, ctx.stop, contextName + ".THAT")
 					capturedThis = true
 				}
 
