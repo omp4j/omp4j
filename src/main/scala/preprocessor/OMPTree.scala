@@ -63,7 +63,7 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parse
 
 	lazy val FQN: String = parent match {	// TODO package?
 		case null => name
-		case _ => parent.FQN + "$" + name
+		case _    => parent.FQN + "$" + name
 	}
 
 	/** List of nested classes */
@@ -78,9 +78,20 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parse
 	/** List of all fields directly implemented in the class */
 	// lazy val implementedFields = (new FieldExtractor ).visit(ctx.classBody()).map(c => new OMPVariable(c.`type`(), c.variableDeclarators(), parser))
 
-	/** Set of all fields (including inherited ones) */
-	lazy val allFields = findAllFields.map(f => new OMPVariable(f.getName(), f.getType().getName())).toSet
+	/** Set of declared and inherited fields */
+	lazy val fields: Set[OMPVariable] = findAllFields.map(f => new OMPVariable(f.getName(), f.getType().getName())).toSet
 
+	/** Set of all fields referable from this class context */
+	lazy val allFields: Set[OMPVariable] = parent match {
+		case null => fields
+		case _    => fields ++ parent.allFields
+	}
+
+	/** Find nested class by simple name
+	  * @param name String name of class
+	  * @throws IllegalArgumentException If class was found more than once or none class found
+	  * @return OMPClass object
+	  */
 	def getNestedClass(name: String) = {
 		val filtered = nestedClasses.filter(_.name == name)
 		filtered.size match {
@@ -104,9 +115,10 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parse
 		  */
 		def findAllMethodsRecursively(clazz: Class[_], firstRun: Boolean): Array[Method] = {
 			val superClazz = clazz.getSuperclass()
-			val res = 
-				if (superClazz == null) clazz.getDeclaredMethods()
-				else concat(clazz.getDeclaredMethods(), findAllMethodsRecursively(superClazz, false))
+			val res = superClazz match {
+				case null => clazz.getDeclaredMethods()
+				case _    => concat(clazz.getDeclaredMethods(), findAllMethodsRecursively(superClazz, false))
+			}
 
 			if (firstRun) res
 			else res.filter(m => ! Modifier.isPrivate(m.getModifiers()))
@@ -134,9 +146,10 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parse
 		  */
 		def findAllFieldsRecursively(clazz: Class[_], firstRun: Boolean): Array[Field] = {
 			val superClazz = clazz.getSuperclass()
-			val res = 
-				if (superClazz == null) clazz.getDeclaredFields()
-				else concat(clazz.getDeclaredFields(), findAllFieldsRecursively(superClazz, false))
+			val res = superClazz match {
+				case null => clazz.getDeclaredFields()
+				case _    => concat(clazz.getDeclaredFields(), findAllFieldsRecursively(superClazz, false))
+			}
 
 			if (firstRun) res
 			else res.filter(m => ! Modifier.isPrivate(m.getModifiers()))
