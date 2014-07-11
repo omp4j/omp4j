@@ -21,33 +21,6 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 	/** Java8Parser.LocalVariableDeclarationContext typedef */
 	type LVDC = Java8Parser.LocalVariableDeclarationContext
 
-	/** Translate directive to parallelized String
-	  * @param d Directive to parallelize
-	  * @return Source code String
-	  */
-	def translate(d: Directive): String = {
-		head(d) + tokens.getText(d.ctx) + tail(d)
-	}
-
-	/** For now only add simple comment at the beginning -> insert context */
-	private def head(d: Directive) = {
-		val source = Source.fromURL(getClass.getResource("/head.in"))
-		// source.getLines mkString "\n"
-
-		"/* " +
-		getPossiblyInheritedLocals(d.ctx).map(_.getText()) +
-		"\t" + 
-		getLocals(d.ctx).map(_.getText()) +
-		" */"
-	}
-
-	/** For now only add simple comment at the end */
-	private def tail(d: Directive) = {
-		val source = Source.fromURL(getClass.getResource("/tail.in"))
-
-		source.getLines mkString "\n"
-	}
-
 	/** Get sequence of all (in)direct parents of tree given
 	  * @param pt Tree whose parents are about to be fetched
 	  * @return Set of trees
