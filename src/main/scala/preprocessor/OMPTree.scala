@@ -182,8 +182,9 @@ object OMPVariableType extends Enumeration {
 	val Local = Value("local")
 	val Field = Value("field")
 	val Class = Value("class")
-	val This  = Value("this")
 	val Liter = Value("liter")
+	val Param = Value("param")
+	val This  = Value("this")
 }
 
 import OMPVariableType._
