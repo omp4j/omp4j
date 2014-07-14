@@ -3,6 +3,7 @@ package org.omp4j.preprocessor
 import scala.io.Source
 import scala.util.control.Breaks._
 import scala.collection.mutable.Stack
+import scala.collection.JavaConverters._
 
 import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
@@ -37,6 +38,9 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** Set of local variables */
 	private var locals = Set[OMPVariable]()
 
+	/** Set of parameters */
+	private var params = Set[OMPVariable]()
+
 	/** Set of variables to be added to context*/
 	private var captured = Set[OMPVariable]()
 
@@ -63,42 +67,24 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 			super.visitStatement(ctx)	// continue visiting
 		} else {	// no directive
 			directives.find(_.ctx == ctx) match {	// TODO: nested directives
-
-				// accessing new directive
-				case Some(d) => {
+				case Some(d) => {	// accessing new directive
 					// set things up
 					currentDirective = d
-					
-					// TODO: method params
-					translator.getPossiblyInheritedLocals(ctx).foreach( l =>
-						locals += new OMPVariable(l.variableDeclarators().variableDeclarator(0).variableDeclaratorId().getText(), l.`type`().getText())
-					)
+					locals = translator.getPossiblyInheritedLocals(ctx)
+					params = translator.getPossiblyInheritedParams(ctx)
 
 					// work the statement
 					super.visitStatement(ctx)
 
-					// parallelize!
-					val first = if (capturedThis) "public " + clStack.head + " THAT;\n" else ""
-					val second = if (capturedThis) contextName + ".THAT = this;\n" else ""
-
-					val toPrepend =
-						"/* === OMP CONTEXT === */\n" + 
-						"class " + contextClassName + " {\n" + 
-							(for {c <- captured} yield "public " + c.varType + " " + c.meaning + "_" + c.name + ";\n").toList.mkString + 
-							first + 
-						"}\n" +
-						"final " + contextClassName + " " + contextName + " = new " + contextClassName + "();\n" + 
-						second + 
-						(for {c <- captured} yield contextName + "." + c.meaning + "_" + c.name + " = " + c.name + ";\n").toList.mkString + 
-						"/* === /OMP CONTEXT === */\n"
-
-					rewriter.insertBefore(ctx.start, toPrepend)
+					// translate (into rewriter)
+					translator.translate(currentDirective, rewriter, locals, params, captured, capturedThis, clStack.head)
 
 					// reset
 					currentDirective = null
 					capturedThis = false
 					captured = Set()
 					locals = Set()
+					params = Set()
 				}
 				case None => super.visitStatement(ctx)	// continue visiting
 			}
@@ -134,13 +120,22 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 							classType = v.varType;
 						}
 						case None => {
-							(fields find (_.name == id)) match {
+							(params find (_.name == id)) match {
 								case Some(v) => {
-									meaning = OMPVariableType.Field
+									meaning = OMPVariableType.Param
 									classType = v.varType;
 								}
-								case None => ;
+								case None => {
+									(fields find (_.name == id)) match {
+										case Some(v) => {
+											meaning = OMPVariableType.Field
+											classType = v.varType;
+										}
+										case None => ;
+									}
+								}
 							}
+
 						}
 					}
 				
@@ -152,11 +147,19 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 				// TODO: exceptions?
 				case e: Exception => println(e.getMessage())
 			} finally {
-				if (meaning == OMPVariableType.Field || meaning == OMPVariableType.Local) {
-					rewriter.insertBefore(ctx.start, contextName + "." + meaning + "_")
+				val startId = ctx.start.getTokenIndex()
+				val stopId = ctx.stop.getTokenIndex()
+				val ctxTokens = for {token <- tokens.getTokens().asScala; i = token.getTokenIndex(); if (i >= startId); if(i <= stopId)} yield token
+
+				if (meaning == OMPVariableType.Field || meaning == OMPVariableType.Local || meaning == OMPVariableType.Param) {
+					// prefix first token
+					ctxTokens.head.asInstanceOf[CommonToken].setText(contextName + "." + meaning + "_" + ctxTokens.head.getText())
+					// rewriter.insertBefore(ctx.start, contextName + "." + meaning + "_")
 					captured += new OMPVariable(id, classType, meaning)
 				} else if (meaning == OMPVariableType.This) {
-					rewriter.replace(ctx.start, ctx.stop, contextName + ".THAT")
+					// replace first (and only) token "this"
+					ctxTokens.head.asInstanceOf[CommonToken].setText(contextName + ".THAT")
+					// rewriter.replace(ctx.start, ctx.stop, contextName + ".THAT")
 					capturedThis = true
 				}
 
