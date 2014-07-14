@@ -18,52 +18,52 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 	/** Save proper statement */
 	override def visitStatement(stmtCtx: Java8Parser.StatementContext) = {
 
-		var result = List[Directive]()
+		var result: Directive = null
 
 		breakable {
 
-		val semi = stmtCtx.getStart()
-		val i = semi.getTokenIndex()
+			val semi = stmtCtx.getStart()
+			val i = semi.getTokenIndex()
 
-		val cmtChannel = tokens.getHiddenTokensToLeft(i, Java8Lexer.COMMENTS)
-		if (cmtChannel != null && cmtChannel.size() > 0) {
-			val cmt = cmtChannel.get(cmtChannel.size() - 1)	// get last comment
-			// println(stmtCtx.getText() + "\t'" + cmt.getText() + "'")
+			val cmtChannel = tokens.getHiddenTokensToLeft(i, Java8Lexer.COMMENTS)
+			if (cmtChannel != null && cmtChannel.size() > 0) {
+				val cmt = cmtChannel.get(cmtChannel.size() - 1)	// get last comment
 
-			val rawComment = cmt.getText()
-			val raw = rawComment.substring(2)
+				val rawComment = cmt.getText()
+				val raw = rawComment.substring(2)
 
-			// validate directive - starting with 'omp'
-			val ompPattern = "^\\s*omp\\s.*$".r
-			ompPattern.findFirstIn(raw) match {
-				case Some(_) => ;
-				case None    => println("Ignoring directive '" + raw + "'")	// TODO: log
-				                break
-			}
+				// validate directive - starting with 'omp'
+				val ompPattern = "^\\s*omp\\s.*$".r
+				ompPattern.findFirstIn(raw) match {
+					case Some(_) => ;
+					case None    => println("Ignoring directive '" + raw + "'")	// TODO: log
+					                break
+				}
 
-			try {
-				val ompLexer  = new OMPLexer(new ANTLRInputStream(raw))
-				ompLexer.removeErrorListeners();
-				ompLexer.addErrorListener(new OMPLexerErrorListener())
+				try {
+					val ompLexer  = new OMPLexer(new ANTLRInputStream(raw))
+					ompLexer.removeErrorListeners();
+					ompLexer.addErrorListener(new OMPLexerErrorListener())
+					val ompTokens = new CommonTokenStream(ompLexer)
+					
+					val ompParser = new OMPParser(ompTokens)
+					ompParser.removeErrorListeners();
+					ompParser.addErrorListener(new OMPLexerErrorListener())
+					val ompCtx = ompParser.ompUnit()
 
-				val ompTokens = new CommonTokenStream(ompLexer)
-				
-				val ompParser = new OMPParser(ompTokens)
-				ompParser.removeErrorListeners();
-				ompParser.addErrorListener(new OMPLexerErrorListener())
+					result = new Directive(cmt, ompCtx, ompParser, stmtCtx, parser)
+				} catch {
+					case e: SyntaxErrorException => throw new SyntaxErrorException("Syntax error before line " + stmtCtx.start.getLine() + "': " + e.getMessage() + "'", e)
+					case e: Exception => throw new ParseException("Unexpected exception", e)
+				}
 
-				val ompCtx = ompParser.ompUnit()
-
-				result = List[Directive](new Directive(ompCtx, ompParser, stmtCtx, parser))
-			} catch {
-				case e: SyntaxErrorException => throw new SyntaxErrorException("Syntax error before line " + stmtCtx.start.getLine() + "': " + e.getMessage() + "'", e)
-				case e: Exception => throw new ParseException("Unexpected exception", e)
-			}
-
-		}	// if
+			}	// if
 		}	// breakable
 
-		result ::: visitChildren(stmtCtx)
+		result match {
+			case null => visitChildren(stmtCtx)
+			case _    => result :: visitChildren(stmtCtx)
+		}
 	}
 
 	override def defaultResult() = List[Directive]()
