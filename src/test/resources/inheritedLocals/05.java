@@ -1,6 +1,6 @@
 import java.util.ArrayList;
 
-class InheritedLocal04 {
+class InheritedLocal05 {
 
 	public int wrongField1;
 
