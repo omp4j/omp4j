@@ -2,6 +2,7 @@ package org.omp4j.preprocessor
 
 import scala.io.Source
 import scala.util.control.Breaks._
+import scala.collection.JavaConverters._
 
 import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
@@ -14,9 +15,6 @@ import org.omp4j.preprocessor.grammar._
 
 /** Translate context given with respect to directives */
 class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Directive], ompFile: OMPFile)(implicit conf: Config) {
-
-	/** Java8Parser.FieldDeclarationContext typedef */
-	type SC = Java8Parser.StatementContext
 
 	/** Java8Parser.LocalVariableDeclarationContext typedef */
 	type LVDC = Java8Parser.LocalVariableDeclarationContext
@@ -35,10 +33,10 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 	  * @param pt Tree whose variable are about to be fetched
 	  * @return Set of variables
 	  */
-	def getPossiblyInheritedLocals(pt: ParseTree): Set[LVDC] = {
-
+	def getPossiblyInheritedLocals(pt: ParseTree): Set[OMPVariable] = {
+		// TODO: move to visitor
 		// result set - TODO: rewrite more functionally
-		var result = Set[LVDC]()
+		var result = Set[OMPVariable]()
 		val neck = getParentList(pt)	// list of parent
 
 		// iterate through the list of tuples (tree-node, follower-in-neck)
@@ -56,10 +54,172 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 		result
 	}
 
+	/** Get set of method parameters that can be reffered
+	  * @param pt Tree whose params are about to be fetched
+	  * @return Set of variables
+	  */
+	def getPossiblyInheritedParams(pt: ParseTree): Set[OMPVariable] = {
+
+		type MDC = Java8Parser.MethodDeclarationContext
+
+		// result set - TODO: rewrite more functionally
+		var result = Set[OMPVariable]()
+		val neck = getParentList(pt)	// list of parent
+
+		neck.foreach{ n =>
+			try {
+				val method: MDC = n.asInstanceOf[MDC]
+				val params = method.formalParameters().formalParameterList().formalParameter()
+				params.asScala.foreach{ p =>
+					result += new OMPVariable(p.variableDeclaratorId().Identifier().getText(), p.`type`().getText())
+				}
+			} catch {
+				case e: Exception => ;
+			}
+		}
+		result
+	}
+
 	/** Get set of variables (their declarations) that are declared directly
 	  * in the tree given
 	  * @param pt Tree whose variable are about to be fetched
 	  * @return Set of variables
 	  */
 	def getLocals(t: ParseTree): Set[LVDC] = (new LocalVariableExtractor ).visit(t)
+
+
+	def translate(directive: Directive, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+		if      (directive.ompCtx.ompParallel()    != null) translateParallel(directive.ompCtx.ompParallel(), directive.ctx, rewriter, locals, params, captured, capturedThis, currentClass)
+		else if (directive.ompCtx.ompParallelFor() != null) translateParallelFor(directive.ompCtx.ompParallelFor(), directive.ctx, rewriter, locals, params, captured, capturedThis, currentClass)
+		else if (directive.ompCtx.ompSections()    != null) translateSections(directive.ompCtx.ompSections(), directive.ctx, rewriter, locals, params, captured, capturedThis, currentClass)
+		else if (directive.ompCtx.ompFor()         != null) translateFor(directive.ompCtx.ompFor(), directive.ctx, rewriter, locals, params, captured, capturedThis, currentClass)
+		else throw new IllegalArgumentException("Unsupported directive")
+		rewriter.replace(directive.cmt, "\n")
+	}
+
+	private def translateParallel(ompCtx: OMPParser.OmpParallelContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+		val contextVar = uniqueContextVarName(rewriter)
+		val contextClass = uniqueContextClassName(rewriter)
+		val threadArr = uniqueThreadArrName(rewriter)
+		val iter = uniqueIteratorName(rewriter)
+
+		val thatDecl = if (capturedThis) "public " + currentClass + " THAT;\n" else ""
+		val thatInit = if (capturedThis) contextVar + ".THAT = this;\n" else ""
+
+		val toPrepend =
+			"/* === OMP CONTEXT === */\n" + 
+			"class " + contextClass + " {\n" + 
+				(for {c <- captured} yield "\tpublic " + c.varType + " " + c.meaning + "_" + c.name + ";\n").toList.mkString + 
+				thatDecl + 
+			"}\n" +
+			"final " + contextClass + " " + contextVar + " = new " + contextClass + "();\n" + 
+			thatInit + 
+			(for {c <- captured} yield contextVar + "." + c.meaning + "_" + c.name + " = " + c.name + ";\n").toList.mkString + 
+			"/* === /OMP CONTEXT === */\n" +
+			"Thread " + threadArr + "[] = new Thread[4];\n" + 
+			"for (int " + iter + " = 0; " + iter + " < 4; " + iter + "++) {\n" + 
+				"\t" + threadArr + "[" + iter + "] = new Thread(new Runnable(){\n" + 
+				"\t\t@Override\n" + 
+				"\t\tpublic void run() {\n"
+
+		val toAppend = 
+				"\t\t}\n" +
+				"\t});\n" +
+				"\t" + threadArr + "[" + iter + "].start();"+
+			"}\n" +
+			"try {\n" + 
+			"\tfor (int " + iter + " = 0; " + iter + " < 4; " + iter + "++) {\n" + 
+			"\t\t" + threadArr + "[" + iter + "].join();\n" +
+			"\t}\n" + 
+			"} catch (InterruptedException e) {\n"+
+			"\tSystem.out.println(\"omp4j: interrupted exception\");\n" + 
+			"\tSystem.exit(1);\n" +
+			"}"
+
+		rewriter.insertBefore(ctx.start, toPrepend)
+		rewriter.insertAfter(ctx.stop, toAppend)
+	}
+
+	private def translateParallelFor(ompCtx: OMPParser.OmpParallelForContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+		val contextVar = uniqueContextVarName(rewriter)
+		val contextClass = uniqueContextClassName(rewriter)
+		val threadArr = uniqueThreadArrName(rewriter)
+		val iter = uniqueIteratorName(rewriter)
+		val iter2 = "ompJ"	// TODO
+
+		val threadCount = "4"
+
+		val thatDecl = if (capturedThis) "public " + currentClass + " THAT;\n" else ""
+		val thatInit = if (capturedThis) contextVar + ".THAT = this;\n" else ""
+
+		val toPrepend =
+			"/* === OMP CONTEXT === */\n" + 
+			"class " + contextClass + " {\n" + 
+				(for {c <- captured} yield "\tpublic " + c.varType + " " + c.meaning + "_" + c.name + ";\n").toList.mkString + 
+				thatDecl + 
+			"}\n" +
+			"final " + contextClass + " " + contextVar + " = new " + contextClass + "();\n" + 
+			thatInit + 
+			(for {c <- captured} yield contextVar + "." + c.meaning + "_" + c.name + " = " + c.name + ";\n").toList.mkString + 
+			"/* === /OMP CONTEXT === */\n" +
+			"Thread " + threadArr + "[] = new Thread[4];\n" + 
+			"for (int " + iter + " = 0; " + iter + " < (" + threadCount + "); " + iter + "++) {\n" + 
+				"\tfinal int " + iter2 + " = " + iter + ";\n" +
+				"\t" + threadArr + "[" + iter + "] = new Thread(new Runnable(){\n" + 
+				"\t\t@Override\n" + 
+				"\t\tpublic void run() {\n"
+
+		val toAppend = 
+				"\t\t}\n" +
+				"\t});\n" +
+				"\t" + threadArr + "[" + iter + "].start();"+
+			"}\n" +
+			"try {\n" + 
+			"\tfor (int " + iter + " = 0; " + iter + " < (" + threadCount + "); " + iter + "++) {\n" + 
+			"\t\t" + threadArr + "[" + iter + "].join();\n" +
+			"\t}\n" + 
+			"} catch (InterruptedException e) {\n"+
+			"\tSystem.out.println(\"omp4j: interrupted exception\");\n" + 
+			"\tSystem.exit(1);\n" +
+			"}"
+
+		// TODO: for now only interval <0;N) with single step incrementation
+		// TODO: banish break/continue!
+		// rewrite for
+
+		val forControl = ctx.forControl()
+		if (forControl == null) throw new ParseException("For directive before non-for statement")
+		val forInit = forControl.forInit()
+		// if...
+
+		// val varName = forInit.localVariableDeclaration().variableDeclarators().variableDeclarator(0).variableDeclaratorId()
+		val initExpr = forInit.localVariableDeclaration().variableDeclarators().variableDeclarator(0).variableInitializer().expression()
+		val limitExpr = forControl.expression()
+		val cond = limitExpr.expression(1)
+		val N = cond.getText()
+
+		// println(limitExpr.toStringTree(parser))
+		// println(cond.toStringTree(parser))
+
+
+		rewriter.replace(initExpr.start, initExpr.stop, "(" + initExpr.getText() + ") + " + iter2 + " * (" + N + ")/(" + threadCount + ")")
+		rewriter.replace(cond.start, cond.stop, "(" + iter2 + " + 1) * (" + N + ")/(" + threadCount + ")")
+
+		rewriter.insertBefore(ctx.start, toPrepend)
+		rewriter.insertAfter(ctx.stop, toAppend)
+	}
+
+	private def translateSections(ompCtx: OMPParser.OmpSectionsContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+		// TODO
+	}
+
+	private def translateFor(ompCtx: OMPParser.OmpForContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+		// TODO
+	}
+
+	// TODO
+	def uniqueContextClassName(rewriter: TokenStreamRewriter) = "OMPContext"
+	def uniqueContextVarName(rewriter: TokenStreamRewriter) = "ompContext"
+	def uniqueThreadArrName(rewriter: TokenStreamRewriter) = "ompThreads"
+	def uniqueIteratorName(rewriter: TokenStreamRewriter) = "ompI"
 }
