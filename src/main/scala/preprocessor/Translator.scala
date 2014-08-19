@@ -103,8 +103,8 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 		val threadArr = uniqueThreadArrName(rewriter)
 		val iter = uniqueIteratorName(rewriter)
 
-		val thatDecl = if (capturedThis) "public " + currentClass + " THAT;\n" else ""
-		val thatInit = if (capturedThis) contextVar + ".THAT = this;\n" else ""
+		val thatDecl = if (capturedThis) s"public $currentClass THAT;\n" else ""
+		val thatInit = if (capturedThis) s"$contextVar.THAT = this;\n" else ""
 
 		val toPrepend =
 			"/* === OMP CONTEXT === */\n" + 
@@ -147,25 +147,25 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 		val iter = uniqueIteratorName(rewriter)
 		val iter2 = "ompJ"	// TODO
 
-		val threadCount = "4"
+		val threadCount = "(4)"
 
 		val thatDecl = if (capturedThis) s"public $currentClass THAT;\n" else ""
 		val thatInit = if (capturedThis) s"${contextVar}.THAT = this;\n" else ""
 
 		val toPrepend =
 			"/* === OMP CONTEXT === */\n" + 
-			"class " + contextClass + " {\n" + 
-				(for {c <- captured} yield "\tpublic " + c.varType + " " + c.meaning + "_" + c.name + ";\n").toList.mkString + 
+			s"class $contextClass {\n" + 
+				(for {c <- captured} yield s"\tpublic ${c.varType} ${c.meaning}_${c.name};\n").toList.mkString + 
 				thatDecl + 
 			"}\n" +
-			"final " + contextClass + " " + contextVar + " = new " + contextClass + "();\n" + 
+			s"final $contextClass $contextVar = new ${contextClass}();\n" + 
 			thatInit + 
-			(for {c <- captured} yield contextVar + "." + c.meaning + "_" + c.name + " = " + c.name + ";\n").toList.mkString + 
+			(for {c <- captured} yield s"$contextVar.${c.meaning}_${c.name} = ${c.name};\n").toList.mkString + 
 			"/* === /OMP CONTEXT === */\n" +
-			"Thread " + threadArr + "[] = new Thread[4];\n" + 
-			"for (int " + iter + " = 0; " + iter + " < (" + threadCount + "); " + iter + "++) {\n" + 
-				"\tfinal int " + iter2 + " = " + iter + ";\n" +
-				"\t" + threadArr + "[" + iter + "] = new Thread(new Runnable(){\n" + 
+			s"Thread $threadArr[] = new Thread[$threadCount];\n" + 
+			s"for (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" + 
+				s"\tfinal int $iter2 = $iter;\n" +
+				s"\t${threadArr}[$iter] = new Thread(new Runnable(){\n" + 
 				"\t\t@Override\n" + 
 				"\t\tpublic void run() {\n"
 
@@ -175,7 +175,7 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 				s"\t${threadArr}[$iter].start();\n"+
 			"}\n" +
 			"try {\n" + 
-			s"\tfor (int $iter = 0; $iter < ($threadCount); ${iter}++) {\n" + 
+			s"\tfor (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" + 
 			s"\t\t ${threadArr}[$iter].join();\n" +
 			"\t}\n" + 
 			"} catch (InterruptedException e) {\n"+
@@ -196,19 +196,12 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 		val initExpr = forInit.localVariableDeclaration().variableDeclarators().variableDeclarator(0).variableInitializer().expression()
 		val limitExpr = forControl.expression()
 		val cond = limitExpr.expression(1)
-		val N = s"(( ${cond.getText()} ) - ( ${initExpr.getText()} ))"
-
-		println(initExpr.toStringTree(parser))
-		println(limitExpr.toStringTree(parser))
-		println(cond.toStringTree(parser))
-		println(N)
-		println("-------------")
-
+		val N = s"((${cond.getText()}) - (${initExpr.getText()}))"
 
 		rewriter.replace(initExpr.start, initExpr.stop,
-			s"(${initExpr.getText()}) + ($iter2 * ($N)/($threadCount))")
+			s"(${initExpr.getText()}) + ($iter2 * $N/$threadCount)")
 		rewriter.replace(cond.start, cond.stop,
-			s"(${initExpr.getText()}) + ($iter2 + 1) * ($N)/($threadCount)")
+			s"(${initExpr.getText()}) + ($iter2 + 1) * $N/$threadCount")
 
 		rewriter.insertBefore(ctx.start, toPrepend)
 		rewriter.insertAfter(ctx.stop, toAppend)
