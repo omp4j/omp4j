@@ -149,8 +149,8 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 
 		val threadCount = "4"
 
-		val thatDecl = if (capturedThis) "public " + currentClass + " THAT;\n" else ""
-		val thatInit = if (capturedThis) contextVar + ".THAT = this;\n" else ""
+		val thatDecl = if (capturedThis) s"public $currentClass THAT;\n" else ""
+		val thatInit = if (capturedThis) s"${contextVar}.THAT = this;\n" else ""
 
 		val toPrepend =
 			"/* === OMP CONTEXT === */\n" + 
@@ -172,38 +172,43 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 		val toAppend = 
 				"\t\t}\n" +
 				"\t});\n" +
-				"\t" + threadArr + "[" + iter + "].start();"+
+				s"\t${threadArr}[$iter].start();\n"+
 			"}\n" +
 			"try {\n" + 
-			"\tfor (int " + iter + " = 0; " + iter + " < (" + threadCount + "); " + iter + "++) {\n" + 
-			"\t\t" + threadArr + "[" + iter + "].join();\n" +
+			s"\tfor (int $iter = 0; $iter < ($threadCount); ${iter}++) {\n" + 
+			s"\t\t ${threadArr}[$iter].join();\n" +
 			"\t}\n" + 
 			"} catch (InterruptedException e) {\n"+
 			"\tSystem.out.println(\"omp4j: interrupted exception\");\n" + 
 			"\tSystem.exit(1);\n" +
 			"}"
 
-		// TODO: for now only interval <0;N) with single step incrementation
+		// TODO: multistep inc.
 		// TODO: banish break/continue!
 		// rewrite for
 
 		val forControl = ctx.forControl()
 		if (forControl == null) throw new ParseException("For directive before non-for statement")
 		val forInit = forControl.forInit()
+		if (forInit == null) throw new ParseException("For directive before enhanced for statement")
 		// if...
 
-		// val varName = forInit.localVariableDeclaration().variableDeclarators().variableDeclarator(0).variableDeclaratorId()
 		val initExpr = forInit.localVariableDeclaration().variableDeclarators().variableDeclarator(0).variableInitializer().expression()
 		val limitExpr = forControl.expression()
 		val cond = limitExpr.expression(1)
-		val N = cond.getText()
+		val N = s"(( ${cond.getText()} ) - ( ${initExpr.getText()} ))"
 
-		// println(limitExpr.toStringTree(parser))
-		// println(cond.toStringTree(parser))
+		println(initExpr.toStringTree(parser))
+		println(limitExpr.toStringTree(parser))
+		println(cond.toStringTree(parser))
+		println(N)
+		println("-------------")
 
 
-		rewriter.replace(initExpr.start, initExpr.stop, "(" + initExpr.getText() + ") + " + iter2 + " * (" + N + ")/(" + threadCount + ")")
-		rewriter.replace(cond.start, cond.stop, "(" + iter2 + " + 1) * (" + N + ")/(" + threadCount + ")")
+		rewriter.replace(initExpr.start, initExpr.stop,
+			s"(${initExpr.getText()}) + ($iter2 * ($N)/($threadCount))")
+		rewriter.replace(cond.start, cond.stop,
+			s"(${initExpr.getText()}) + ($iter2 + 1) * ($N)/($threadCount)")
 
 		rewriter.insertBefore(ctx.start, toPrepend)
 		rewriter.insertAfter(ctx.stop, toAppend)
