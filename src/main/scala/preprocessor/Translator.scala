@@ -66,15 +66,28 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 		var result = Set[OMPVariable]()
 		val neck = getParentList(pt)	// list of parent
 
+		// TODO: local classes?
 		neck.foreach{ n =>
 			try {
 				val method: MDC = n.asInstanceOf[MDC]
-				val params = method.formalParameters().formalParameterList().formalParameter()
-				params.asScala.foreach{ p =>
-					result += new OMPVariable(p.variableDeclaratorId().Identifier().getText(), p.`type`().getText())
+				val list = method.methodHeader().methodDeclarator().formalParameterList()
+
+				// add non-last
+				if (list != null) {
+					val firsts = list.formalParameters	// TODO: receiver??
+					if (firsts != null) {
+						firsts.formalParameter.asScala.foreach{ p =>
+							result += new OMPVariable(p.variableDeclaratorId().Identifier().getText(), p.unannType().getText())
+						}
+					}
+
+					val last = list.lastFormalParameter.formalParameter
+					if (last != null) {
+						result += new OMPVariable(last.variableDeclaratorId().Identifier().getText(), last.unannType().getText())
+					}
 				}
 			} catch {
-				case e: Exception => ;
+				case e: ClassCastException => ;
 			}
 		}
 		result
@@ -114,7 +127,7 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 			"}\n" +
 			"final " + contextClass + " " + contextVar + " = new " + contextClass + "();\n" + 
 			thatInit + 
-			(for {c <- captured} yield contextVar + "." + c.meaning + "_" + c.name + " = " + c.name + ";\n").toList.mkString + 
+			(for {c <- captured} yield s"$contextVar.${c.meaning}_${c.name} = ${c.name};\n").toList.mkString + 
 			"/* === /OMP CONTEXT === */\n" +
 			"Thread " + threadArr + "[] = new Thread[4];\n" + 
 			"for (int " + iter + " = 0; " + iter + " < 4; " + iter + "++) {\n" + 
@@ -187,15 +200,30 @@ class Translator(tokens: TokenStream, parser: Java8Parser, directives: List[Dire
 		// TODO: banish break/continue!
 		// rewrite for
 
-		val forControl = ctx.forControl()
-		if (forControl == null) throw new ParseException("For directive before non-for statement")
-		val forInit = forControl.forInit()
+		val forStatement = ctx.forStatement()
+		if (forStatement == null) throw new ParseException("For directive before non-for statement")
+		val basicForStatement = forStatement.basicForStatement
+		if (forStatement.basicForStatement == null) throw new ParseException("For directive before enhanced for statement")
+
+
+		val forInit = basicForStatement.forInit()
 		if (forInit == null) throw new ParseException("For directive before enhanced for statement")
+		val forUpdate = basicForStatement.forUpdate()
+		// TODO: if more, deal only with it. var.
+		if (forUpdate == null) throw new ParseException("For directive before enhanced for statement or missing it. variable update")
+
+		// println(forUpdate.expressionList.expression(0).toStringTree(parser))
+		// println(forUpdate.expressionList.expression(0).expression(0).toStringTree(parser))
+		// println(forUpdate.expressionList.expression(0).expression(1).toStringTree(parser))
+
+		// println(forUpdate.expressionList.expression(0).superSuffix.toStringTree(parser))
+		// println(forUpdate.expressionList.expression(0).expression(1).toStringTree(parser))
+
 		// if...
 
-		val initExpr = forInit.localVariableDeclaration().variableDeclarators().variableDeclarator(0).variableInitializer().expression()
-		val limitExpr = forControl.expression()
-		val cond = limitExpr.expression(1)
+		val initExpr = forInit.localVariableDeclaration().variableDeclaratorList().variableDeclarator(0).variableInitializer().expression()
+		val limitExpr = basicForStatement.expression()
+		val cond = limitExpr.assignmentExpression.conditionalExpression
 		val N = s"((${cond.getText()}) - (${initExpr.getText()}))"
 
 		rewriter.replace(initExpr.start, initExpr.stop,

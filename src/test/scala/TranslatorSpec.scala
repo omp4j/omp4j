@@ -25,6 +25,11 @@ class TranslatorLoadedContext(path: String) extends AbstractLoadedContext(path) 
 		inherLocals.map{ v => v.varType + " " + v.name }
 	}
 
+	def getParentListSize = {
+		val neck = (new Translator(tokens, parser, directives, null)(null)).getParentList(directives.head.ctx)
+		neck.size
+	}
+
 }
 
 /** Unit test for Translator */
@@ -40,4 +45,6 @@ class TranslatorSpec extends AbstractSpec {
 	// check method params
 	(new TranslatorLoadedContext("/inheritedParams/01.java")).paramsAsText should contain only ("String[] args", "int a", "String b", "float c")
 
+	// check parentlist size
+	(new TranslatorLoadedContext("/parentListSize/01.java")).getParentListSize should equal (33)
 }

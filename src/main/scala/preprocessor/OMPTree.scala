@@ -59,7 +59,7 @@ class OMPFile(ctx: Java8Parser.CompilationUnitContext, parser: Java8Parser)(impl
 /** Class representation containing list of methods, fields and nested classes */
 class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config) extends OMPBase(ctx, parser) {
 	/** String class name */
-	lazy val name: String = ctx.Identifier().getText()
+	lazy val name: String = ctx.normalClassDeclaration.Identifier().getText()
 
 	lazy val FQN: String = parent match {	// TODO package?
 		case null => name
@@ -67,7 +67,7 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parse
 	}
 
 	/** List of nested classes */
-	lazy val nestedClasses = (new ClassExtractor ).visit(ctx.classBody()).map(c => new OMPClass(c, this, parser))
+	lazy val nestedClasses = (new ClassExtractor ).visit(ctx.normalClassDeclaration.classBody()).map(c => new OMPClass(c, this, parser))
 
 	/** List of methods directly implemented (or overriden) in the class */
 	// lazy val implementedMethods = (new MethodExtractor ).visit(ctx.classBody()).map(c => new OMPMethod(c, parser))
@@ -194,4 +194,6 @@ class OMPVariable(_name: String, _varType: String, _meaning: OMPVariableType = O
 	lazy val name = _name
 	lazy val varType = _varType
 	lazy val meaning = _meaning
+
+	override def toString = s"Variable '$name' of type '$varType' with meaning of '$meaning'"
 }

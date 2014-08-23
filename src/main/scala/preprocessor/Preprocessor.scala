@@ -43,6 +43,7 @@ class Preprocessor(files: Iterable[File])(implicit conf: Config) {
 		val t: Java8Parser.CompilationUnitContext = parser.compilationUnit()
 
 		// t.inspect(parser);	// display gui tree
+		// println(t.toStringTree(parser))
 
 		val transVis = new TranslationVisitor(tokens, parser, t)
 		val res: String = transVis.translate
