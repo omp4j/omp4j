@@ -1,10 +1,13 @@
-class Simple {
+class Complex {
 	public int field = 15;
 	class Inner {
 		public int innerField = 4;
 		class MoreInner {
 			public int moreField = 4;
 			private void fooo() {
+
+				int capt = 4;
+
 				// omp parallel
 				{
 					int x = 5;
@@ -12,6 +15,7 @@ class Simple {
 					x += innerField;
 					x += moreField;
 					this.moreField++;
+					x += capt;
 				}
 				inc(moreField);
 				inc(this.moreField);
@@ -22,7 +26,7 @@ class Simple {
 
 	public static void main(String[] args) {
 
-		Simple s = new Simple();
+		Complex s = new Complex();
 
 		int var1 = 0;
 		var1++;
