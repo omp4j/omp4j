@@ -103,7 +103,6 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		clStack.pop()
 	}
 
-
 	/** Construct OMPVariable properly or throws exception */
 	private def constructVariable(id: String, locals: Set[OMPVariable], params: Set[OMPVariable]) = {
 
@@ -142,21 +141,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 				}
 			}
 		}
-
 		new OMPVariable(id, classType, meaning)
-	}
-
-	/** Get tokens matching to context given
-	  *  Must use this construct as Java8Parser has no logical hierarchy
-	  */
-	private def getContextTokens[T <: {
-			def getStart(): Token;
-			def getStop(): Token
-		}](ctx: T) = {
-
-		val startId = ctx.getStart.getTokenIndex()
-		val stopId = ctx.getStop.getTokenIndex()
-		for {token <- tokens.getTokens().asScala; i = token.getTokenIndex(); if (i >= startId); if(i <= stopId)} yield token
 	}
 
 	// TODO: http://docs.oracle.com/javase/tutorial/java/javaOO/anonymousclasses.html
@@ -165,7 +150,6 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		if (currentDirective != null) {
 			// globals (not actually functional, TODO)
 			try {
-
 				var id = ""
 				if (ctx.ambiguousName != null) {
 					id = ctx.ambiguousName.Identifier.getText
@@ -173,17 +157,12 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 					id = ctx.Identifier.getText
 				}
 
-
 				val toCapture = constructVariable(id, locals, params)
-				// if (id == "capt") println(s"3 $toCapture - ${ctx.toStringTree(parser)}")
-
-				// println(toCapture)
 
 				// prefix the first token
-				val ctxTokens = getContextTokens(ctx)
+				val ctxTokens = translator.getContextTokens(ctx)
 				ctxTokens.head.asInstanceOf[CommonToken].setText(s"$contextName.${toCapture.meaning}_${ctxTokens.head.getText}")
 				captured += toCapture
-				// rewriter.insertBefore(ctx.start, contextName + "." + meaning + "_")
 
 			} catch {
 				// TODO: exceptions?
@@ -202,6 +181,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		super.visitMethodInvocation(ctx)
 	}
 
+	/** Capture objects invoking methods */
 	override def visitMethodInvocation_lfno_primary(ctx: Java8Parser.MethodInvocation_lfno_primaryContext) = {
 		if (currentDirective != null) {
 			generalMethodInvocation(ctx)
@@ -209,6 +189,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		super.visitMethodInvocation_lfno_primary(ctx)
 	}
 
+	/** Handle all method invocations */
 	private def generalMethodInvocation[T <: {
 			def methodName(): Java8Parser.MethodNameContext;
 			def typeName(): Java8Parser.TypeNameContext;
@@ -218,10 +199,9 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 			def toStringTree(parser: Parser): String
 		}](ctx: T) = {
 
-
 		try {
 			if (ctx.methodName != null) {
-				val ctxTokens = getContextTokens(ctx)
+				val ctxTokens = translator.getContextTokens(ctx)
 				ctxTokens.head.asInstanceOf[CommonToken].setText(s"$contextName.THAT.${ctxTokens.head.getText}")
 				capturedThis = true
 			} else if (ctx.typeName != null) {
@@ -230,7 +210,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 				// if (id == "capt") println(s"1 $toCapture  - ${ctx.toStringTree(parser)}")
 
 				// prefix the first token
-				val ctxTokens = getContextTokens(ctx)
+				val ctxTokens = translator.getContextTokens(ctx)
 				ctxTokens.head.asInstanceOf[CommonToken].setText(s"$contextName.${toCapture.meaning}_${ctxTokens.head.getText}")
 				captured += toCapture
 				// rewriter.insertBefore(ctx.start, contextName + "." + meaning + "_")
@@ -240,7 +220,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 				// if (id == "capt") println(s"2 $toCapture - ${ctx.toStringTree(parser)}")
 
 				// prefix the first token
-				val ctxTokens = getContextTokens(ctx)
+				val ctxTokens = translator.getContextTokens(ctx)
 				ctxTokens.head.asInstanceOf[CommonToken].setText(s"$contextName.${toCapture.meaning}_${ctxTokens.head.getText}")
 				captured += toCapture
 				// rewriter.insertBefore(ctx.start, contextName + "." + meaning + "_")
@@ -260,30 +240,37 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		generalPrimary(ctx)
 		super.visitPrimaryNoNewArray(ctx)
 	}
+
+	/** Handle 'this' keyword */
 	override def visitPrimaryNoNewArray_lfno_arrayAccess(ctx: Java8Parser.PrimaryNoNewArray_lfno_arrayAccessContext) = {
 		generalPrimary(ctx)
 		super.visitPrimaryNoNewArray_lfno_arrayAccess(ctx)
 	}
+
+	/** Handle 'this' keyword */
 	override def visitPrimaryNoNewArray_lfno_primary(ctx: Java8Parser.PrimaryNoNewArray_lfno_primaryContext) = {
 		generalPrimary(ctx)
 		super.visitPrimaryNoNewArray_lfno_primary(ctx)
 	}
+
+	/** Handle 'this' keyword */
 	override def visitPrimaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primary(ctx: Java8Parser.PrimaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primaryContext) = {
 		generalPrimary(ctx)
 		super.visitPrimaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primary(ctx)
 	}
 
+	/** Handle all primaries */
 	private def generalPrimary(ctx: ParserRuleContext) = {
 		if (currentDirective != null) {
 			try {
 				if (ctx.getText == "this") {
 					// replace first (and only) token "this"
-					val ctxTokens = getContextTokens(ctx)
+					val ctxTokens = translator.getContextTokens(ctx)
 					ctxTokens.head.asInstanceOf[CommonToken].setText(contextName + ".THAT")
 					capturedThis = true
-					// rewriter.replace(ctx.start, ctx.stop, contextName + ".THAT")
 				}
 			} catch {
+				// TODO: exceptions?
 				// case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
 				case e: Exception => println(s" E3: ${e.getMessage}")
 			}

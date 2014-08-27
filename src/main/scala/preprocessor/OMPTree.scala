@@ -19,7 +19,7 @@ import org.omp4j.extractor._
 import org.omp4j.preprocessor.grammar._
 
 abstract class OMPBase(ctx: ParserRuleContext, parser: Java8Parser)(implicit conf: Config) {
-	override def toString() = ctx.toStringTree(parser)
+	override def toString = ctx.toStringTree(parser)
 }
 
 /** File representation containing list of classes */
@@ -59,7 +59,7 @@ class OMPFile(ctx: Java8Parser.CompilationUnitContext, parser: Java8Parser)(impl
 /** Class representation containing list of methods, fields and nested classes */
 class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config) extends OMPBase(ctx, parser) {
 	/** String class name */
-	lazy val name: String = ctx.normalClassDeclaration.Identifier().getText()
+	lazy val name: String = ctx.normalClassDeclaration.Identifier.getText
 
 	lazy val FQN: String = parent match {	// TODO package?
 		case null => name
@@ -67,19 +67,19 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parse
 	}
 
 	/** List of nested classes */
-	lazy val nestedClasses = (new ClassExtractor ).visit(ctx.normalClassDeclaration.classBody()).map(c => new OMPClass(c, this, parser))
+	lazy val nestedClasses = (new ClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(c => new OMPClass(c, this, parser))
 
 	/** List of methods directly implemented (or overriden) in the class */
-	// lazy val implementedMethods = (new MethodExtractor ).visit(ctx.classBody()).map(c => new OMPMethod(c, parser))
+	// lazy val implementedMethods = (new MethodExtractor ).visit(ctx.classBody).map(c => new OMPMethod(c, parser))
 
 	/** List of all methods (including inherited ones) */
 	lazy val allMethods: Array[Method] = findAllMethods
 
 	/** List of all fields directly implemented in the class */
-	// lazy val implementedFields = (new FieldExtractor ).visit(ctx.classBody()).map(c => new OMPVariable(c.`type`(), c.variableDeclarators(), parser))
+	// lazy val implementedFields = (new FieldExtractor ).visit(ctx.classBody).map(c => new OMPVariable(c.`type`, c.variableDeclarators, parser))
 
 	/** Set of declared and inherited fields */
-	lazy val fields: Set[OMPVariable] = findAllFields.map(f => new OMPVariable(f.getName(), f.getType().getName())).toSet
+	lazy val fields: Set[OMPVariable] = findAllFields.map(f => new OMPVariable(f.getName, f.getType.getName)).toSet
 
 	/** Set of all fields referable from this class context */
 	lazy val allFields: Set[OMPVariable] = parent match {
@@ -114,14 +114,14 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parse
 		  * @return Array of Methods
 		  */
 		def findAllMethodsRecursively(clazz: Class[_], firstRun: Boolean): Array[Method] = {
-			val superClazz = clazz.getSuperclass()
+			val superClazz = clazz.getSuperclass
 			val res = superClazz match {
-				case null => clazz.getDeclaredMethods()
-				case _    => concat(clazz.getDeclaredMethods(), findAllMethodsRecursively(superClazz, false))
+				case null => clazz.getDeclaredMethods
+				case _    => concat(clazz.getDeclaredMethods, findAllMethodsRecursively(superClazz, false))
 			}
 
 			if (firstRun) res
-			else res.filter(m => ! Modifier.isPrivate(m.getModifiers()))
+			else res.filter(m => ! Modifier.isPrivate(m.getModifiers))
 		}
 
 		try {
@@ -145,14 +145,14 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parse
 		  * @return Array of Fields
 		  */
 		def findAllFieldsRecursively(clazz: Class[_], firstRun: Boolean): Array[Field] = {
-			val superClazz = clazz.getSuperclass()
+			val superClazz = clazz.getSuperclass
 			val res = superClazz match {
-				case null => clazz.getDeclaredFields()
-				case _    => concat(clazz.getDeclaredFields(), findAllFieldsRecursively(superClazz, false))
+				case null => clazz.getDeclaredFields
+				case _    => concat(clazz.getDeclaredFields, findAllFieldsRecursively(superClazz, false))
 			}
 
 			if (firstRun) res
-			else res.filter(m => ! Modifier.isPrivate(m.getModifiers()))
+			else res.filter(m => ! Modifier.isPrivate(m.getModifiers))
 		}
 
 		try {
@@ -171,7 +171,7 @@ class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parse
 // 	// val tree: OMPTree
 // 	// val variables: List[OMPVariable] // TODO
 
-// 	override def toString() = ctx.toStringTree(parser)
+// 	override def toString = ctx.toStringTree(parser)
 // }
 
 // class OMPTree(implicit conf: Config) {}
