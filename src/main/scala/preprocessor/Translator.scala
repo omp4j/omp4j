@@ -211,7 +211,8 @@ class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: Lis
 		} else if (update.assignment != null) {	// assignment
 			if (update.assignment.leftHandSide.getText != iterName) throw new ParseException("Iter. variable must be modified")
 
-			if (List("=", "+=", "-=") contains update.assignment.assignmentOperator.getText) {
+			// TODO: assignment?
+			if (List("+=", "-=") contains update.assignment.assignmentOperator.getText) {
 				oper = update.assignment.assignmentOperator.getText
 			} else throw new ParseException("Unsupported for-update operation (=, +=, -=)")
 
@@ -231,9 +232,10 @@ class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: Lis
 			s"final int $incVal = $step;\n" + // TODO
 			s"final int $cycleLength = Math.abs($condVal - $initVal);\n"
 
+		// TODO: inclusive condition?
 		cc.rewriter.insertBefore(cc.ctx.start, forVars)
-		cc.rewriter.replace(initExpr.start, initExpr.stop, s"$initVal + ((${cc.iter2} == 0) ? 0 : (($incVal - 1 - ((${cc.iter2} * $cycleLength/${cc.threadCount} - 1) % $incVal)) + (${cc.iter2} * $cycleLength/${cc.threadCount})))")
-		cc.rewriter.replace(cond.start, cond.stop, s"$initVal + (${cc.iter2} + 1) * $cycleLength/${cc.threadCount}")
+		cc.rewriter.replace(initExpr.start, initExpr.stop, s"$initVal ${oper.head} ((${cc.iter2} == 0) ? 0 : (($incVal - 1 - ((${cc.iter2} * $cycleLength/${cc.threadCount} - 1) % $incVal)) + (${cc.iter2} * $cycleLength/${cc.threadCount})))")
+		cc.rewriter.replace(cond.start, cond.stop, s"$initVal ${oper.head} (${cc.iter2} + 1) * $cycleLength/${cc.threadCount}")
 		cc.rewriter.replace(update.start, update.stop, s"$iterName $oper $incVal")
 		cc.wrap
 	}
