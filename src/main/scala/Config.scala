@@ -10,51 +10,64 @@ import org.omp4j.loader.Loader
 import org.omp4j.compiler.Compiler
 import org.omp4j.preprocessor.Preprocessor
 
-/** Configuration for compiler and other classes. Use implicitally. Use Config factory.*/
-class Config {
+/** Configuration for compiler and other classes. Use implicitally. */
+class Config(args: Array[String]) {
+	
 	/** working directory */
-	var workDir: File = null
+	lazy val workDir: File = createWorkingDir
 
-	/** javac flags */
-	var flags: Iterable[String]  = null
-	
-	/** files to be preprocessed (and compiled) */
-	var files: Iterable[File] = null
-	
+	/** directory of preprocessed sources */
+	lazy val prepDir: File = Files.createTempDirectory(workDir.toPath, "preprocessed-").toFile
+
 	/** tmp JAR file */
-	var jar: File = null
+	lazy val jar: File = new File(workDir.getAbsolutePath + "/output.jar")
 
-	/** ClassLoader for the jar defined above */
-	var classLoader: ClassLoader = null
-}
+	/** javac flags and file names */
+	lazy val (flags: Array[String], fileNames: Array[String]) = splitArgs(args)
 
-/** Config factory */
-object Config {
+	/** files to be preprocessed (and compiled) */
+	lazy val files: Array[File] = openFiles(fileNames)
 
-	/** Make (compilation included) config based on	String args passed
-	  * @param args Program params
-	  * @throws almost everything
-	  * @return new configuration
-	  */
-	def apply(args: Array[String]) = {
-		val config = new Config
-		
-		config.workDir = createWorkingDir	// working directory, free to do anything
-		config.jar = new File(config.workDir.getAbsolutePath() + "/output.jar")	// prepare jar-file
+	/** Loader for the jar defined above */
+	var loader: Loader = null
 
-		val (flags, fileNames) = splitArgs(args)	// handle flags
-		config.files = openFiles(fileNames)	// opened files
+	/** flags for first compilation */
+	lazy val (optDir: File, firstCompFlags: Array[String]) = getOptDirAndFirstCompFlags
 
-		val tmpFlags = concat(flags, Array("-d", config.workDir.getAbsolutePath()))
-		config.flags = tmpFlags
+	def init = {
+		initCompile
+		load
+	}
 
-		// compilation before preprocessing
-		val compiler = new Compiler()(config)
+	/** compile before preprocessing */
+	private def initCompile = {
+		val compiler = new Compiler(files, firstCompFlags)(this)
 		compiler.compile
-		compiler.jar
-		config.classLoader = (new Loader ).load(config.jar)
+		compiler.jar(jar)
+	}
 
-		config
+	/** set the loader */
+	private def load = {
+		loader = new Loader(jar)
+	}
+
+	/** */
+	private def getOptDirAndFirstCompFlags = {
+
+		// last index of flags
+		val lastIdx: Int = flags.size - 1
+
+		flags.indexOf("-d") match {
+			case -1 =>
+				val od = new File(".")
+				val fcf = concat(flags, Array("-d", workDir.getAbsolutePath))
+				(od, fcf)
+			case `lastIdx` => throw new IllegalArgumentException("Missing value for '-d'")
+			case idx: Int =>
+				val od = new File(flags(idx + 1))
+				val fcf = flags.updated(idx + 1, workDir.getAbsolutePath)
+				(od, fcf)
+		}
 	}
 
 	/** Split args to list of flags and list of file names
@@ -62,8 +75,11 @@ object Config {
 	  * @return Tuple of Arrays (flags, fileNames)
 	  */
 	private def splitArgs(args: Array[String]): (Array[String], Array[String]) = {
-		(Array[String](), args)
-		// TODO: filter
+		// TODO: case -1
+		args.indexOf("--") match {
+			case -1 => (Array[String](), args)
+			case id => (args.take(id), args.drop(id+1))
+		}
 	}
 
 	/** Get files based on their string paths
@@ -72,12 +88,12 @@ object Config {
 	  * @return Open files
 	  */
 	private def openFiles(fileNames: Array[String]) = {
-		if (fileNames.size == 0)  throw new IllegalArgumentException("No files passed")
+		if (fileNames.size == 0) throw new IllegalArgumentException("No files passed")
 
-		val files = fileNames.map{ new File(_) }
+		val files = fileNames.map(new File(_))
 		files.foreach{ f =>
-			if (!f.exists())  throw new IllegalArgumentException("File '" + f.getPath() + "' does not exist")
-			if (!f.canRead()) throw new IllegalArgumentException("Missing read permission for file '" + f.getPath() + "'")
+			if (!f.exists)  throw new IllegalArgumentException("File '" + f.getPath + "' does not exist")
+			if (!f.canRead) throw new IllegalArgumentException("Missing read permission for file '" + f.getPath + "'")
 		}
 		files
 	}
@@ -92,10 +108,11 @@ object Config {
 		val tmpRootStr = System.getProperty("java.io.tmpdir")
 		val tmpRootFile = new File(tmpRootStr)
 
-		if (!tmpRootFile.exists()) throw new RuntimeException("Directory described in property 'java.io.tmpdir' does not exist.")
+		if (!tmpRootFile.exists) throw new RuntimeException("Directory described in property 'java.io.tmpdir' does not exist.")
+		// TODO: test writability
 
-		val tmpPath = Files.createTempDirectory(tmpRootFile.toPath(), "omp4j-")
-		tmpPath.toFile()
+		// TODO: use hidden (.*)
+		val tmpPath = Files.createTempDirectory(tmpRootFile.toPath, "omp4j-")
+		tmpPath.toFile
 	}
-
 }

@@ -32,6 +32,6 @@ class FirstLevelLocalVariableExtractor extends Java8BaseVisitor[Set[OMPVariable]
 
 	/** Don't get into other methods */
 	override def visitMethodDeclaration(ctx: Java8Parser.MethodDeclarationContext) = Set[OMPVariable]()
-	override def defaultResult() = Set[OMPVariable]()
+	override def defaultResult = Set[OMPVariable]()
 	override def aggregateResult(a: Set[OMPVariable], b: Set[OMPVariable]) = a ++ b
 }

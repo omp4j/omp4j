@@ -14,7 +14,7 @@ import org.omp4j.extractor._
 import org.omp4j.preprocessor.grammar._
 
 /** Context for Translator class */
-case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String, secondIter: Boolean){
+case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String, secondIter: Boolean)(implicit conf: Config) {
 	/** Number of threads */
 	lazy val threadCount    = "(4)"	// TODO
 
@@ -32,6 +32,9 @@ case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Par
 
 	/** 2. iterator name */
 	lazy val iter2          = uniqueName("ompJ")
+
+	/** exception name */
+	lazy val exceptionName  = uniqueName("ompE")
 
 	/** Initialization of 2. iterator */
 	private lazy val secondIterInit = if (secondIter) s"\tfinal int $iter2 = $iter;\n" else ""
@@ -77,7 +80,7 @@ case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Par
 		s"\tfor (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" + 
 		s"\t\t ${threadArr}[$iter].join();\n" +
 		"\t}\n" + 
-		"} catch (InterruptedException e) {\n"+
+		"} catch (InterruptedException $exceptionName) {\n"+
 		"\tSystem.out.println(\"omp4j: interrupted exception\");\n" + 
 		"\tSystem.exit(1);\n" +
 		"}"

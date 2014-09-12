@@ -18,7 +18,7 @@ class InheritedLocal02 {
 			double wrong4 = 1.2;
 		}
 
-		String ok4 = 1;
+		String ok4 = "heey";
 
 		{
 			int wrong5;

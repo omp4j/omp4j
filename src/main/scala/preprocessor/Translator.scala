@@ -16,83 +16,6 @@ import org.omp4j.preprocessor.grammar._
 /** Translate context given with respect to directives */
 class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: List[Directive], ompFile: OMPFile)(implicit conf: Config) {
 
-	/** Java8Parser.LocalVariableDeclarationContext typedef */
-	type LVDC = Java8Parser.LocalVariableDeclarationContext
-
-	/** Get sequence of all (in)direct parents of tree given
-	  * @param pt Tree whose parents are about to be fetched
-	  * @return Set of trees
-	  */
-	def getParentList(t: ParseTree): Seq[ParseTree] = {
-		if (t == null) Seq[ParseTree]()
-		else getParentList(t.getParent) :+ t
-	}
-
-	/** Get set of variables (their declarations) whose can be reffered
-	  * but are not declared in the tree given
-	  * @param pt Tree whose variable are about to be fetched
-	  * @return Set of variables
-	  */
-	def getPossiblyInheritedLocals(pt: ParseTree): Set[OMPVariable] = {
-		// TODO: move to visitor
-		// result set - TODO: rewrite more functionally
-		var result = Set[OMPVariable]()
-		val neck = getParentList(pt)	// list of parent
-
-		// iterate through the list of tuples (tree-node, follower-in-neck)
-		for {(t, follower) <- (neck zip neck.tail)} {
-			// println("visiting:\t" + t)
-			breakable {
-				// iterate through all children left to the follower
-				for {i <- 0 until t.getChildCount} {
-					val child = t.getChild(i)
-					if (child == follower) break
-					result = result ++ (new FirstLevelLocalVariableExtractor ).visit(child)
-				}
-			}
-		}
-		result
-	}
-
-	/** Get set of method parameters that can be reffered
-	  * @param pt Tree whose params are about to be fetched
-	  * @return Set of variables
-	  */
-	def getPossiblyInheritedParams(pt: ParseTree): Set[OMPVariable] = {
-
-		type MDC = Java8Parser.MethodDeclarationContext
-
-		// result set - TODO: rewrite more functionally
-		var result = Set[OMPVariable]()
-		val neck = getParentList(pt)	// list of parent
-
-		// TODO: local classes?
-		neck.foreach{ n =>
-			try {
-				val method: MDC = n.asInstanceOf[MDC]
-				val list = method.methodHeader.methodDeclarator.formalParameterList
-
-				// add non-last
-				if (list != null) {
-					val firsts = list.formalParameters	// TODO: receiver??
-					if (firsts != null) {
-						firsts.formalParameter.asScala.foreach{ p =>
-							result += new OMPVariable(p.variableDeclaratorId.Identifier.getText, p.unannType.getText)
-						}
-					}
-
-					val last = list.lastFormalParameter.formalParameter
-					if (last != null) {
-						result += new OMPVariable(last.variableDeclaratorId.Identifier.getText, last.unannType.getText)
-					}
-				}
-			} catch {
-				case e: ClassCastException => ;
-			}
-		}
-		result
-	}
-
 	/** Get tokens matching to context given
 	  * Must use this construct as Java8Parser has no logical hierarchy
 	  */
@@ -183,7 +106,6 @@ class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: Lis
 		}
 
 		// INC
-		// TODO: negative step
 		val forUpdate = basicForStatement.forUpdate
 		val updateList = forUpdate.statementExpressionList.statementExpression.asScala
 		if (updateList.size != 1) throw new ParseException("For incrementation must containt exactly one statement")
@@ -214,7 +136,7 @@ class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: Lis
 			// TODO: assignment?
 			if (List("+=", "-=") contains update.assignment.assignmentOperator.getText) {
 				oper = update.assignment.assignmentOperator.getText
-			} else throw new ParseException("Unsupported for-update operation (=, +=, -=)")
+			} else throw new ParseException("Unsupported for-update operation (+=, -=)")
 
 			if (getContextTokens(update.assignment.expression).map(_.getText) contains iterName) throw new ParseException("For-update statement must not reference iterator")
 			step = update.assignment.expression.getText

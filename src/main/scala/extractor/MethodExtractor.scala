@@ -17,6 +17,6 @@ class MethodExtractor extends Java8BaseVisitor[List[Java8Parser.MethodDeclaratio
 
 	/** Add method context */
 	override def visitMethodDeclaration(methodCtx: MDC) = List[MDC](methodCtx)
-	override def defaultResult() = List[MDC]()
+	override def defaultResult = List[MDC]()
 	override def aggregateResult(a: List[MDC], b: List[MDC]) = a ::: b
 }

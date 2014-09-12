@@ -5,13 +5,10 @@ class FirstLevelBreakExtractorTest02 {
 		int i =0;
 		// omp parallel for
 		for (; i < 10; i++) {
-			break;
 
 			for (;;) {
 				break;
 			}
-
-			break;
 
 			while (true) {
 				break;

@@ -11,6 +11,7 @@ class InheritedParams01 {
 						{ int xxx; }
 					}
 				}
+				return 1;
 			}
 		}
 
@@ -21,6 +22,7 @@ class InheritedParams01 {
 						
 					}
 				}
+				return 0;
 			}
 		}
 	}

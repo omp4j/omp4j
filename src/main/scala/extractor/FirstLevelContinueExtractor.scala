@@ -18,6 +18,6 @@ class FirstLevelContinueExtractor extends Java8BaseVisitor[List[Java8Parser.Cont
 
 	/** Do not continue, so no nested classes included */
 	override def visitContinueStatement(continueCtx: BSC) = List[BSC](continueCtx)
-	override def defaultResult() = List[BSC]()
+	override def defaultResult = List[BSC]()
 	override def aggregateResult(a: List[BSC], b: List[BSC]) = a ::: b
 }

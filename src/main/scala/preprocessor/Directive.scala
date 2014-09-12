@@ -11,7 +11,7 @@ case class Directive(
 	ctx:       Java8Parser.StatementContext,
 	parser:    Java8Parser
 ) {
-	override def toString() = {
+	override def toString = {
 		ompCtx.toStringTree(ompParser) +
 		"\n" +
 		ctx.toStringTree(parser)

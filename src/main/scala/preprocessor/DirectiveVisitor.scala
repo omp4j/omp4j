@@ -22,14 +22,14 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 
 		breakable {
 
-			val semi = stmtCtx.getStart()
-			val i = semi.getTokenIndex()
+			val semi = stmtCtx.getStart
+			val i = semi.getTokenIndex
 
 			val cmtChannel = tokens.getHiddenTokensToLeft(i, Java8Lexer.COMMENTS)
-			if (cmtChannel != null && cmtChannel.size() > 0) {
-				val cmt = cmtChannel.get(cmtChannel.size() - 1)	// get last comment
+			if (cmtChannel != null && cmtChannel.size > 0) {
+				val cmt = cmtChannel.get(cmtChannel.size - 1)	// get last comment
 
-				val rawComment = cmt.getText()
+				val rawComment = cmt.getText
 				val raw = rawComment.substring(2)
 
 				// validate directive - starting with 'omp'
@@ -42,18 +42,18 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 
 				try {
 					val ompLexer  = new OMPLexer(new ANTLRInputStream(raw))
-					ompLexer.removeErrorListeners();
-					ompLexer.addErrorListener(new OMPLexerErrorListener())
+					ompLexer.removeErrorListeners;
+					ompLexer.addErrorListener(new OMPLexerErrorListener )
 					val ompTokens = new CommonTokenStream(ompLexer)
 					
 					val ompParser = new OMPParser(ompTokens)
-					ompParser.removeErrorListeners();
-					ompParser.addErrorListener(new OMPLexerErrorListener())
-					val ompCtx = ompParser.ompUnit()
+					ompParser.removeErrorListeners
+					ompParser.addErrorListener(new OMPLexerErrorListener )
+					val ompCtx = ompParser.ompUnit
 
 					result = new Directive(cmt, ompCtx, ompParser, stmtCtx, parser)
 				} catch {
-					case e: SyntaxErrorException => throw new SyntaxErrorException("Syntax error before line " + stmtCtx.start.getLine() + "': " + e.getMessage() + "'", e)
+					case e: SyntaxErrorException => throw new SyntaxErrorException("Syntax error before line " + stmtCtx.start.getLine + "': " + e.getMessage + "'", e)
 					case e: Exception => throw new ParseException("Unexpected exception", e)
 				}
 
@@ -70,7 +70,7 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 	override def aggregateResult(a: List[Directive], b: List[Directive]) = a ::: b
 
 	/** Error listener implementation for simple throwing syntax exceptions */
-	private class OMPLexerErrorListener() extends BaseErrorListener {
+	private class OMPLexerErrorListener extends BaseErrorListener {
 		/** @throws SyntaxErrorException */		
 		override def syntaxError(recognizer: Recognizer[_,_], offendingSymbol: Object, line: Int, charPositionInLine: Int, msg: String, e: RecognitionException) = {
 			throw new SyntaxErrorException(msg, e)

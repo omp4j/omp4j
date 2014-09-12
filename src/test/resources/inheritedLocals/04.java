@@ -18,7 +18,7 @@ class InheritedLocal04 {
 			int wrong6;
 		}
 	
-		Nested(int wrong1) {
+		Nested(int wrong0) {
 
 			int ok1;
 			{

@@ -28,7 +28,7 @@ class FirstLevelBreakExtractorSpec extends AbstractSpec {
 
 	// check count of found first level breaks
 	(new FLBELoadedContext("/firstLevelBreak/01.java")).firstLevetBreakCount should equal (0)
-	(new FLBELoadedContext("/firstLevelBreak/02.java")).firstLevetBreakCount should equal (3)
+	(new FLBELoadedContext("/firstLevelBreak/02.java")).firstLevetBreakCount should equal (1)
 
 
 }

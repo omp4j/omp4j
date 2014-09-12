@@ -14,6 +14,6 @@ class ClassExtractor extends Java8BaseVisitor[List[Java8Parser.ClassDeclarationC
 
 	/** Do not continue, so no nested classes included */
 	override def visitClassDeclaration(classCtx: CDC) = List[CDC](classCtx)
-	override def defaultResult() = List[CDC]()
+	override def defaultResult = List[CDC]()
 	override def aggregateResult(a: List[CDC], b: List[CDC]) = a ::: b
 }

@@ -17,6 +17,6 @@ class FieldExtractor extends Java8BaseVisitor[List[Java8Parser.FieldDeclarationC
 
 	/** Add field context */
 	override def visitFieldDeclaration(fieldCtx: FDC) = List[FDC](fieldCtx)
-	override def defaultResult() = List[FDC]()
+	override def defaultResult = List[FDC]()
 	override def aggregateResult(a: List[FDC], b: List[FDC]) = a ::: b
 }

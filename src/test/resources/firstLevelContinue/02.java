@@ -5,15 +5,14 @@ class FirstLevelContinueExtractorTest02 {
 		int i =0;
 		// omp parallel for
 		for (; i < 10; i++) {
-			continue;
-
-			for (;;) {
+			
+			for (int k=0; k<10; k++) {
 				continue;
 			}
 
-			continue;
-
-			while (true) {
+			int x = 0;
+			while (x < 10) {
+				x++;
 				continue;
 			}
 

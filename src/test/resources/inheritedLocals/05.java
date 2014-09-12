@@ -1,10 +1,12 @@
 import java.util.ArrayList;
+import javax.swing.JButton;
+import java.awt.event.*;
 
 class InheritedLocal05 {
 
 	public int wrongField1;
 
-	public void foo() {
+	public static void foo(int w) {
 		int wrong0;
 	}
 
@@ -14,9 +16,10 @@ class InheritedLocal05 {
 
 		int ok1;
 
-		button.addListener(new Listener() {
+		JButton button = new JButton();
+		button.addActionListener(new ActionListener() {
 			@Override
-			void action() {
+			public void actionPerformed(ActionEvent e) {
 				int ok2;
 
 				// omp parallel

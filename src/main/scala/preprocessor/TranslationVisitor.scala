@@ -12,6 +12,7 @@ import org.antlr.v4.runtime._
 import org.omp4j.Config
 import OMPVariableType._
 import org.omp4j.exception._
+import org.omp4j.extractor.Inheritor
 import org.omp4j.preprocessor.grammar._
 
 /** Listener for directive application */
@@ -32,8 +33,8 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** Directive currently being proccesed*/
 	private var currentDirective: Directive = null
 
-	/** Stack of nested classes (currently in) */
-	private val clStack = Stack[String]()
+	/** Stack of nested classes (Class name, isLocal) */
+	private val clStack = Stack[StackClass]()
 
 	/** Set of local variables */
 	private var locals = Set[OMPVariable]()
@@ -56,7 +57,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** Run translator and resturn modified source as String */
 	def translate: String = {
 		visit(tree)
-		rewriter.getText()
+		rewriter.getText
 	}
 	
 	/** Translate statements having directive */
@@ -70,8 +71,8 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 				case Some(d) => {	// accessing new directive
 					// set things up
 					currentDirective = d
-					locals = translator.getPossiblyInheritedLocals(ctx)
-					params = translator.getPossiblyInheritedParams(ctx)
+					locals = Inheritor.getPossiblyInheritedLocals(ctx)
+					params = Inheritor.getPossiblyInheritedParams(ctx)
 
 					// work the statement
 					super.visitStatement(ctx)
@@ -82,7 +83,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 					// captured.foreach{c => println(s"\t${c.name} - ${c.meaning}")}
 
 					// translate (into rewriter)
-					translator.translate(currentDirective, rewriter, locals, params, captured, capturedThis, clStack.head)
+					translator.translate(currentDirective, rewriter, locals, params, captured, capturedThis, clStack.head.name)
 
 					// reset
 					currentDirective = null
@@ -98,9 +99,9 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 
 	/** Handle class stack */
 	override def visitClassDeclaration(ctx: Java8Parser.ClassDeclarationContext) = {
-		clStack.push(ctx.normalClassDeclaration.Identifier().getText())
+		clStack.push(new StackClass(ctx))
 		super.visitClassDeclaration(ctx)
-		clStack.pop()
+		clStack.pop
 	}
 
 	/** Construct OMPVariable properly or throws exception */
@@ -109,7 +110,13 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		var meaning = OMPVariableType.Class	// Primary meaning (class/local/...)
 		var classType = ""	// extracted variable type (if really variable)
 
-		val clazz = ompFile.getClass(clStack)
+		var clazz: OMPClass = null
+		ompFile.classMap.get(clStack.head.ctx) match {
+			case Some(x) => clazz = x
+			case None    => throw new ParseException("class not loaded")
+		}
+
+		// val clazz = ompFile.getClass(clStack)
 		val fields = clazz.allFields
 
 		// if (id == "capt") println(s"starting finding $id")
@@ -135,6 +142,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 								classType = v.varType;
 								// println(s"found field - $meaning")
 							}
+							// TODO: ignore exception?
 							case None => throw new IllegalArgumentException(s"Variable '$id' not found in locals/params/fields")
 						}
 					}
@@ -166,7 +174,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 
 			} catch {
 				// TODO: exceptions?
-				case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
+				case e: IllegalArgumentException => ; // println(s"IAE: ${e.getMessage}")
 				case e: Exception => println(s" E1: ${e.getMessage}")
 			}
 		}
@@ -227,7 +235,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 			}
 		} catch {
 			// TODO: exceptions?
-			case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
+			case e: IllegalArgumentException => ;	// println(s"IAE: ${e.getMessage}")
 			// case e: Exception => println(s" E2: ${e.getStackTrace}")
 			case e: Exception => e.printStackTrace
 		}
