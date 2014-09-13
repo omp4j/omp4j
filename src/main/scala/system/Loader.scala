@@ -1,4 +1,4 @@
-package org.omp4j.loader
+package org.omp4j.system
 
 import java.io.File
 import java.net.URL;
@@ -6,7 +6,7 @@ import java.net.URLClassLoader;
 
 import scala.collection.JavaConverters._
 
-import org.omp4j.preprocessor.grammar._
+import org.omp4j.grammar._
 
 /** JAR loader */
 class Loader(jar: File) {

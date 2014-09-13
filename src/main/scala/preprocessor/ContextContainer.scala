@@ -11,7 +11,8 @@ import org.antlr.v4.runtime._
 import org.omp4j.Config
 import org.omp4j.exception._
 import org.omp4j.extractor._
-import org.omp4j.preprocessor.grammar._
+import org.omp4j.tree.OMPVariable
+import org.omp4j.grammar._
 
 /** Context for Translator class */
 case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String, secondIter: Boolean)(implicit conf: Config) {

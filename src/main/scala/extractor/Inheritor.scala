@@ -7,8 +7,9 @@ import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 
-import org.omp4j.preprocessor.grammar._
-import org.omp4j.preprocessor.OMPVariable
+import org.omp4j.grammar._
+import org.omp4j.tree.OMPVariable
+
 /** Extracts various inherited stuff */
 object Inheritor {
 

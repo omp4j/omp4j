@@ -54,7 +54,7 @@ Total lexer+parser time 30844ms.
 grammar Java8;
 
 @header {
-package org.omp4j.preprocessor.grammar;
+package org.omp4j.grammar;
 }
 
 // single-line comment channel

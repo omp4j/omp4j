@@ -10,9 +10,10 @@ import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
 import org.omp4j._
+import org.omp4j.tree._
+import org.omp4j.grammar._
 import org.omp4j.exception._
 import org.omp4j.preprocessor._
-import org.omp4j.preprocessor.grammar._
 
 /** LoadedContext with TranslationListener */
 class OMPTreeLoadedContext(path: String) extends AbstractLoadedContext(path) {
@@ -32,7 +33,7 @@ class OMPTreeLoadedContext(path: String) extends AbstractLoadedContext(path) {
 	def fields(n: Int) = ompFile.classes(n).allFields.map(_.name).toSet
 	def localClassFields(n: Int, m: Int) = ompFile.classes(n).localClasses(m).allFields.map(_.name).toSet
 
-	def nestedClassName(n: Int, m: Int) = ompFile.classes(n).nestedClasses(m)
+	def innerClassName(n: Int, m: Int) = ompFile.classes(n).innerClasses(m)
 	def getClass(name: String) = ompFile.getClass(name)
 
 	// TODO:
@@ -64,10 +65,10 @@ class OMPTreeSpec extends AbstractSpec {
 	ompT2.totalClassCount should equal (13)
 
 	// nested classes
-	ompT2.nestedClassName(0, 0).name should equal ("Middle1")
-	ompT2.nestedClassName(0, 1).name should equal ("Middle2")
-	ompT2.nestedClassName(0, 2).name should equal ("Middle3")
-	ompT2.nestedClassName(0, 1).nestedClasses(1).name should equal ("Bottom22")
+	ompT2.innerClassName(0, 0).name should equal ("Middle1")
+	ompT2.innerClassName(0, 1).name should equal ("Middle2")
+	ompT2.innerClassName(0, 2).name should equal ("Middle3")
+	ompT2.innerClassName(0, 1).innerClasses(1).name should equal ("Bottom22")
 
 	ompT2.getClass("Top").name should equal ("Top")
 	an [IllegalArgumentException] should be thrownBy ompT2.getClass("Middle1")
@@ -105,5 +106,5 @@ class OMPTreeSpec extends AbstractSpec {
 	ompT7.totalClassCount should equal (4)
 	ompT7.getClass("First").FQN should equal ("org.domain.test.First")
 	ompT7.getClass("First").packageNamePrefix() should equal ("org.domain.test.")
-	ompT7.nestedClassName(2,0).FQN should equal ("org.domain.test.Third$Inner")
+	ompT7.innerClassName(2,0).FQN should equal ("org.domain.test.Third$Inner")
 }

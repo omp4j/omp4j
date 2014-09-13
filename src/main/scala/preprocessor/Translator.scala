@@ -9,9 +9,10 @@ import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
 import org.omp4j.Config
+import org.omp4j.tree._
 import org.omp4j.exception._
 import org.omp4j.extractor._
-import org.omp4j.preprocessor.grammar._
+import org.omp4j.grammar._
 
 /** Translate context given with respect to directives */
 class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: List[Directive], ompFile: OMPFile)(implicit conf: Config) {

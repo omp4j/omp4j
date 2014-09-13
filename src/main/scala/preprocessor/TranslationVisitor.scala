@@ -9,11 +9,11 @@ import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
+import org.omp4j.tree._
 import org.omp4j.Config
-import OMPVariableType._
 import org.omp4j.exception._
 import org.omp4j.extractor.Inheritor
-import org.omp4j.preprocessor.grammar._
+import org.omp4j.grammar._
 
 /** Listener for directive application */
 class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: Java8Parser.CompilationUnitContext)(implicit conf: Config) extends Java8BaseVisitor[Unit] {

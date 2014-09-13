@@ -1,7 +1,8 @@
 package org.omp4j.preprocessor
 
-import org.omp4j.preprocessor.grammar._
 import org.antlr.v4.runtime.Token
+
+import org.omp4j.grammar._
 
 /** Directive structure */
 case class Directive(

@@ -7,10 +7,11 @@ import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
+import org.omp4j.tree._
+import org.omp4j.grammar._
 import org.omp4j.exception._
 import org.omp4j.preprocessor._
 import org.omp4j.extractor.Inheritor
-import org.omp4j.preprocessor.grammar._
 
 /** LoadedContext with TranslationListener */
 class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {

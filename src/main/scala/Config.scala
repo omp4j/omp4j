@@ -5,9 +5,8 @@ import Array._
 import java.io._
 import java.nio.file.Files
 
+import org.omp4j.system._
 import org.omp4j.exception._
-import org.omp4j.loader.Loader
-import org.omp4j.compiler.Compiler
 import org.omp4j.preprocessor.Preprocessor
 
 /** Configuration for compiler and other classes. Use implicitally. */

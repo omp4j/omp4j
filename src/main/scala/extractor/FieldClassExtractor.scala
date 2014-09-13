@@ -6,7 +6,7 @@ import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
-import org.omp4j.preprocessor.grammar._
+import org.omp4j.grammar._
 
 /**  */
 class FieldClassExtractor extends Java8BaseVisitor[List[Java8Parser.ClassDeclarationContext]] {

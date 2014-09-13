@@ -1,7 +1,7 @@
 grammar OMP;
 
 @header {
-package org.omp4j.preprocessor.grammar;
+package org.omp4j.grammar;
 }
 
 // PARSER RULES

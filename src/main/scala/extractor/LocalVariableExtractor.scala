@@ -4,7 +4,7 @@ import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
-import org.omp4j.preprocessor.grammar._
+import org.omp4j.grammar._
 
 /** Extracts all local variable declarations from ANTLR4 ParseTree */
 class LocalVariableExtractor extends Java8BaseVisitor[Set[Java8Parser.LocalVariableDeclarationContext]] {

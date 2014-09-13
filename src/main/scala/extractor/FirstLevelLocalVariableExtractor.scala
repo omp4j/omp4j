@@ -4,8 +4,9 @@ import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
-import org.omp4j.preprocessor.grammar._
-import org.omp4j.preprocessor._
+import org.omp4j.tree.OMPVariable
+import org.omp4j.tree.OMPVariableType
+import org.omp4j.grammar._
 
 import scala.collection.JavaConverters._
 

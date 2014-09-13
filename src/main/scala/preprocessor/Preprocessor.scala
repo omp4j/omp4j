@@ -10,11 +10,10 @@ import java.nio.file.Files
 import java.net.MalformedURLException
 
 import org.omp4j.Config
+import org.omp4j.system._
+import org.omp4j.grammar._
 import org.omp4j.exception._
-import org.omp4j.loader.Loader
-import org.omp4j.compiler.Compiler
 import org.omp4j.utils.FileTreeWalker
-import org.omp4j.preprocessor.grammar._
 
 /** Class representing the preprocessor itself.
   * @constructor Create preprocessor for given files.

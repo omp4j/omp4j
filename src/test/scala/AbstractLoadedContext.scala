@@ -8,9 +8,9 @@ import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
 import org.omp4j.Config
+import org.omp4j.grammar._
 import org.omp4j.preprocessor._
 import org.omp4j.utils.FileTreeWalker
-import org.omp4j.preprocessor.grammar._
 
 /** Loads given file */
 abstract class AbstractLoadedContext(path: String) {
