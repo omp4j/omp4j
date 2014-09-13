@@ -7,6 +7,7 @@ import org.antlr.v4.runtime._
 import java.lang.reflect.Modifier
 
 import Array._
+import scala.collection.JavaConverters._
 
 import org.omp4j.tree._
 import org.omp4j.Config
@@ -22,7 +23,23 @@ trait ClassTrait {
 	val parser: Java8Parser
 	val conf: Config
 	val classMap: OMPFile.ClassMap
+	val innerClasses: List[OMPClass]
+
 	def packageNamePrefix(pt: ParserRuleContext = ctx): String
+
+	val localClasses: List[OMPClass] = ctx.normalClassDeclaration.classBody.classBodyDeclaration.asScala
+		.filter(d => d.classMemberDeclaration != null)
+		.map(_.classMemberDeclaration)
+		.filter(m => m.methodDeclaration != null)
+		.map(_.methodDeclaration)	// methods
+		.map((new ClassExtractor ).visit(_))
+		.flatten
+		.map(new LocalClass(_, THIS, parser)(conf, classMap))
+		.toList
+
+	// if (parent == null) println(s"$name\t(parent = TOP) type\t${this.getClass.getName}\t(${innerClasses.size}|${localClasses.size})")
+	// else println(s"$name\t(parent = ${parent.name}) type\t${this.getClass.getName}\t(${innerClasses.size}|${localClasses.size})")
+
 
 	/** Recursively build array of class fields
 	  * @param clazz fields of this class are returned

@@ -21,6 +21,11 @@ class OMPTreeLoadedContext(path: String) extends AbstractLoadedContext(path) {
 	/** Tested OMPFile*/
 	lazy val ompFile = new OMPFile(t, parser)
 
+	/** Return n-th first-level class */
+	def topClass(n: Int) = ompFile.classes(n)
+
+	//////
+
 	// lazy val objectMethods = (new java.lang.Object ).getClass.getDeclaredMethods.map(_.getName).toSet
 
 	/** Total number of all (registred) classes*/
@@ -33,7 +38,8 @@ class OMPTreeLoadedContext(path: String) extends AbstractLoadedContext(path) {
 	def fields(n: Int) = ompFile.classes(n).allFields.map(_.name).toSet
 	def localClassFields(n: Int, m: Int) = ompFile.classes(n).localClasses(m).allFields.map(_.name).toSet
 
-	def innerClassName(n: Int, m: Int) = ompFile.classes(n).innerClasses(m)
+	def innerClass(n: Int, m: Int) = ompFile.classes(n).innerClasses(m)
+	// def innerClassCount(n: Int) = ompFile.classes(n).size
 	def getClass(name: String) = ompFile.getClass(name)
 
 	// TODO:
@@ -65,10 +71,10 @@ class OMPTreeSpec extends AbstractSpec {
 	ompT2.totalClassCount should equal (13)
 
 	// nested classes
-	ompT2.innerClassName(0, 0).name should equal ("Middle1")
-	ompT2.innerClassName(0, 1).name should equal ("Middle2")
-	ompT2.innerClassName(0, 2).name should equal ("Middle3")
-	ompT2.innerClassName(0, 1).innerClasses(1).name should equal ("Bottom22")
+	ompT2.innerClass(0, 0).name should equal ("Middle1")
+	ompT2.innerClass(0, 1).name should equal ("Middle2")
+	ompT2.innerClass(0, 2).name should equal ("Middle3")
+	ompT2.innerClass(0, 1).innerClasses(1).name should equal ("Bottom22")
 
 	ompT2.getClass("Top").name should equal ("Top")
 	an [IllegalArgumentException] should be thrownBy ompT2.getClass("Middle1")
@@ -106,5 +112,12 @@ class OMPTreeSpec extends AbstractSpec {
 	ompT7.totalClassCount should equal (4)
 	ompT7.getClass("First").FQN should equal ("org.domain.test.First")
 	ompT7.getClass("First").packageNamePrefix() should equal ("org.domain.test.")
-	ompT7.innerClassName(2,0).FQN should equal ("org.domain.test.Third$Inner")
+	ompT7.innerClass(2,0).FQN should equal ("org.domain.test.Third$Inner")
+
+	val ompT8 = new OMPTreeLoadedContext("/ompTree/08.java")
+	ompT8.topClass(0).innerClasses(1).name should equal ("Nested1")
+	ompT8.topClass(0).innerClasses.size should equal (2)
+	ompT8.topClass(0).innerClasses(1).innerClasses.size should equal (0)
+	ompT8.topClass(0).innerClasses(1).localClasses.size should equal (1)
+
 }

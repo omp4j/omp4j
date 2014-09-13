@@ -16,8 +16,8 @@ trait Reflectable extends ClassTrait {
 		case _    => parent.FQN + "$" + name
 	}
 
-	val innerClasses: List[OMPClass] = (new ClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerClass(_, THIS, parser)(conf, classMap))
-
+	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerClass(_, THIS, parser)(conf, classMap))
+	// println(name + " " + innerClasses.size)
 
 	/** Find all fields via reflection (only for field allFields)
 	  * @param name String name of class

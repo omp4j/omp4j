@@ -15,7 +15,7 @@ trait Nonreflectable extends ClassTrait {
 
 	override lazy val FQN: String = s"[LOCAL] $name"
 
-	val innerClasses: List[OMPClass] = (new ClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerInLocalClass(_, THIS, parser)(conf, classMap))
+	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerInLocalClass(_, THIS, parser)(conf, classMap))
 
 	/** Find all fields via reflection (only for field allFields)
 	  * @param name String name of class

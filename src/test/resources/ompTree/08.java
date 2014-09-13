@@ -9,7 +9,6 @@ class Simple {
 			public int anonField = 4;
 			public void run (int a) {
 				int x = 15;
-				// omp parallel
 				{
 					int foo = anonField + this.anonField + x + a + field;
 					foo = anonField;
@@ -21,7 +20,7 @@ class Simple {
 			}
 		}
 	}
-	// complex example - params and locals must be declared final
+	// TODO: complex example - params and locals must be declared final
 	class Nested1 {
 		int f1 = 0;
 		void m1(final int n1) {

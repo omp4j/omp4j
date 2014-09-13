@@ -41,15 +41,16 @@ abstract class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPCla
 	// TODO: what if enum?
 	val innerClasses: List[OMPClass]
 
-	val localClasses: List[OMPClass] = ctx.normalClassDeclaration.classBody.classBodyDeclaration.asScala
-		.filter(d => d.classMemberDeclaration != null)
-		.map(_.classMemberDeclaration)
-		.filter(m => m.methodDeclaration != null)
-		.map(_.methodDeclaration)	// methods
-		.map((new ClassExtractor ).visit(_))
-		.flatten
-		.map(new LocalClass(_, this, parser))
-		.toList
+	val localClasses: List[OMPClass]
+	// val localClasses: List[OMPClass] = ctx.normalClassDeclaration.classBody.classBodyDeclaration.asScala
+	// 	.filter(d => d.classMemberDeclaration != null)
+	// 	.map(_.classMemberDeclaration)
+	// 	.filter(m => m.methodDeclaration != null)
+	// 	.map(_.methodDeclaration)	// methods
+	// 	.map((new ClassExtractor ).visit(_))
+	// 	.flatten
+	// 	.map(new LocalClass(_, this, parser))
+	// 	.toList
 
 	/** Set of declared and inherited fields */
 	lazy val fields: Set[OMPVariable] = findAllFields.toSet
