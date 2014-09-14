@@ -28,7 +28,6 @@ trait Nonreflectable extends ClassTrait {
 		var res = Array[OMPVariable]()
 		var inheritedFields = Array[OMPVariable]()
 		try {
-			// ctx.normalClassDeclaration.superclass
 			res = ctx.normalClassDeclaration.classBody.classBodyDeclaration.asScala
 				.filter(d => d.classMemberDeclaration != null)
 				.map(_.classMemberDeclaration)
@@ -41,43 +40,34 @@ trait Nonreflectable extends ClassTrait {
 				.flatten
 				.toArray
 
-			try {
+			try {	// try to load superclass
 				val superName = ctx.normalClassDeclaration.superclass.classType.getText
 				val visibleLocalClasses = Inheritor.getVisibleLocalClasses(ctx)
 				val filteredClasses = visibleLocalClasses.filter(_.normalClassDeclaration != null).filter(_.normalClassDeclaration.Identifier.getText == superName)
 
 				inheritedFields = filteredClasses.size match {
-					case 0 =>
+					case 0 =>	// is not local
 						try {
-							// println(s"loading $superName")
-							val cls = conf.loader.loadByFQN(superName)
-							// println("loaded")
+							val cls = conf.loader.load(superName, cunit)
 							findAllFieldsRecursively(cls, false)
-							// (new OMPClass(filteredClasses.head, null, parser)).allFields
 						} catch {
-							case e: Exception => throw new ParseException("Class '" + name + "' (" + FQN + ") was not found in generated JAR even though it was found by ANTLR", e)
+							case e: Exception => throw new ParseException(s"Class '$name' ($FQN) was not found in generated JAR even though it was found by ANTLR", e)
 						}
 
-
-					case _ => classMap.get(filteredClasses.head) match {
-						case Some(x) => x.allFields.toArray
-						case None    => throw new ParseException(s"Local class '$superName' not cached in OMPTree")
-					}
-					// case _ => (new OMPLocalClass(filteredClasses.head, null, parser)).allFields.toArray
+					case _ =>	// is local, taking the first one
+						classMap.get(filteredClasses.head) match {
+							case Some(x) => x.allFields.toArray
+							case None    => throw new ParseException(s"Local class '$superName' not cached in OMPTree")
+						}
 				}
-				// println("===> " + inheritedFields.size)
-
 			} catch {
-				case e: NullPointerException => ;
+				case e: NullPointerException => ;	// no superclass
 			}
 
 		} catch {
-			case e: Exception => ; //println("err")	// TODO
+			case e: Exception => throw new ParseException(s"Unexpected exception during finding all fields in '$FQN'", e)
 		}
 
-		// val ifArray: Array[OMPVariable] = inheritedFields.toArray.filter(! _.isPrivate)
-		// println("return:\t" + (res ++ ifArray).size)
 		res ++ inheritedFields.filter(! _.isPrivate)
 	}
-
 }

@@ -95,4 +95,9 @@ class OMPTreeSpec extends AbstractSpec {
 	ompT8.topClass(0).innerClasses.size should equal (2)
 	ompT8.innerClass(0,1).innerClasses.size should equal (0)
 	ompT8.innerClass(0,1).localClasses.size should equal (1)
+
+	// local inheritence from imported class
+	val ompT9 = new OMPTreeLoadedContext("/ompTree/09.java")
+	ompT9.localClassFields(0,1) should contain allOf ("local2Public", "local2Protected", "local2Private", "x", "y")
+	ompT9.localClassFields(0,2) should contain allOf ("local2Public", "local2Protected", "local3Public", "local3Protected", "local3Private", "x", "y")
 }

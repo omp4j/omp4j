@@ -36,7 +36,7 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 				val ompPattern = "^\\s*omp\\s.*$".r
 				ompPattern.findFirstIn(raw) match {
 					case Some(_) => ;
-					case None    => println("Ignoring directive '" + raw + "'")	// TODO: log
+					case None    => // println("Ignoring directive '" + raw + "'")	// TODO: log
 					                break
 				}
 

@@ -26,7 +26,8 @@ trait ClassTrait {
 	val conf: Config
 	val classMap: OMPFile.ClassMap
 	val innerClasses: List[OMPClass]
-
+	val cunit: Java8Parser.CompilationUnitContext
+	
 	def packageNamePrefix(pt: ParserRuleContext = ctx): String
 
 	/** List of local classes (first level only) */
