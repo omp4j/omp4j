@@ -115,11 +115,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 			case Some(x) => clazz = x
 			case None    => throw new ParseException("class not loaded")
 		}
-
-		// val clazz = ompFile.getClass(clStack)
 		val fields = clazz.allFields
-
-		// if (id == "capt") println(s"starting finding $id")
 
 		(locals find (_.name == id)) match {
 			case Some(v) => {
