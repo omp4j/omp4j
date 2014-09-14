@@ -13,6 +13,7 @@ import org.omp4j.extractor._
 import org.omp4j.grammar._
 
 object OMPFile {
+	/** Type alias for classMap*/
 	type ClassMap = Map[ParserRuleContext, OMPClass]
 }
 

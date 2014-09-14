@@ -14,7 +14,9 @@ import org.omp4j.Config
 import org.omp4j.extractor._
 import org.omp4j.grammar._
 
+/** The basic class trait. Reflectable and Nonreflectable traits inherits from this trait. */
 trait ClassTrait {
+	/** Abstract fields and vars that are mapped to real fields and (implicit) params */
 	val THIS: OMPClass
 	val name: String
 	val FQN: String
@@ -27,6 +29,7 @@ trait ClassTrait {
 
 	def packageNamePrefix(pt: ParserRuleContext = ctx): String
 
+	/** List of local classes (first level only) */
 	val localClasses: List[OMPClass] = ctx.normalClassDeclaration.classBody.classBodyDeclaration.asScala
 		.filter(d => d.classMemberDeclaration != null)
 		.map(_.classMemberDeclaration)
@@ -37,16 +40,12 @@ trait ClassTrait {
 		.map(new LocalClass(_, THIS, parser)(conf, classMap))
 		.toList
 
-	// if (parent == null) println(s"$name\t(parent = TOP) type\t${this.getClass.getName}\t(${innerClasses.size}|${localClasses.size})")
-	// else println(s"$name\t(parent = ${parent.name}) type\t${this.getClass.getName}\t(${innerClasses.size}|${localClasses.size})")
-
-
 	/** Recursively build array of class fields
 	  * @param clazz fields of this class are returned
 	  * @param firstRun If set to True, private Fields will be included (but not parents ones)
 	  * @return Array of Fields
 	  */
-	def findAllFieldsRecursively(clazz: Class[_], firstRun: Boolean): Array[OMPVariable] = {
+	protected def findAllFieldsRecursively(clazz: Class[_], firstRun: Boolean): Array[OMPVariable] = {
 		val superClazz = clazz.getSuperclass
 		superClazz match {
 			case null =>

@@ -11,17 +11,17 @@ import org.omp4j.exception._
 import org.omp4j.extractor._
 import org.omp4j.grammar._
 
+/** The nonreflextable class representation. This class can't be reflected. */
 trait Nonreflectable extends ClassTrait {
 
+	/** Placeholder for debug purposes */
 	override lazy val FQN: String = s"[LOCAL] $name"
 
+	/** Inner classes of type InnerInLocalClass */
 	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerInLocalClass(_, THIS, parser)(conf, classMap))
 
-	/** Find all fields via reflection (only for field allFields)
-	  * @param name String name of class
-	  * @throws ParseException If class was found by ANTLR but not by reflection
-	  * @throws SecurityException From Class.getDeclaredFields
-	  * @return Array of Fields
+	/** Find all fields syntactically (use only for allFields initialization)
+	  * @return Array of OMPVariable
 	  */
 	def findAllFields: Array[OMPVariable] = {
 

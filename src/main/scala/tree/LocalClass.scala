@@ -7,5 +7,5 @@ import org.antlr.v4.runtime._
 import org.omp4j.Config
 import org.omp4j.grammar._
 
-case class LocalClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, classMap: OMPFile.ClassMap) extends OMPClass(ctx, parent, parser) with Nonreflectable {
-}
+/** The local class representation */
+case class LocalClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, classMap: OMPFile.ClassMap) extends OMPClass(ctx, parent, parser) with Nonreflectable

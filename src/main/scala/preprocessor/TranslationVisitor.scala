@@ -48,9 +48,6 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** Name of OMPContext variable; TODO: unique*/
 	private var contextName = "ompContext"
 
-	/** Name of OMPContext class; TODO: unique*/
-	private var contextClassName = "OMPContext"
-
 	/** Does 'this' keywork appears in parallel statement? */
 	private var capturedThis = false
 
