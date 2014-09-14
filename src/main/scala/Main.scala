@@ -9,6 +9,8 @@ import org.omp4j.preprocessor.Preprocessor
   */
 object Main extends App {
 	val prep = new Preprocessor(args)
-	val exitCode = prep.run
-	System.exit(exitCode)
+	prep.run match {
+		case 0 => ;
+		case e => System.exit(e)
+	}
 }
