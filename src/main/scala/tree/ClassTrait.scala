@@ -24,7 +24,7 @@ trait ClassTrait {
 	val parent: OMPClass
 	val parser: Java8Parser
 	val conf: Config
-	val classMap: OMPFile.ClassMap
+	val ompFile: OMPFile
 	val innerClasses: List[OMPClass]
 	val cunit: Java8Parser.CompilationUnitContext
 	
@@ -38,7 +38,7 @@ trait ClassTrait {
 		.map(_.methodDeclaration)	// methods
 		.map((new ClassExtractor ).visit(_))
 		.flatten
-		.map(new LocalClass(_, THIS, parser)(conf, classMap))
+		.map(new LocalClass(_, THIS, parser)(conf, ompFile))
 		.toList
 
 	/** Recursively build array of class fields

@@ -29,6 +29,7 @@ class DirectiveVisitorSpec extends AbstractSpec {
 	(new DCLoadedContext("/directiveCount/01.java")).directiveCount should equal (1)
 	(new DCLoadedContext("/directiveCount/02.java")).directiveCount should equal (3)
 	(new DCLoadedContext("/directiveCount/03.java")).directiveCount should equal (4)
+	(new DCLoadedContext("/directiveCount/07.java")).directiveCount should equal (4)
 
 	// check throwing SyntaxErrorException while processing invalid directives
 	an [SyntaxErrorException] should be thrownBy (new DCLoadedContext("/directiveCount/04.java")).directiveCount

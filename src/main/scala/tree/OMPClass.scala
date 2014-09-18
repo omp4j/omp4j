@@ -11,10 +11,10 @@ import org.omp4j.extractor._
 import org.omp4j.grammar._
 
 /** The abstract class representation */
-abstract class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit val conf: Config, val classMap: OMPFile.ClassMap) extends OMPBase(ctx, parser) {
+abstract class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit val conf: Config, ompFile: OMPFile) extends OMPBase(ctx, parser) with Findable{
 
 	// register itself in classMap
-	classMap += (ctx -> this)
+	ompFile.classMap += (ctx -> this)
 
 	/** Accessing this in traits */
 	lazy final val THIS: OMPClass = this
@@ -59,4 +59,17 @@ abstract class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPCla
 	  * @return Array of Fields
 	  */
 	protected def findAllFields: Array[OMPVariable]
+
+	/** Find class based on (almost) FQN subsequence */
+	def findClass(chunks: Array[String]): OMPClass = {
+		chunks match {
+			case Array() => this
+			case _       =>
+				val filtered = innerClasses.filter(_.name == chunks.head)
+				filtered.size match {
+					case 0 => throw new IllegalArgumentException("(findClass) Class not found")
+					case _ => filtered.head.findClass(chunks.tail)
+				}
+		}
+	}
 }

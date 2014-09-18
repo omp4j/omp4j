@@ -136,6 +136,17 @@ class Top {
 
 		// 
 	}
+
+	static class A {
+		public static class B {
+			public static class C {
+				public int abcPublic;
+				protected int abcProtected;
+				private int abcPrivate;
+			}
+		}
+	}
+	
 	void m2() {
 		class Local3 extends A.B.C {
 			void zzz() {
@@ -199,12 +210,3 @@ class notjava {
 }
 
 
-class A {
-	public static class B {
-		public static class C {
-			public int abcPublic;
-			protected int abcProtected;
-			private int abcPrivate;
-		}
-	}
-}

@@ -16,6 +16,8 @@ import org.omp4j.extractor.Inheritor
 /** LoadedContext with TranslationListener */
 class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
+	val ompFile = new OMPFile(t, parser)
+
 	/** Variable string in format: "<type> <identifier>" e.g. "int ok1" etc. */
 	private def varAsText(v: OMPVariable) = s"${v.varType} ${v.name}"
 
@@ -28,8 +30,11 @@ class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 	/** Return size of parent-list */
 	def getParentListSize = Inheritor.getParentList(directives.head.ctx).size
 
-	/** Return set of possible inherited local variables as formated strings */
-	def classesAsText = Inheritor.getVisibleLocalClasses(directives.head.ctx).map(_.normalClassDeclaration.Identifier.getText)
+	/** Return set of possible inherited local classes as formated strings */
+	def localClassesAsText = Inheritor.getVisibleLocalClasses(directives.head.ctx, ompFile).map(_.name)
+
+	/** Return set of directly visible non-local classes */
+	def nonlocalClassesAsText = Inheritor.getVisibleNonLocalClasses(directives.head.ctx, ompFile).map(_.name)
 }
 
 /** Unit test for Iheritor */
@@ -50,5 +55,8 @@ class InheritorSpec extends AbstractSpec {
 	(new InheritorLoadedContext("/parentListSize/01.java")).getParentListSize should equal (33)
 
 	// check local classes visibility
-	(new InheritorLoadedContext("/visibleLocalClasses/01.java")).classesAsText should contain only ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O")
+	// local and inner in local
+	(new InheritorLoadedContext("/visibleLocalClasses/01.java")).localClassesAsText should contain only ("A", "P", "B", "C", "D", "E", "F", "G")
+	(new InheritorLoadedContext("/visibleLocalClasses/01.java")).nonlocalClassesAsText should contain only ("H", "I", "J", "K", "L", "M", "N", "O")
+	(new InheritorLoadedContext("/visibleLocalClasses/02.java")).nonlocalClassesAsText should contain allOf ("java", "notjava")
 }

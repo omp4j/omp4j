@@ -60,6 +60,22 @@ class OMPTreeSpec extends AbstractSpec {
 	ompT2.innerClass(0,1).name should equal ("Middle2")
 	ompT2.innerClass(0,2).name should equal ("Middle3")
 	ompT2.innerClass(0,1).innerClasses(1).name should equal ("Bottom22")
+	
+	// findClass
+	ompT2.topClass(0).name should equal ("Top")
+	"Middle1.Bottom12".split("\\.") should contain only ("Middle1", "Bottom12")
+	"Middle1".split("\\.") should contain only ("Middle1")
+	"Middle1".split("\\.").head should equal ("Middle1")
+	ompT2.topClass(0).findClass(Array()).name should equal ("Top")
+	ompT2.topClass(0).findClass(Array("Middle1")).name should equal ("Middle1")
+	ompT2.topClass(0).findClass(Array("Middle1", "Bottom12")).name should equal ("Bottom12")
+	ompT2.topClass(0).findClass("Middle1.Bottom12".split("\\.")).name should equal ("Bottom12")
+	an [IllegalArgumentException] should be thrownBy ompT2.topClass(0).findClass("Middle1.Bottom32".split("\\."))
+	an [IllegalArgumentException] should be thrownBy ompT2.topClass(0).findClass("Middle.Bottom12".split("\\."))
+	ompT2.ompFile.findClass(Array("Top")).name should equal ("Top")
+	an [IllegalArgumentException] should be thrownBy ompT2.ompFile.findClass("Tox".split("\\."))
+	an [IllegalArgumentException] should be thrownBy ompT2.ompFile.findClass("Top.Middle1.Bottom145".split("\\."))
+	ompT2.ompFile.findClass("Top.Middle1.Bottom12".split("\\.")).name should equal ("Bottom12")
 
 	// local classes
 	val ompT3 = new OMPTreeLoadedContext("/ompTree/03.java")
@@ -98,6 +114,11 @@ class OMPTreeSpec extends AbstractSpec {
 
 	// local inheritence from imported class
 	val ompT9 = new OMPTreeLoadedContext("/ompTree/09.java")
+	ompT9.topClass(0).localClasses.size should equal (5)
+	ompT9.localClassFields(0,0) should contain allOf ("local1Public", "local1Protected", "local1Private", "inner1Public", "inner1Protected")
 	ompT9.localClassFields(0,1) should contain allOf ("local2Public", "local2Protected", "local2Private", "x", "y")
 	ompT9.localClassFields(0,2) should contain allOf ("local2Public", "local2Protected", "local3Public", "local3Protected", "local3Private", "x", "y")
+	ompT9.localClassFields(0,3) should contain allOf ("abcPublic", "abcProtected")
+	ompT9.localClassFields(0,4) should contain       ("bububu")
+
 }

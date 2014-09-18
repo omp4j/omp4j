@@ -101,49 +101,46 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		clStack.pop
 	}
 
-	/** Construct OMPVariable properly or throws exception */
-	private def constructVariable(id: String, locals: Set[OMPVariable], params: Set[OMPVariable]) = {
+	// /** Construct OMPVariable properly or throws exception */
+	// private def(id: String, locals: Set[OMPVariable], params: Set[OMPVariable]) = {
 
-		var meaning = OMPVariableType.Class	// Primary meaning (class/local/...)
-		var classType = ""	// extracted variable type (if really variable)
+	// 	var meaning = OMPVariableType.Class	// Primary meaning (class/local/...)
+	// 	var classType = ""	// extracted variable type (if really variable)
 
-		var clazz: OMPClass = null
-		ompFile.classMap.get(clStack.head.ctx) match {
-			case Some(x) => clazz = x
-			case None    => throw new ParseException("class not loaded")
-		}
-		val fields = clazz.allFields
+	// 	var clazz: OMPClass = null
+	// 	ompFile.classMap.get(clStack.head.ctx) match {
+	// 		case Some(x) => clazz = x
+	// 		case None    => throw new ParseException("class not loaded")
+	// 	}
+	// 	val fields = clazz.allFields
 
-		(locals find (_.name == id)) match {
-			case Some(v) => {
-				// if (id == "capt") println(s"\tfound in local")
-				meaning = OMPVariableType.Local
-				classType = v.varType
+	// 	(locals find (_.name == id)) match {
+	// 		case Some(v) => {
+	// 			meaning = OMPVariableType.Local
+	// 			classType = v.varType
 
-			}
-			case None => {
-				(params find (_.name == id)) match {
-					case Some(v) => {
-						meaning = OMPVariableType.Param
-						classType = v.varType;
-						// println(s"found param - $meaning")
-					}
-					case None => {
-						(fields find (_.name == id)) match {
-							case Some(v) => {
-								meaning = OMPVariableType.Field
-								classType = v.varType;
-								// println(s"found field - $meaning")
-							}
-							// TODO: ignore exception?
-							case None => throw new IllegalArgumentException(s"Variable '$id' not found in locals/params/fields")
-						}
-					}
-				}
-			}
-		}
-		new OMPVariable(id, classType, meaning)
-	}
+	// 		}
+	// 		case None => {
+	// 			(params find (_.name == id)) match {
+	// 				case Some(v) => {
+	// 					meaning = OMPVariableType.Param
+	// 					classType = v.varType;
+	// 				}
+	// 				case None => {
+	// 					(fields find (_.name == id)) match {
+	// 						case Some(v) => {
+	// 							meaning = OMPVariableType.Field
+	// 							classType = v.varType;
+	// 						}
+	// 						// TODO: ignore exception?
+	// 						case None => throw new IllegalArgumentException(s"Variable '$id' not found in locals/params/fields")
+	// 					}
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	new OMPVariable(id, classType, meaning)
+	// }
 
 	// TODO: http://docs.oracle.com/javase/tutorial/java/javaOO/anonymousclasses.html
 	/** Capture variables/fields */
@@ -158,7 +155,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 					id = ctx.Identifier.getText
 				}
 
-				val toCapture = constructVariable(id, locals, params)
+				val toCapture = OMPVariable(id, locals, params, ompFile, clStack.head.ctx)
 
 				// prefix the first token
 				val ctxTokens = translator.getContextTokens(ctx)
@@ -207,7 +204,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 				capturedThis = true
 			} else if (ctx.typeName != null) {
 				val id = ctx.typeName.Identifier.getText
-				val toCapture = constructVariable(id, locals, params)
+				val toCapture = OMPVariable(id, locals, params, ompFile, clStack.head.ctx)
 				// if (id == "capt") println(s"1 $toCapture  - ${ctx.toStringTree(parser)}")
 
 				// prefix the first token
@@ -217,7 +214,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 				// rewriter.insertBefore(ctx.start, contextName + "." + meaning + "_")
 			} else if (ctx.expressionName != null) {
 				val id = ctx.expressionName.Identifier.getText
-				val toCapture = constructVariable(id, locals, params)
+				val toCapture = OMPVariable(id, locals, params, ompFile, clStack.head.ctx)
 				// if (id == "capt") println(s"2 $toCapture - ${ctx.toStringTree(parser)}")
 
 				// prefix the first token

@@ -18,7 +18,7 @@ trait Nonreflectable extends ClassTrait {
 	override lazy val FQN: String = s"[LOCAL] $name"
 
 	/** Inner classes of type InnerInLocalClass */
-	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerInLocalClass(_, THIS, parser)(conf, classMap))
+	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerInLocalClass(_, THIS, parser)(conf, ompFile))
 
 	/** Find all fields syntactically (use only for allFields initialization)
 	  * @return Array of OMPVariable
@@ -41,12 +41,37 @@ trait Nonreflectable extends ClassTrait {
 				.toArray
 
 			try {	// try to load superclass
-				val superName = ctx.normalClassDeclaration.superclass.classType.getText
-				val visibleLocalClasses = Inheritor.getVisibleLocalClasses(ctx)
-				val filteredClasses = visibleLocalClasses.filter(_.normalClassDeclaration != null).filter(_.normalClassDeclaration.Identifier.getText == superName)
+				/*
+				  - using variable
+				  - implemented classes (local, other)
+				  - reflection
+				*/
 
-				inheritedFields = filteredClasses.size match {
-					case 0 =>	// is not local
+				def getCandidates(objs: List[Findable], chunks: Array[String]): List[OMPClass] = {
+					objs.size match {
+						case 0 => List()
+						case _ => 
+							try {
+								objs.head.findClass(chunks) :: getCandidates(objs.tail, chunks)
+							} catch {
+								case e: IllegalArgumentException => getCandidates(objs.tail, chunks)
+							}
+					}
+				}
+
+				val superName = ctx.normalClassDeclaration.superclass.classType.getText
+				val chunks = superName.split("\\.")
+				val visibleLocalClasses = Inheritor.getVisibleLocalClasses(ctx, ompFile)
+				val visibleNonLocalClasses = Inheritor.getVisibleNonLocalClasses(ctx, ompFile)
+
+				val filteredLocalClasses = visibleLocalClasses.filter(_.name == chunks.head)
+				val filteredNonLocalClasses = visibleNonLocalClasses.filter(_.name == chunks.head)
+				val candidates = getCandidates(filteredLocalClasses ::: filteredNonLocalClasses, chunks.tail)
+				// val filteredClasses = visibleLocalClasses.filter(_.name == superName)
+
+				inheritedFields = candidates.size match {
+					// is not local
+					case 0 =>
 						try {
 							val cls = conf.loader.load(superName, cunit)
 							findAllFieldsRecursively(cls, false)
@@ -54,14 +79,11 @@ trait Nonreflectable extends ClassTrait {
 							case e: Exception => throw new ParseException(s"Class '$name' ($FQN) was not found in generated JAR even though it was found by ANTLR", e)
 						}
 
-					case _ =>	// is local, taking the first one
-						classMap.get(filteredClasses.head) match {
-							case Some(x) => x.allFields.toArray
-							case None    => throw new ParseException(s"Local class '$superName' not cached in OMPTree")
-						}
+					// is local, take the first one
+					case _ => candidates.head.allFields.toArray
 				}
 			} catch {
-				case e: NullPointerException => ;	// no superclass
+				case e: NullPointerException => ;	// no superclass, it's ok to be as other exceptions pass
 			}
 
 		} catch {

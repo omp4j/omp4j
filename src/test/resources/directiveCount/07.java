@@ -93,6 +93,7 @@ class Top {
 	// complex example - params and locals must be declared final
 	class Inner2 {
 		int f1 = 0;
+
 		void m1(final int n1) {
 			final int l1 = 0;
 			class Local4 {
@@ -133,5 +134,35 @@ class Top {
 			}
 		}
 	}
+}
 
+class java {
+	public static class awt {
+		public static class geom {
+			public static class Area {
+				public int bububu;
+			}
+		}
+	}
+}
+
+class notjava {
+	public class awt {
+		public class geom {
+			public class Area {
+				public int trololo;
+			}
+		}
+	}
+}
+
+
+class A {
+	public static class B {
+		public static class C {
+			public int abcPublic;
+			protected int abcProtected;
+			private int abcPrivate;
+		}
+	}
 }

@@ -19,7 +19,7 @@ trait Reflectable extends ClassTrait {
 	}
 
 	/** Inner classes of type InnerClass */
-	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerClass(_, THIS, parser)(conf, classMap))
+	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerClass(_, THIS, parser)(conf, ompFile))
 
 	/** Find all fields using reflection (use only for allFields initialization)
 	  * @throws ParseException If class was found by ANTLR but not by reflection

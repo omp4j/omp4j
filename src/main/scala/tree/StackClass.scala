@@ -10,5 +10,4 @@ import org.omp4j.grammar._
 case class StackClass (ctx: Java8Parser.ClassDeclarationContext)(implicit conf: Config) {
 	lazy val name = ctx.normalClassDeclaration.Identifier.getText
 	lazy val isLocal = if (ctx.getParent.isInstanceOf[Java8Parser.ClassMemberDeclarationContext] || ctx.getParent.getParent.isInstanceOf[Java8Parser.CompilationUnitContext]) false else true
-	// println(s"-> $name ... $isLocal")
 }
