@@ -10,10 +10,15 @@ import org.omp4j.preprocessor.Preprocessor
 /** Unit test for Preprocessor */
 class PreprocessorSpec extends AbstractSpec {
 
-	// test examples (valid compilation after sources are preprocessed)
 	// TODO: add exmaple/ to resources
-	val exDir = new File("example/")
-	exDir.listFiles(null: FilenameFilter).foreach{ f =>
-		(new Preprocessor(Array(f.getAbsolutePath))).run should equal (0)
+	describe("Preprocessor should run example") {
+
+		val exDir = new File("example/")
+		exDir.listFiles(null: FilenameFilter).foreach{ f =>
+			it(f.getName) {
+				(new Preprocessor(Array(f.getAbsolutePath))).run should equal (0)
+			}
+		}
 	}
+
 }

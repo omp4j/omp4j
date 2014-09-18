@@ -26,9 +26,13 @@ class FLBELoadedContext(path: String) extends AbstractLoadedContext(path) {
 /** Unit test for DirectiveVisitor */
 class FirstLevelBreakExtractorSpec extends AbstractSpec {
 
-	// check count of found first level breaks
-	(new FLBELoadedContext("/firstLevelBreak/01.java")).firstLevetBreakCount should equal (0)
-	(new FLBELoadedContext("/firstLevelBreak/02.java")).firstLevetBreakCount should equal (1)
-
+	describe("Number of found first level breaks in file") {
+		it("01.java should equal 0") {
+			(new FLBELoadedContext("/firstLevelBreak/01.java")).firstLevetBreakCount should equal (0)
+		}
+		it("02.java should equal 1") {
+			(new FLBELoadedContext("/firstLevelBreak/02.java")).firstLevetBreakCount should equal (1)
+		}
+	}
 
 }

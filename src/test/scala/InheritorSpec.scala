@@ -40,23 +40,52 @@ class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 /** Unit test for Iheritor */
 class InheritorSpec extends AbstractSpec {
 
-	// check inherited vars in block after first (and the only) directive
-	(new InheritorLoadedContext("/inheritedLocals/01.java")).localsAsText should contain only ("int ok1", "int ok2", "int ok3")
-	(new InheritorLoadedContext("/inheritedLocals/02.java")).localsAsText should contain only ("int ok1", "int ok2", "int ok3", "String ok4", "int ok5", "float ok6", "int ok7")
-	(new InheritorLoadedContext("/inheritedLocals/03.java")).localsAsText should contain only ("int ok1", "int ok2")
-	(new InheritorLoadedContext("/inheritedLocals/04.java")).localsAsText should contain only ("int ok1", "int ok2")
-	(new InheritorLoadedContext("/inheritedLocals/05.java")).localsAsText should contain only ("int ok1", "int ok2", "JButton button")
-	(new InheritorLoadedContext("/inheritedLocals/06.java")).localsAsText should contain only ("int x")
+	describe("Inherited local variables in file") {
+		it("01.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedLocals/01.java")).localsAsText should contain only ("int ok1", "int ok2", "int ok3")
+		}
+		it("02.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedLocals/02.java")).localsAsText should contain only ("int ok1", "int ok2", "int ok3", "String ok4", "int ok5", "float ok6", "int ok7")
+		}
+		it("03.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedLocals/03.java")).localsAsText should contain only ("int ok1", "int ok2")
+		}
+		it("04.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedLocals/04.java")).localsAsText should contain only ("int ok1", "int ok2")
+		}
+		it("05.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedLocals/05.java")).localsAsText should contain only ("int ok1", "int ok2", "JButton button")
+		}
+		it("06.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedLocals/06.java")).localsAsText should contain only ("int x")
+		}
+	}
 
-	// check method params
-	(new InheritorLoadedContext("/inheritedParams/01.java")).paramsAsText should contain only ("String[] args", "int a", "String b", "float c")
+	describe("Inherited parameters in file") {
+		it("01.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedParams/01.java")).paramsAsText should contain only ("String[] args", "int a", "String b", "float c")
+		}
+	}
 
-	// check parentlist size
-	(new InheritorLoadedContext("/parentListSize/01.java")).getParentListSize should equal (33)
+	describe("Parent list size in file") {
+		it("01.java should equal 33") {
+			(new InheritorLoadedContext("/parentListSize/01.java")).getParentListSize should equal (33)
+		}
+	}
 
-	// check local classes visibility
-	// local and inner in local
-	(new InheritorLoadedContext("/visibleLocalClasses/01.java")).localClassesAsText should contain only ("A", "P", "B", "C", "D", "E", "F", "G")
-	(new InheritorLoadedContext("/visibleLocalClasses/01.java")).nonlocalClassesAsText should contain only ("H", "I", "J", "K", "L", "M", "N", "O")
-	(new InheritorLoadedContext("/visibleLocalClasses/02.java")).nonlocalClassesAsText should contain allOf ("java", "notjava")
+	describe("Visible (first directive) local classes in file") {
+		it("01.java should contain only...") {
+			(new InheritorLoadedContext("/visibleLocalClasses/01.java")).localClassesAsText should contain only ("A", "P", "B", "C", "D", "E", "F", "G")
+		}
+	}
+
+	describe("Visible (first directive) non-local classes in file") {
+		it("01.java should contain only...") {
+			(new InheritorLoadedContext("/visibleLocalClasses/01.java")).nonlocalClassesAsText should contain only ("H", "I", "J", "K", "L", "M", "N", "O")
+		}
+		it("02.java should contain only...") {
+			(new InheritorLoadedContext("/visibleLocalClasses/02.java")).nonlocalClassesAsText should contain allOf ("java", "notjava")
+		}
+	}
+
 }

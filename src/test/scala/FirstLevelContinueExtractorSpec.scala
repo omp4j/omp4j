@@ -26,9 +26,13 @@ class FLCELoadedContext(path: String) extends AbstractLoadedContext(path) {
 /** Unit test for DirectiveVisitor */
 class FirstLevelContinueExtractorSpec extends AbstractSpec {
 
-	// check count of found first level continues
-	(new FLCELoadedContext("/firstLevelContinue/01.java")).firstLevetContinueCount should equal (0)
-	(new FLCELoadedContext("/firstLevelContinue/02.java")).firstLevetContinueCount should equal (1)
-
+	describe("Number of found first level continues in file") {
+		it("01.java should equal 0") {
+			(new FLCELoadedContext("/firstLevelContinue/01.java")).firstLevetContinueCount should equal (0)
+		}
+		it("02.java should equal 1") {
+			(new FLCELoadedContext("/firstLevelContinue/02.java")).firstLevetContinueCount should equal (1)
+		}
+	}
 
 }
