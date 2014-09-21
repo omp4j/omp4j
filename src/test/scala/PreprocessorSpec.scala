@@ -14,9 +14,16 @@ class PreprocessorSpec extends AbstractSpec {
 	describe("Preprocessor should run example") {
 
 		val exDir = new File("example/")
+		val java8samples = List("12_lambda.java")
 		exDir.listFiles(null: FilenameFilter).foreach{ f =>
-			it(f.getName) {
-				(new Preprocessor(Array(f.getAbsolutePath))).run should equal (0)
+
+			// all JDK versions			
+			if (!(java8samples contains f.getName) || System.getProperty("java.version").startsWith("1.8.")) {
+				it(f.getName) {
+					(new Preprocessor(Array(f.getAbsolutePath))).run should equal (0)
+				}
+			} else {	// only for java8
+				it(f.getName) {pending}
 			}
 		}
 	}
