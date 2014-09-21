@@ -65,6 +65,46 @@ class InheritorSpec extends AbstractSpec {
 		it("01.java should contain only...") {
 			(new InheritorLoadedContext("/inheritedParams/01.java")).paramsAsText should contain only ("String[] args", "int a", "String b", "float c")
 		}
+
+
+	}
+
+	// Java8 specific code
+	if (System.getProperty("java.version").startsWith("1.8.")) {
+		describe("Inherited parameters (including lambdas) in file") {
+			it("02.java should contain only...") {
+				(new InheritorLoadedContext("/inheritedParams/02.java")).paramsAsText should contain only ("String[] args", "int a", "String b", "float c")
+			}
+			it("03.java should contain only...") {
+				(new InheritorLoadedContext("/inheritedParams/03.java")).paramsAsText should contain only ("String[] args", "int a", "String b", "float c", "int d")
+			}
+			it("04.java should contain only...") {
+				(new InheritorLoadedContext("/inheritedParams/04.java")).paramsAsText should contain only ("String[] args", "int a", "String b", "float c", "int d", "int e", "int f")
+			}
+		}
+	} else {	// others
+		describe("Inherited parameters (including lambdas) in file") {
+			it ("for Java8 only") {pending}
+		}
+	}
+
+	// Java8 specific code
+	if (System.getProperty("java.version").startsWith("1.8.")) {
+		describe("Inherited invalid parameters (including lambdas) in file") {
+			it("05.java should throw ParseException") {
+				an [ParseException] should be thrownBy (new InheritorLoadedContext("/inheritedParams/05.java")).paramsAsText
+			}
+			it("06.java should throw ParseException") {
+				an [ParseException] should be thrownBy (new InheritorLoadedContext("/inheritedParams/06.java")).paramsAsText
+			}
+			it("07.java should throw ParseException") {
+				an [ParseException] should be thrownBy (new InheritorLoadedContext("/inheritedParams/07.java")).paramsAsText
+			}
+		}
+	} else {	// others
+		describe("Inherited invalid parameters (including lambdas) in file") {
+			it ("for Java8 only") {pending}
+		}
 	}
 
 	describe("Parent list size in file") {

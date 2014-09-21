@@ -7,6 +7,7 @@ import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 
+import org.omp4j.exception._
 import org.omp4j.grammar._
 import org.omp4j.tree._
 
@@ -54,12 +55,14 @@ object Inheritor {
 	def getPossiblyInheritedParams(pt: ParseTree): Set[OMPVariable] = {
 
 		type MDC = Java8Parser.MethodDeclarationContext
+		type LEC = Java8Parser.LambdaExpressionContext
 
 		// result set - TODO: rewrite more functionally
 		var result = Set[OMPVariable]()
 		val neck = getParentList(pt)	// list of parent
 
 		neck.foreach{ n =>
+			// method params
 			try {
 				val method: MDC = n.asInstanceOf[MDC]
 				val list = method.methodHeader.methodDeclarator.formalParameterList
@@ -69,17 +72,44 @@ object Inheritor {
 					val firsts = list.formalParameters	// TODO: receiver??
 					if (firsts != null) {
 						firsts.formalParameter.asScala.foreach{ p =>
-							result += new OMPVariable(p.variableDeclaratorId.Identifier.getText, p.unannType.getText)
+							result += new OMPVariable(p.variableDeclaratorId.Identifier.getText, p.unannType.getText, OMPVariableType.Param)
 						}
 					}
 
 					val last = list.lastFormalParameter.formalParameter
 					if (last != null) {
-						result += new OMPVariable(last.variableDeclaratorId.Identifier.getText, last.unannType.getText)
+						result += new OMPVariable(last.variableDeclaratorId.Identifier.getText, last.unannType.getText, OMPVariableType.Param)
 					}
 				}
 			} catch {
-				case e: ClassCastException => ;
+				// lambda param
+				case e: ClassCastException => try {
+					val lambda: LEC = n.asInstanceOf[LEC]
+					val params = lambda.lambdaParameters
+
+					// no params at all
+					if (params.Identifier == null && params.inferredFormalParameterList == null && params.formalParameterList == null) {
+						;
+					} else {
+						val list = params.formalParameterList
+						if (list == null) throw new ParseException("Lambda params must be typed (using Formal Parametr List)")
+
+						val firsts = list.formalParameters	// TODO: receiver??
+						if (firsts != null) {
+							firsts.formalParameter.asScala.foreach{ p =>
+								result += new OMPVariable(p.variableDeclaratorId.Identifier.getText, p.unannType.getText, OMPVariableType.Param)
+							}
+						}
+
+						val last = list.lastFormalParameter.formalParameter
+						if (last != null) {
+							result += new OMPVariable(last.variableDeclaratorId.Identifier.getText, last.unannType.getText, OMPVariableType.Param)
+						}
+					}
+
+				} catch {
+					case e: ClassCastException => ;
+				}
 			}
 		}
 		result
