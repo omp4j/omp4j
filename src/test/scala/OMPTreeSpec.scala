@@ -46,15 +46,17 @@ class OMPTreeLoadedContext(path: String) extends AbstractLoadedContext(path) {
 /** Unit test for OMPTree */
 class OMPTreeSpec extends AbstractSpec {
 
-	val ompT1 = new OMPTreeLoadedContext("/ompTree/01.java")
-	val ompT2 = new OMPTreeLoadedContext("/ompTree/02.java")
-	val ompT3 = new OMPTreeLoadedContext("/ompTree/03.java")
-	val ompT4 = new OMPTreeLoadedContext("/ompTree/04.java")
-	val ompT5 = new OMPTreeLoadedContext("/ompTree/05.java")
-	val ompT6 = new OMPTreeLoadedContext("/ompTree/06.java")
-	val ompT7 = new OMPTreeLoadedContext("/ompTree/07.java")
-	val ompT8 = new OMPTreeLoadedContext("/ompTree/08.java")
-	val ompT9 = new OMPTreeLoadedContext("/ompTree/09.java")
+	val ompT1  = new OMPTreeLoadedContext("/ompTree/01.java")
+	val ompT2  = new OMPTreeLoadedContext("/ompTree/02.java")
+	val ompT3  = new OMPTreeLoadedContext("/ompTree/03.java")
+	val ompT4  = new OMPTreeLoadedContext("/ompTree/04.java")
+	val ompT5  = new OMPTreeLoadedContext("/ompTree/05.java")
+	val ompT6  = new OMPTreeLoadedContext("/ompTree/06.java")
+	val ompT7  = new OMPTreeLoadedContext("/ompTree/07.java")
+	val ompT8  = new OMPTreeLoadedContext("/ompTree/08.java")
+	val ompT9  = new OMPTreeLoadedContext("/ompTree/09.java")
+	val ompT10 = new OMPTreeLoadedContext("/ompTree/10.java")
+	val ompT11 = new OMPTreeLoadedContext("/ompTree/11.java")
 
 	describe("Total class count in context") {
 		
@@ -92,6 +94,14 @@ class OMPTreeSpec extends AbstractSpec {
 		
 		it("ompT9 should be 22") {
 			ompT9.totalClassCount should equal (22)
+		}
+
+		it("ompT10 should be 1") {
+			ompT10.totalClassCount should equal (1)
+		}
+
+		it("ompT11 should be 2") {
+			ompT11.totalClassCount should equal (2)
 		}
 
 	}
