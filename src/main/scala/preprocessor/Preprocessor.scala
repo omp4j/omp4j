@@ -6,7 +6,6 @@ import org.antlr.v4.runtime._
 
 import java.io.File
 import java.io.PrintWriter
-import java.nio.file.Files
 import java.net.MalformedURLException
 
 import org.omp4j.Config
@@ -82,7 +81,7 @@ class Preprocessor(args: Array[String]) {
 	private def saveResult(origFile: File, text: String) = {
 		// println(text)	// TODO: DEBUG
 
-		val newFile = Files.createTempFile(conf.prepDir.toPath, origFile.getName + "-", ".java").toFile
+		val newFile: File = File.createTempFile(s"${origFile.getName}-", ".java", conf.prepDir)
 		val writer = new PrintWriter(newFile, "UTF-8")
 		writer.println(text)
 		writer.close

@@ -3,10 +3,10 @@ package org.omp4j
 import Array._
 
 import java.io._
-import java.nio.file.Files
 
 import org.omp4j.system._
 import org.omp4j.exception._
+import org.omp4j.utils.TmpDir
 import org.omp4j.preprocessor.Preprocessor
 
 /** Configuration for compiler and other classes. Use implicitally. */
@@ -16,7 +16,7 @@ class Config(args: Array[String]) {
 	lazy val workDir: File = createWorkingDir
 
 	/** directory of preprocessed sources */
-	lazy val prepDir: File = Files.createTempDirectory(workDir.toPath, "preprocessed-").toFile
+	lazy val prepDir: File = (new TmpDir(workDir, "preprocessed")).toFile
 
 	/** tmp JAR file */
 	lazy val jar: File = new File(workDir.getAbsolutePath + "/output.jar")
@@ -111,7 +111,6 @@ class Config(args: Array[String]) {
 		// TODO: test writability
 
 		// TODO: use hidden (.*)
-		val tmpPath = Files.createTempDirectory(tmpRootFile.toPath, "omp4j-")
-		tmpPath.toFile
+		(new TmpDir(tmpRootFile, "omp4j")).toFile
 	}
 }
