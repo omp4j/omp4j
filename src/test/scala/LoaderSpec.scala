@@ -30,6 +30,10 @@ class LoaderSpec extends AbstractSpec {
 			loader1.load("File", cunit1).getName should equal ("java.io.File")
 		}
 
+		it("should load ActionListener") {
+			loader1.load("ActionListener", cunit1).getName should equal ("java.awt.event.ActionListener")
+		}
+
 		it("should load java.awt.Container") {
 			loader1.load("java.awt.Container", cunit1).getName should equal ("java.awt.Container")
 		}
