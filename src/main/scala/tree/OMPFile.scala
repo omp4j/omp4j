@@ -18,7 +18,7 @@ object OMPFile {
 }
 
 /** File representation containing list of classes */
-class OMPFile(ctx: Java8Parser.CompilationUnitContext, parser: Java8Parser)(implicit conf: Config) extends OMPBase(ctx, parser) with Findable {
+class OMPFile(ctx: Java8Parser.CompilationUnitContext, parser: Java8Parser)(implicit conf: Config) extends Findable {
 
 	/** (ctx -> OMPClass) mapping*/
 	implicit val classMap = Map[ParserRuleContext, OMPClass]()

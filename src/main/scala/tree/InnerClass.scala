@@ -8,4 +8,4 @@ import org.omp4j.Config
 import org.omp4j.grammar._
 
 /** The inner class representation (with FQN; reflectable) */
-case class InnerClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, val ompFile: OMPFile) extends OMPClass(ctx, parent, parser) with Reflectable
+case class InnerClass(ec: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, val ompFile: OMPFile) extends OMPClass(Left(ec), parent, parser) with Reflectable

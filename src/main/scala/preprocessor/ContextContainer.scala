@@ -15,7 +15,7 @@ import org.omp4j.tree.OMPVariable
 import org.omp4j.grammar._
 
 /** Context for Translator class */
-case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String, secondIter: Boolean)(implicit conf: Config) {
+case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Parser.StatementContext, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String, secondIter: Boolean)(implicit conf: Config) {
 	/** Number of threads */
 	lazy val threadCount    = "(4)"	// TODO
 
@@ -93,7 +93,7 @@ case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Par
 	lazy val toAppend  = threadsEnd
 
 	/** Modify code according to toPrepend and toAppend */
-	def wrap = {
+	def wrap(rewriter: TokenStreamRewriter) = {
 		rewriter.insertBefore(ctx.start, toPrepend)
 		rewriter.insertAfter(ctx.stop, toAppend)
 	}

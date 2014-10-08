@@ -7,6 +7,9 @@ import org.antlr.v4.runtime._
 import org.omp4j.grammar._
 import org.omp4j.Config
 
-abstract class OMPBase(ctx: ParserRuleContext, parser: Java8Parser)(implicit conf: Config) {
-	override def toString = ctx.toStringTree(parser)
+abstract class OMPBase(ec: OMPClass.EitherCtx, parser: Java8Parser)(implicit conf: Config) {
+	override def toString = ec match {
+		case Left(x)  => x.toStringTree(parser)
+		case Right(x) => x.toStringTree(parser)
+	}
 }

@@ -96,12 +96,12 @@ class OMPTreeSpec extends AbstractSpec {
 			ompT9.totalClassCount should equal (22)
 		}
 
-		it("ompT10 should be 1") {
-			ompT10.totalClassCount should equal (1)
+		it("ompT10 should be 2") {
+			ompT10.totalClassCount should equal (2)
 		}
 
-		it("ompT11 should be 2") {
-			ompT11.totalClassCount should equal (2)
+		it("ompT11 should be 3") {
+			ompT11.totalClassCount should equal (3)
 		}
 
 	}

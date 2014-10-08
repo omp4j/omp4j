@@ -4,6 +4,8 @@ import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
 
+import scala.collection.JavaConverters._
+
 import java.io.File
 import java.io.PrintWriter
 import java.net.MalformedURLException
@@ -32,13 +34,12 @@ class Preprocessor(args: Array[String]) {
 			// init conf (compile, pack and load)
 			conf.init
 
-			// run preprocessing
+			// run pre-processing
 			conf.files.foreach(f => parseFile(f))
 
 			// compile again -> result
 			val compiler = new Compiler(FileTreeWalker.recursiveListFiles(conf.prepDir), conf.flags)
 			compiler.compile
-			// conf.files.foreach(f => println(f.getAbsolutePath))
 
 			exitCode = 0
 

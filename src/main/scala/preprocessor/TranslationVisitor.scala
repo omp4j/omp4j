@@ -24,20 +24,23 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** List of directives */
 	private lazy val directives = (new DirectiveVisitor(tokens, parser)).visit(tree)
 
-	/** Directive translator */
-	private lazy val translator = new Translator(tokens, parser, directives, ompFile)
-
 	/** Rewriter for directive expansions*/
 	private lazy val rewriter = new TokenStreamRewriter(tokens)
 
-	/** Directive currently being proccesed*/
+	/** Directive translator */
+	private lazy val translator = new Translator(rewriter, parser, directives, ompFile)
+
+	/** Directive currently being processed */
 	private var currentDirective: Directive = null
 
 	/** Stack of nested classes (Class name, isLocal) */
-	private val clStack = Stack[StackClass]()
+	private val clStack = Stack[OMPClass]()
 
 	/** Set of local variables */
 	private var locals = Set[OMPVariable]()
+
+	/** Last visited class when directive was discovered */
+	private var directiveClass: OMPClass = null
 
 	/** Set of parameters */
 	private var params = Set[OMPVariable]()
@@ -45,13 +48,13 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** Set of variables to be added to context*/
 	private var captured = Set[OMPVariable]()
 
-	/** Name of OMPContext variable; TODO: unique*/
-	private var contextName = "ompContext"
-
-	/** Does 'this' keywork appears in parallel statement? */
+	/** Does 'this' keyword appears in parallel statement? */
 	private var capturedThis = false
 
-	/** Run translator and resturn modified source as String */
+	/** Name of OMPContext variable; TODO: unique */
+	private val contextName = "ompContext"
+
+	/** Run translator and return modified source as String */
 	def translate: String = {
 		visit(tree)
 		rewriter.getText
@@ -68,22 +71,19 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 				case Some(d) => {	// accessing new directive
 					// set things up
 					currentDirective = d
+					directiveClass = clStack.head
 					locals = Inheritor.getPossiblyInheritedLocals(ctx)
 					params = Inheritor.getPossiblyInheritedParams(ctx)
 
-					// work the statement
+					// process the statement
 					super.visitStatement(ctx)
 
-					// println(s"Found ${locals.size} locals")
-					// locals.foreach{l => println(s"\t${l.name} - ${l.meaning}")}
-					// println(s"Found ${captured.size} captured")
-					// captured.foreach{c => println(s"\t${c.name} - ${c.meaning}")}
-
 					// translate (into rewriter)
-					translator.translate(currentDirective, rewriter, locals, params, captured, capturedThis, clStack.head.name)
+					translator.translate(currentDirective, locals, params, captured, capturedThis, clStack.head.name)
 
 					// reset
 					currentDirective = null
+					directiveClass = null
 					capturedThis = false
 					captured = Set()
 					locals = Set()
@@ -95,183 +95,221 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	}
 
 	/** Handle class stack */
-	override def visitClassDeclaration(ctx: Java8Parser.ClassDeclarationContext) = {
-		clStack.push(new StackClass(ctx))
-		super.visitClassDeclaration(ctx)
-		clStack.pop
+	private def handleStack[T <: ParserRuleContext](ctx: T, f: (T) => Unit) = {
+		ompFile.classMap.get(ctx) match {
+			case Some(c) => 
+				clStack.push(c)
+				f(ctx)
+				clStack.pop
+			case None => throw new ParseException("Unexpected error - class not found")
+		}
 	}
 
-	// /** Construct OMPVariable properly or throws exception */
-	// private def(id: String, locals: Set[OMPVariable], params: Set[OMPVariable]) = {
+	override def visitClassDeclaration(ctx: Java8Parser.ClassDeclarationContext) = {
+		handleStack(ctx, super.visitClassDeclaration)
+	}
 
-	// 	var meaning = OMPVariableType.Class	// Primary meaning (class/local/...)
-	// 	var classType = ""	// extracted variable type (if really variable)
+	override def visitClassBody(ctx: Java8Parser.ClassBodyContext) = {
+		if (
+			ctx.parent.isInstanceOf[Java8Parser.ClassInstanceCreationExpressionContext] ||
+			ctx.parent.isInstanceOf[Java8Parser.ClassInstanceCreationExpression_lf_primaryContext] ||
+			ctx.parent.isInstanceOf[Java8Parser.ClassInstanceCreationExpression_lfno_primaryContext]) {
 
-	// 	var clazz: OMPClass = null
-	// 	ompFile.classMap.get(clStack.head.ctx) match {
-	// 		case Some(x) => clazz = x
-	// 		case None    => throw new ParseException("class not loaded")
-	// 	}
-	// 	val fields = clazz.allFields
+			handleStack(ctx, super.visitClassBody)
+		} else {
+			super.visitClassBody(ctx)
+		}
 
-	// 	(locals find (_.name == id)) match {
-	// 		case Some(v) => {
-	// 			meaning = OMPVariableType.Local
-	// 			classType = v.varType
+	}
 
-	// 		}
-	// 		case None => {
-	// 			(params find (_.name == id)) match {
-	// 				case Some(v) => {
-	// 					meaning = OMPVariableType.Param
-	// 					classType = v.varType;
-	// 				}
-	// 				case None => {
-	// 					(fields find (_.name == id)) match {
-	// 						case Some(v) => {
-	// 							meaning = OMPVariableType.Field
-	// 							classType = v.varType;
-	// 						}
-	// 						// TODO: ignore exception?
-	// 						case None => throw new IllegalArgumentException(s"Variable '$id' not found in locals/params/fields")
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// 	new OMPVariable(id, classType, meaning)
-	// }
+	// TODO: doc
+	private def getLeftName[T, S](
+		top: T,
+		topF: (T) => S,
+		bottomF: (S) => S,
+		topId: (T) => String,
+		bottomId: (S) => String): String = {
 
-	// TODO: http://docs.oracle.com/javase/tutorial/java/javaOO/anonymousclasses.html
+		def getRec(under: S): String = {
+			if (bottomF(under) == null) bottomId(under)
+			else getRec(bottomF(under))
+		}
+
+		if (top == null) throw new IllegalArgumentException
+		else if (topF(top) == null) topId(top)
+		else getRec(topF(top))
+	}
+
 	/** Capture variables/fields */
 	override def visitExpressionName(ctx: Java8Parser.ExpressionNameContext) = {
 		if (currentDirective != null) {
 			// globals (not actually functional, TODO)
 			try {
-				var id = ""
-				if (ctx.ambiguousName != null) {
-					id = ctx.ambiguousName.Identifier.getText
-				} else {
-					id = ctx.Identifier.getText
+
+				// println(s"-> ${ctx.getText}")
+				val id = getLeftName[Java8Parser.ExpressionNameContext, Java8Parser.AmbiguousNameContext](
+					ctx,
+					_.ambiguousName,
+					_.ambiguousName,
+					_.Identifier.getText,
+					_.Identifier.getText)
+				try {
+					val v = OMPVariable(id, locals, params, directiveClass)
+
+					val tkns = translator.getContextTokens(ctx)
+					if (tkns.head.getText == id) {
+						rewriter.replace(tkns.head, s"$contextName.${v.fullName}")
+					} else {
+						rewriter.replace(ctx.start, ctx.stop, s"$contextName.${v.fullName}")
+					}
+
+					captured += v
+				} catch {
+					case e: IllegalArgumentException => ;	// local (ok)
 				}
 
-				val toCapture = OMPVariable(id, locals, params, ompFile, clStack.head.ctx)
-
-				// prefix the first token
-				val ctxTokens = translator.getContextTokens(ctx)
-				ctxTokens.head.asInstanceOf[CommonToken].setText(s"$contextName.${toCapture.meaning}_${ctxTokens.head.getText}")
-				captured += toCapture
+				// TODO: don't use field if local (in omp block) is found!
 
 			} catch {
 				// TODO: exceptions?
-				case e: IllegalArgumentException => ; // println(s"IAE: ${e.getMessage}")
-				case e: Exception => println(s" E1: ${e.getMessage}")
+				case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
 			}
 		}
 		super.visitExpressionName(ctx)
 	}
 
-	/** Capture objects invoking methods */
 	override def visitMethodInvocation(ctx: Java8Parser.MethodInvocationContext) = {
 		if (currentDirective != null) {
-			generalMethodInvocation(ctx)
-		}		
+			try {	// primary exists
+				if (ctx.primary.getText == "this") {
+					if (clStack.head == directiveClass) {
+						// handle only the '.' as 'this' will be handled automatically later on
+						val dot = translator.getContextTokens(ctx)(1)
+						rewriter.delete(dot)
+					}
+				}
+			} catch {
+				case e: NullPointerException => ;
+			}
+		}
 		super.visitMethodInvocation(ctx)
 	}
 
-	/** Capture objects invoking methods */
-	override def visitMethodInvocation_lfno_primary(ctx: Java8Parser.MethodInvocation_lfno_primaryContext) = {
+	override def visitPrimary(ctx: Java8Parser.PrimaryContext) = {
 		if (currentDirective != null) {
-			generalMethodInvocation(ctx)
-		}	
-		super.visitMethodInvocation_lfno_primary(ctx)
+
+			if (ctx.primaryNoNewArray_lfno_primary == null) {
+				// TODO
+			}
+			else {
+				val first = ctx.primaryNoNewArray_lfno_primary
+				val seconds: List[Java8Parser.PrimaryNoNewArray_lf_primaryContext] =
+					if (ctx.primaryNoNewArray_lf_primary != null) ctx.primaryNoNewArray_lf_primary.asScala.toList
+					else List[Java8Parser.PrimaryNoNewArray_lf_primaryContext]()
+
+				handlePrimary(ctx, first, seconds)
+			}
+		}
+		super.visitPrimary(ctx)
 	}
 
-	/** Handle all method invocations */
-	private def generalMethodInvocation[T <: {
-			def methodName(): Java8Parser.MethodNameContext;
-			def typeName(): Java8Parser.TypeNameContext;
-			def expressionName(): Java8Parser.ExpressionNameContext;
-			def getStart(): Token;
-			def getStop(): Token;
-			def toStringTree(parser: Parser): String
-		}](ctx: T) = {
+	private def handlePrimary(ctx: Java8Parser.PrimaryContext, first: Java8Parser.PrimaryNoNewArray_lfno_primaryContext, seconds: List[Java8Parser.PrimaryNoNewArray_lf_primaryContext]) = {
 
+		// is primary expression of method invocation
+		val isMI = first.parent.parent.isInstanceOf[Java8Parser.MethodInvocationContext]
 		try {
-			if (ctx.methodName != null) {
-				val ctxTokens = translator.getContextTokens(ctx)
-				ctxTokens.head.asInstanceOf[CommonToken].setText(s"$contextName.THAT.${ctxTokens.head.getText}")
-				capturedThis = true
-			} else if (ctx.typeName != null) {
-				val id = ctx.typeName.Identifier.getText
-				val toCapture = OMPVariable(id, locals, params, ompFile, clStack.head.ctx)
-				// if (id == "capt") println(s"1 $toCapture  - ${ctx.toStringTree(parser)}")
 
-				// prefix the first token
-				val ctxTokens = translator.getContextTokens(ctx)
-				ctxTokens.head.asInstanceOf[CommonToken].setText(s"$contextName.${toCapture.meaning}_${ctxTokens.head.getText}")
-				captured += toCapture
-				// rewriter.insertBefore(ctx.start, contextName + "." + meaning + "_")
-			} else if (ctx.expressionName != null) {
-				val id = ctx.expressionName.Identifier.getText
-				val toCapture = OMPVariable(id, locals, params, ompFile, clStack.head.ctx)
-				// if (id == "capt") println(s"2 $toCapture - ${ctx.toStringTree(parser)}")
+			// primary starts with 'this'
+			if (first.getText == "this") {
 
-				// prefix the first token
-				val ctxTokens = translator.getContextTokens(ctx)
-				ctxTokens.head.asInstanceOf[CommonToken].setText(s"$contextName.${toCapture.meaning}_${ctxTokens.head.getText}")
-				captured += toCapture
-				// rewriter.insertBefore(ctx.start, contextName + "." + meaning + "_")
-			}
-		} catch {
-			// TODO: exceptions?
-			case e: IllegalArgumentException => ;	// println(s"IAE: ${e.getMessage}")
-			// case e: Exception => println(s" E2: ${e.getStackTrace}")
-			case e: Exception => e.printStackTrace
-		}
+				// only for first-class expressions
+				if (clStack.head == directiveClass) {
 
-	}
+					// 'this' as a standalone
+					if (seconds.size == 0) {
+						if (isMI) {
+							rewriter.delete(first.start, first.stop)
+						} else {
+							rewriter.replace(first.start, first.stop, s"$contextName.THAT")
+							capturedThis = true
+						}
+					} else {
+						// 'this' in a tandem
+						val next = seconds.head
+						if (next.fieldAccess_lf_primary != null) {
+							val id = next.fieldAccess_lf_primary.Identifier.getText
+							try {
+								// try to rewrite var name (if captured)
+								val v = OMPVariable.findField(id, directiveClass)
+								rewriter.replace(first.start, first.stop, contextName)
+								rewriter.replace(next.start, next.stop, s".${v.fullName}")
 
-	// TODO: super
-	/** Handle 'this' keyword */
-	override def visitPrimaryNoNewArray(ctx: Java8Parser.PrimaryNoNewArrayContext) = {
-		generalPrimary(ctx)
-		super.visitPrimaryNoNewArray(ctx)
-	}
+								captured += v   // ??
+							} catch {
+								case e: IllegalArgumentException => ; // local (ok)
+							}
+						} else if (next.methodInvocation_lf_primary != null) {
+							// getting rid of 'this.'
+							rewriter.delete(first.start, first.stop)
 
-	/** Handle 'this' keyword */
-	override def visitPrimaryNoNewArray_lfno_arrayAccess(ctx: Java8Parser.PrimaryNoNewArray_lfno_arrayAccessContext) = {
-		generalPrimary(ctx)
-		super.visitPrimaryNoNewArray_lfno_arrayAccess(ctx)
-	}
+							val dot = translator.getContextTokens(ctx)(1)
+							rewriter.delete(dot)
+						}
 
-	/** Handle 'this' keyword */
-	override def visitPrimaryNoNewArray_lfno_primary(ctx: Java8Parser.PrimaryNoNewArray_lfno_primaryContext) = {
-		generalPrimary(ctx)
-		super.visitPrimaryNoNewArray_lfno_primary(ctx)
-	}
-
-	/** Handle 'this' keyword */
-	override def visitPrimaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primary(ctx: Java8Parser.PrimaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primaryContext) = {
-		generalPrimary(ctx)
-		super.visitPrimaryNoNewArray_lfno_primary_lfno_arrayAccess_lfno_primary(ctx)
-	}
-
-	/** Handle all primaries */
-	private def generalPrimary(ctx: ParserRuleContext) = {
-		if (currentDirective != null) {
-			try {
-				if (ctx.getText == "this") {
-					// replace first (and only) token "this"
-					val ctxTokens = translator.getContextTokens(ctx)
-					ctxTokens.head.asInstanceOf[CommonToken].setText(contextName + ".THAT")
-					capturedThis = true
+						capturedThis = true
+					}
 				}
-			} catch {
-				// TODO: exceptions?
-				// case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
-				case e: Exception => println(s" E3: ${e.getMessage}")
+
+
+			} else {
+				if (first.fieldAccess_lfno_primary != null) {
+
+					val id = getLeftName[Java8Parser.TypeNameContext, Java8Parser.PackageOrTypeNameContext](
+					first.fieldAccess_lfno_primary.typeName,
+					_.packageOrTypeName,
+					_.packageOrTypeName,
+					_.Identifier.getText,
+					_.Identifier.getText)
+					try {
+						val v = OMPVariable(id, locals, params, directiveClass)
+						rewriter.replace(first.start, first.stop, s"$contextName.${v.fullName}")
+					} catch {
+						case e: IllegalArgumentException => ; // local (ok)
+					}
+
+				} else if (first.methodInvocation_lfno_primary != null) {
+					val mip = first.methodInvocation_lfno_primary
+					if (mip.methodName != null) {
+						// simple method call
+					} else if (mip.typeName != null) {
+
+						val id = getLeftName[Java8Parser.TypeNameContext, Java8Parser.PackageOrTypeNameContext](
+							first.methodInvocation_lfno_primary.typeName,
+							_.packageOrTypeName,
+							_.packageOrTypeName,
+							_.Identifier.getText,
+							_.Identifier.getText)
+						try {
+							val v = OMPVariable(id, locals, params, directiveClass)
+							val firstToken = translator.getContextTokens(first).head
+							rewriter.replace(firstToken, s"$contextName.${v.fullName}")
+							captured += v
+
+						} catch {
+							case e: IllegalArgumentException => ; // local (ok)
+						}
+
+					} else {
+						// TODO:
+					}
+				}
 			}
+		// TODO: exception (should never happen?)
+		} catch {
+			case e: Exception => throw new ParseException("Unepected exception in handlePrimary", e)
 		}
+
 	}
+	// TODO: super
+
 }

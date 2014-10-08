@@ -15,34 +15,34 @@ import org.omp4j.extractor._
 import org.omp4j.grammar._
 
 /** Translate context given with respect to directives */
-class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: List[Directive], ompFile: OMPFile)(implicit conf: Config) {
+class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives: List[Directive], ompFile: OMPFile)(implicit conf: Config) {
 
 	/** Get tokens matching to context given
-	  * Must use this construct as Java8Parser has no logical hierarchy
 	  */
-	def getContextTokens[T <: {
-			def getStart(): Token;
-			def getStop(): Token
-		}](ctx: T) = {
+	def getContextTokens(ctx: SyntaxTree): List[Token] = {
+		val interval = ctx.getSourceInterval
+		val tokenStream = rewriter.getTokenStream
 
-		val startId = ctx.getStart.getTokenIndex
-		val stopId = ctx.getStop.getTokenIndex
-		for {token <- tokens.getTokens.asScala; i = token.getTokenIndex; if (i >= startId); if(i <= stopId)} yield token
+		val toks = for {i <- interval.a to interval.b} yield tokenStream.get(i)
+		toks.toList
 	}
 
+	/** Wrapper of TokenStreamRewriter.getText(SyntaxTree) until it is officially supported */
+	private def getRewrittenText(ctx: SyntaxTree) = rewriter.getText(ctx.getSourceInterval)
+
 	/** Translate directive given using special methods for each directive type */
-	def translate(directive: Directive, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
-		if      (directive.ompCtx.ompParallel    != null) translateParallel(new ContextContainer(directive.ompCtx.ompParallel, directive.ctx, rewriter, locals, params, captured, capturedThis, currentClass, false))
-		else if (directive.ompCtx.ompParallelFor != null) translateParallelFor(new ContextContainer(directive.ompCtx.ompParallel, directive.ctx, rewriter, locals, params, captured, capturedThis, currentClass, true))
-		else if (directive.ompCtx.ompSections    != null) translateSections(directive.ompCtx.ompSections, directive.ctx, rewriter, locals, params, captured, capturedThis, currentClass)
-		else if (directive.ompCtx.ompFor         != null) translateFor(directive.ompCtx.ompFor, directive.ctx, rewriter, locals, params, captured, capturedThis, currentClass)
+	def translate(directive: Directive, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+		if      (directive.ompCtx.ompParallel    != null) translateParallel(new ContextContainer(directive.ompCtx.ompParallel, directive.ctx, locals, params, captured, capturedThis, currentClass, false))
+		else if (directive.ompCtx.ompParallelFor != null) translateParallelFor(new ContextContainer(directive.ompCtx.ompParallel, directive.ctx, locals, params, captured, capturedThis, currentClass, true))
+		else if (directive.ompCtx.ompSections    != null) translateSections(directive.ompCtx.ompSections, directive.ctx, locals, params, captured, capturedThis, currentClass)
+		else if (directive.ompCtx.ompFor         != null) translateFor(directive.ompCtx.ompFor, directive.ctx, locals, params, captured, capturedThis, currentClass)
 		else throw new IllegalArgumentException("Unsupported directive")
 		rewriter.replace(directive.cmt, "\n")
 	}
 
 	/** Translate "omp parallel" */
 	private def translateParallel(cc: ContextContainer) = {
-		cc.wrap
+		cc.wrap(rewriter)
 	}
 
 	/** Translate "omp parallel for" */
@@ -62,7 +62,7 @@ class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: Lis
 		if (forInit == null) throw new ParseException("For directive before enhanced for statement")
 		val forList = forInit.localVariableDeclaration.variableDeclaratorList.variableDeclarator.asScala
 		if (forList.size != 1) throw new ParseException("For initialization must containt exactly one variable")
-		val iterName = forList.head.variableDeclaratorId.Identifier.getText	// var name
+		val iterName = getRewrittenText(forList.head.variableDeclaratorId.Identifier) //.getText	// var name
 		val initExpr = forList.head.variableInitializer.expression	// right side of init assignment
 
 		// COND
@@ -116,31 +116,31 @@ class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: Lis
 		var step: String = null
 		var oper: String = null
 		if (update.preIncrementExpression != null) {
-			if (update.preIncrementExpression.unaryExpression.getText != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.preIncrementExpression.unaryExpression) != iterName) throw new ParseException("Iter. variable must be modified")
 			oper = "+="
 			step = "1"
 		} else if (update.postIncrementExpression != null) {
-			if (update.postIncrementExpression.postfixExpression.getText != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.postIncrementExpression.postfixExpression) != iterName) throw new ParseException("Iter. variable must be modified")
 			oper = "+="
 			step = "1"
 		} else if (update.preDecrementExpression != null) {
-			if (update.preDecrementExpression.unaryExpression.getText != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.preDecrementExpression.unaryExpression) != iterName) throw new ParseException("Iter. variable must be modified")
 			oper = "-="
 			step = "1"
 		} else if (update.postDecrementExpression != null) {
-			if (update.postDecrementExpression.postfixExpression.getText != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.postDecrementExpression.postfixExpression) != iterName) throw new ParseException("Iter. variable must be modified")
 			oper = "-="
 			step = "1"
 		} else if (update.assignment != null) {	// assignment
-			if (update.assignment.leftHandSide.getText != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.assignment.leftHandSide) != iterName) throw new ParseException("Iter. variable must be modified")
 
 			// TODO: assignment?
-			if (List("+=", "-=") contains update.assignment.assignmentOperator.getText) {
-				oper = update.assignment.assignmentOperator.getText
+			if (List("+=", "-=") contains getRewrittenText(update.assignment.assignmentOperator)) {
+				oper = getRewrittenText(update.assignment.assignmentOperator)
 			} else throw new ParseException("Unsupported for-update operation (+=, -=)")
 
-			if (getContextTokens(update.assignment.expression).map(_.getText) contains iterName) throw new ParseException("For-update statement must not reference iterator")
-			step = update.assignment.expression.getText
+			if (getRewrittenText(update.assignment.expression) contains iterName) throw new ParseException("For-update statement must not reference iterator")
+			step = getRewrittenText(update.assignment.expression)
 		} else throw new ParseException("Iter. variable must be modified")
 
 		// get names of for-bounds vars
@@ -150,26 +150,26 @@ class Translator(tokens: CommonTokenStream, parser: Java8Parser, directives: Lis
 		val cycleLength = cc.uniqueName("ompCycleLength")
 
 		val forVars = "/* OMP for boundaries */\n" +
-			s"final int $initVal = ${initExpr.getText};\n" +
-			s"final int $condVal = ${cond.getText};\n" +
+			s"final int $initVal = ${getRewrittenText(initExpr)};\n" +
+			s"final int $condVal = ${getRewrittenText(cond)};\n" +
 			s"final int $incVal = $step;\n" + // TODO
 			s"final int $cycleLength = Math.abs($condVal - $initVal);\n"
 
 		// TODO: inclusive condition?
-		cc.rewriter.insertBefore(cc.ctx.start, forVars)
-		cc.rewriter.replace(initExpr.start, initExpr.stop, s"$initVal ${oper.head} ((${cc.iter2} == 0) ? 0 : (($incVal - 1 - ((${cc.iter2} * $cycleLength/${cc.threadCount} - 1) % $incVal)) + (${cc.iter2} * $cycleLength/${cc.threadCount})))")
-		cc.rewriter.replace(cond.start, cond.stop, s"$initVal ${oper.head} (${cc.iter2} + 1) * $cycleLength/${cc.threadCount}")
-		cc.rewriter.replace(update.start, update.stop, s"$iterName $oper $incVal")
-		cc.wrap
+		rewriter.insertBefore(cc.ctx.start, forVars)
+		rewriter.replace(initExpr.start, initExpr.stop, s"$initVal ${oper.head} ((${cc.iter2} == 0) ? 0 : (($incVal - 1 - ((${cc.iter2} * $cycleLength/${cc.threadCount} - 1) % $incVal)) + (${cc.iter2} * $cycleLength/${cc.threadCount})))")
+		rewriter.replace(cond.start, cond.stop, s"$initVal ${oper.head} (${cc.iter2} + 1) * $cycleLength/${cc.threadCount}")
+		rewriter.replace(update.start, update.stop, s"$iterName $oper $incVal")
+		cc.wrap(rewriter)
 	}
 
 	/** Translate "omp sections" */
-	private def translateSections(ompCtx: OMPParser.OmpSectionsContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+	private def translateSections(ompCtx: OMPParser.OmpSectionsContext, ctx: Java8Parser.StatementContext, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
 		// TODO
 	}
 
 	/** Translate "omp for" */
-	private def translateFor(ompCtx: OMPParser.OmpForContext, ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+	private def translateFor(ompCtx: OMPParser.OmpForContext, ctx: Java8Parser.StatementContext, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
 		// TODO
 	}
 }

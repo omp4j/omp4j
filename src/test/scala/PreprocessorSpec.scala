@@ -26,6 +26,15 @@ class PreprocessorSpec extends AbstractSpec {
 				it(f.getName) {pending}
 			}
 		}
+
+	}
+
+	describe("Preprocessor should run extra sample") {
+
+		it("01.java") {
+			val f = new File(getClass.getResource("/preprocessor/01.java").toURI.getPath)
+			(new Preprocessor(Array(f.getAbsolutePath))).run should equal (0)
+		}
 	}
 
 }

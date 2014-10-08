@@ -8,4 +8,4 @@ import org.omp4j.Config
 import org.omp4j.grammar._
 
 /** The local class representation */
-case class LocalClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, val ompFile: OMPFile) extends OMPClass(ctx, parent, parser) with Nonreflectable
+case class LocalClass(ec: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, val ompFile: OMPFile) extends OMPClass(Left(ec), parent, parser) with Nonreflectable

@@ -35,7 +35,6 @@ object Inheritor {
 
 		// iterate through the list of tuples (tree-node, follower-in-neck)
 		for {(t, follower) <- (neck zip neck.tail)} {
-			// println("visiting:\t" + t)
 			breakable {
 				// iterate through all children left to the follower
 				for {i <- 0 until t.getChildCount} {
@@ -128,7 +127,6 @@ object Inheritor {
 				for {i <- 0 until t.getChildCount} {
 					val child = t.getChild(i)
 					if (child == follower) break
-					// println("----")
 					try {
 						val bs = child.asInstanceOf[Java8Parser.BlockStatementContext]
 						val cdc = bs.classDeclaration
@@ -143,13 +141,8 @@ object Inheritor {
 							case None => ;
 						}
 					} catch {
-						case e: Exception => ; //println(child.getText + "\n\t" + child.getClass.getName.toString)
+						case e: Exception => ;
 					}
-					// result = result ::: (new ClassExtractor ).visit(child).toList.map(ctx => 
-					// 	classMap.get(ctx) match {
-					// 		case Some(ompC) => ompC
-					// 		case None        => null
-					// 	}).filter(c => c != null)
 				}
 			}
 			result
@@ -189,6 +182,4 @@ object Inheritor {
 		// add top classes as they are always visible
 		onPath ::: ompFile.classes
 	}
-
-
 }

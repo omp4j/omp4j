@@ -27,6 +27,7 @@ class Complex {
 	public static void main(String[] args) {
 
 		Complex s = new Complex();
+		Complex t = new Complex();
 
 		int var1 = 0;
 		var1++;
@@ -34,7 +35,7 @@ class Complex {
 			int var2 = 0;
 			var1++;
 			var2++;
-			s.baar(var2);
+			t.baar(var2);
 			System.out.println("hello" + var1);
 
 			{

@@ -16,7 +16,7 @@ import org.omp4j.grammar._
 class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends Java8BaseVisitor[List[Directive]] {
 
 	/** Save proper statement */
-	override def visitStatement(stmtCtx: Java8Parser.StatementContext) = {
+	override def visitStatement(stmtCtx: Java8Parser.StatementContext): List[Directive] = {
 
 		var result: Directive = null
 
@@ -35,14 +35,13 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 				// validate directive - starting with 'omp'
 				val ompPattern = "^\\s*omp\\s.*$".r
 				ompPattern.findFirstIn(raw) match {
-					case Some(_) => ; // println(s"Taking directive '$raw' from '${stmtCtx.getText}'")
-					case None    => // println(s"Ignoring directive '$raw'")	// TODO: log
-					                break
+					case Some(_) => ;
+					case None    => break	// TODO: log
 				}
 
 				try {
 					val ompLexer  = new OMPLexer(new ANTLRInputStream(raw))
-					ompLexer.removeErrorListeners;
+					ompLexer.removeErrorListeners
 					ompLexer.addErrorListener(new OMPLexerErrorListener )
 					val ompTokens = new CommonTokenStream(ompLexer)
 					
@@ -63,8 +62,6 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 		result match {
 			case null => super.visitStatement(stmtCtx)
 			case _    => result :: super.visitStatement(stmtCtx)
-			// case null => visitChildren(stmtCtx)
-			// case _    => result :: visitChildren(stmtCtx)
 		}
 	}
 

@@ -10,14 +10,34 @@ import org.omp4j.Config
 import org.omp4j.extractor._
 import org.omp4j.grammar._
 
+object OMPClass {
+	type EitherCtx = Either[Java8Parser.ClassDeclarationContext, Java8Parser.ClassBodyContext]
+}
+
 /** The abstract class representation */
-abstract class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit val conf: Config, ompFile: OMPFile) extends OMPBase(ctx, parser) with Findable{
+abstract class OMPClass(ec: OMPClass.EitherCtx, parent: OMPClass, parser: Java8Parser)(implicit val conf: Config, ompFile: OMPFile) extends Findable{
+
+	/** classMap key */
+	lazy val key: ParserRuleContext = ctx
 
 	// register itself in classMap
-	ompFile.classMap += (ctx -> this)
+	ompFile.classMap += (key -> this)
 
 	/** Accessing this in traits */
 	lazy final val THIS: OMPClass = this
+
+	/** Main context (may be null if AnonymousClass used) */
+	lazy val ctx: Java8Parser.ClassDeclarationContext = ec match {
+		case Left(x)  => x
+		case Right(_) => null
+	}
+	
+	/** Class body declaration (always non-null) */
+	lazy val classBody: Java8Parser.ClassBodyContext = ec match {
+		case Left(x)  => x.normalClassDeclaration.classBody
+		case Right(y) => y
+	}
+
 
 	/** String class name */
 	lazy val name: String = ctx.normalClassDeclaration.Identifier.getText
@@ -42,6 +62,9 @@ abstract class OMPClass(ctx: Java8Parser.ClassDeclarationContext, parent: OMPCla
 	
 	/** List of local classes (first level only) */
 	val localClasses: List[OMPClass]
+
+	/** List of anonymous classes (first level only) */
+	val anonymousClasses: List[OMPClass] = (new AnonymousClassExtractor ).visit(classBody).map(ac => new AnonymousClass(ac, this, parser))
 
 	/** Set of declared and inherited fields */
 	lazy val fields: Set[OMPVariable] = findAllFields.toSet

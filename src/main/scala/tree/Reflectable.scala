@@ -19,7 +19,7 @@ trait Reflectable extends ClassTrait {
 	}
 
 	/** Inner classes of type InnerClass */
-	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(ctx.normalClassDeclaration.classBody).map(new InnerClass(_, THIS, parser)(conf, ompFile))
+	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(classBody).map(new InnerClass(_, THIS, parser)(conf, ompFile))
 
 	/** Find all fields using reflection (use only for allFields initialization)
 	  * @throws ParseException If class was found by ANTLR but not by reflection
@@ -31,7 +31,7 @@ trait Reflectable extends ClassTrait {
 			val cls = conf.loader.loadByFQN(FQN)
 			findAllFieldsRecursively(cls, true)
 		} catch {
-			case e: ClassNotFoundException => throw new ParseException("Class '" + name + "' (" + FQN + ") was not found in generated JAR even though it was found by ANTLR", e)
+			case e: ClassNotFoundException => throw new ParseException(s"Class '$name' ($FQN) was not found in generated JAR (${conf.jar.getAbsolutePath}}) even though it was found by ANTLR", e)
 		}
 	}
 

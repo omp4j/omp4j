@@ -1,12 +1,5 @@
 package org.omp4j.tree
 
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
-import org.antlr.v4.runtime._
-
-import org.omp4j.grammar._
-import org.omp4j.exception._
-
 /** Variable meaning enum  */
 object OMPVariableType extends Enumeration {
 	type OMPVariableType = Value
@@ -22,26 +15,39 @@ import OMPVariableType._
 
 /** Static OMPVariable constructor */
 object OMPVariable {
-	def apply(id: String, locals: Set[OMPVariable], params: Set[OMPVariable], ompFile: OMPFile, keyCtx: Java8Parser.ClassDeclarationContext) = {
-		ompFile.classMap.get(keyCtx) match {
-			case Some(clazz) =>
-				(locals find (_.name == id)) match {
-					case Some(v) => new OMPVariable(id, v.varType, OMPVariableType.Local)
-					case None => (params find (_.name == id)) match {
-						case Some(v) => new OMPVariable(id, v.varType, OMPVariableType.Param)
-						case None => (clazz.allFields find (_.name == id)) match {
-							case Some(v) => new OMPVariable(id, v.varType, OMPVariableType.Field)
-							case None => throw new IllegalArgumentException(s"Variable '$id' not found in locals/params/fields")
-						}	// field
-					}	// params
-				}	// locals
+	def apply(id: String, locals: Set[OMPVariable], params: Set[OMPVariable], ompClass: OMPClass) = {
 
-			case None => throw new ParseException("class not loaded")
-		}	// get
+		try {
+			find(id, locals)
+		} catch { case e: IllegalArgumentException => try {
+			find(id, params)
+		} catch { case e: IllegalArgumentException => try {
+			findField(id, ompClass)
+		}}}
+	}
+
+	// TODO: IllegalArgEx -> NoSuchElEx
+	def findField(id: String, ompClass: OMPClass): OMPVariable = {
+		(ompClass.allFields find (_.name == id)) match {
+			case Some(v) => v
+//			case None => throw new NoSuchElementException(s"variable '$id' not found")
+			case None => throw new IllegalArgumentException(s"variable '$id' not found")
+		}
+	}
+
+	private def find(id: String, set: Set[OMPVariable]): OMPVariable = {
+		(set find (_.name == id)) match {
+			case Some(v) => v
+//			case None => throw new NoSuchElementException(s"variable '$id' not found")
+			case None => throw new IllegalArgumentException(s"variable '$id' not found")
+		}
 	}
 }
 
 /** Variable representation */
 case class OMPVariable(name: String, varType: String, meaning: OMPVariableType = OMPVariableType.Class, isPrivate: Boolean = false) {
 	override def toString = s"Variable '$name' of type '$varType' with meaning of '$meaning'"
+
+	lazy val fullName = s"${meaning}_$name"
+	lazy val declaration = s"public $varType $fullName;"
 }

@@ -60,4 +60,19 @@ class Simple {
 			}
 		}
 	}
+
+	class Nested2 {
+		int field1;
+		void m1(int x) {
+			// omp parallel
+			{
+				class Local {
+					int field2;
+					void m2(int y) {
+						int tmp = x + y + field1 + field2;
+					}
+				}
+			}
+		}
+	}
 }

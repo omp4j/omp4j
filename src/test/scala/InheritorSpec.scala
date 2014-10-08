@@ -65,8 +65,9 @@ class InheritorSpec extends AbstractSpec {
 		it("01.java should contain only...") {
 			(new InheritorLoadedContext("/inheritedParams/01.java")).paramsAsText should contain only ("String[] args", "int a", "String b", "float c")
 		}
-
-
+		it("08.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedParams/08.java")).paramsAsText should contain only ("ActionEvent e")
+		}
 	}
 
 	// Java8 specific code
@@ -110,6 +111,9 @@ class InheritorSpec extends AbstractSpec {
 	describe("Parent list size in file") {
 		it("01.java should equal 33") {
 			(new InheritorLoadedContext("/parentListSize/01.java")).getParentListSize should equal (33)
+		}
+		it("02.java should equal 46") {
+			(new InheritorLoadedContext("/parentListSize/02.java")).getParentListSize should equal (46)
 		}
 	}
 

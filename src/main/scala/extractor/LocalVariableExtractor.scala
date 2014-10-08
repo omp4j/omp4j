@@ -15,10 +15,6 @@ class LocalVariableExtractor extends Java8BaseVisitor[Set[Java8Parser.LocalVaria
 	/** Add local variable declaration context */
 	override def visitLocalVariableDeclaration(variableCtx: LVDC) = Set[LVDC](variableCtx)
 
-	/** Don't get into nested statements */
-	// override def visitStatement(c: Java8Parser.StatementContext) = Set[LVDC]()
-	// override def visitBlockStatement(c: Java8Parser.BlockStatementContext) = Set[LVDC]()
-
 	override def defaultResult = Set[LVDC]()
 	override def aggregateResult(a: Set[LVDC], b: Set[LVDC]) = a ++ b
 }

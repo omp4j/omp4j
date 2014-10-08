@@ -8,7 +8,7 @@ import org.antlr.v4.runtime._
 
 import org.omp4j.grammar._
 
-/**  */
+/** Extract classes defined as field (nested ones) */
 class FieldClassExtractor extends Java8BaseVisitor[List[Java8Parser.ClassDeclarationContext]] {
 
 	/** Java8Parser.ClassDeclarationContext typedef */
@@ -35,9 +35,6 @@ class FieldClassExtractor extends Java8BaseVisitor[List[Java8Parser.ClassDeclara
 
 	/** Don't get into nested statements */
 	override def visitStatement(ctx: Java8Parser.StatementContext) = List[CDC]()
-
-	/** Don't get into other methods */
-	// override def visitMethodDeclaration(ctx: Java8Parser.MethodDeclarationContext) = List[CDC]()
 
 	override def defaultResult = List[CDC]()
 	override def aggregateResult(a: List[CDC], b: List[CDC]) = a ::: b

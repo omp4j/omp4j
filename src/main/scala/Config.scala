@@ -13,7 +13,7 @@ import org.omp4j.preprocessor.Preprocessor
 class Config(args: Array[String]) {
 	
 	/** working directory */
-	lazy val workDir: File = createWorkingDir
+	val workDir: File = createWorkingDir
 
 	/** directory of preprocessed sources */
 	lazy val prepDir: File = (new TmpDir(workDir, "preprocessed")).toFile
