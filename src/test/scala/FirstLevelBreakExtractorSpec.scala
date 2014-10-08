@@ -33,6 +33,9 @@ class FirstLevelBreakExtractorSpec extends AbstractSpec {
 		it("02.java should equal 1") {
 			(new FLBELoadedContext("/firstLevelBreak/02.java")).firstLevetBreakCount should equal (1)
 		}
+		it("03.java should equal 1 (label)") {
+			(new FLBELoadedContext("/firstLevelBreak/03.java")).firstLevetBreakCount should equal (1)
+		}
 	}
 
 }

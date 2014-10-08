@@ -33,6 +33,9 @@ class FirstLevelContinueExtractorSpec extends AbstractSpec {
 		it("02.java should equal 1") {
 			(new FLCELoadedContext("/firstLevelContinue/02.java")).firstLevetContinueCount should equal (1)
 		}
+		it("03.java should equal 1 (label)") {
+			(new FLCELoadedContext("/firstLevelContinue/03.java")).firstLevetContinueCount should equal (1)
+		}
 	}
 
 }
