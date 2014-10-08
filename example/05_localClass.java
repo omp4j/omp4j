@@ -63,7 +63,7 @@ class Simple {
 
 	class Nested2 {
 		int field1;
-		void m1(int x) {
+		void m1(final int x) {
 			// omp parallel
 			{
 				class Local {
