@@ -180,16 +180,32 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 
 	override def visitMethodInvocation(ctx: Java8Parser.MethodInvocationContext) = {
 		if (currentDirective != null) {
-			try {	// primary exists
-				if (ctx.primary.getText == "this") {
-					if (clStack.head == directiveClass) {
-						// handle only the '.' as 'this' will be handled automatically later on
-						val dot = translator.getContextTokens(ctx)(1)
-						rewriter.delete(dot)
-					}
+
+			if (ctx.primary != null && ctx.primary.getText == "this") {
+				if (clStack.head == directiveClass) {
+					// handle only the '.' as 'this' will be handled automatically later on
+					val dot = translator.getContextTokens(ctx)(1)
+					rewriter.delete(dot)
 				}
-			} catch {
-				case e: NullPointerException => ;
+			} else if (ctx.typeName != null) {
+
+				val id = getLeftName[Java8Parser.TypeNameContext, Java8Parser.PackageOrTypeNameContext](
+				ctx.typeName,
+				_.packageOrTypeName,
+				_.packageOrTypeName,
+				_.Identifier.getText,
+				_.Identifier.getText)
+
+				try {
+					val v = OMPVariable(id, locals, params, directiveClass)
+					val firstToken = translator.getContextTokens(ctx).head
+					rewriter.replace(firstToken, s"$contextName.${v.fullName}")
+
+					captured += v
+				} catch {
+					case e: IllegalArgumentException => ; // local (ok)
+				}
+
 			}
 		}
 		super.visitMethodInvocation(ctx)
