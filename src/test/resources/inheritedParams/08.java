@@ -11,7 +11,7 @@ interface IZoomable {
 	public void zoom();
 }
 
-class InheritedParams07 {
+class InheritedParams08 {
 	void foo() {
 		JButton jb = new JButton("button");
 		jb.addActionListener(new ActionListener(){

@@ -59,6 +59,9 @@ class InheritorSpec extends AbstractSpec {
 		it("06.java should contain only...") {
 			(new InheritorLoadedContext("/inheritedLocals/06.java")).localsAsText should contain only ("int x")
 		}
+		it("07.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedLocals/07.java")).localsAsText should contain only ("int[] arr1", "int[] arr2", "int[] arr3")
+		}
 	}
 
 	describe("Inherited parameters in file") {
@@ -67,6 +70,9 @@ class InheritorSpec extends AbstractSpec {
 		}
 		it("08.java should contain only...") {
 			(new InheritorLoadedContext("/inheritedParams/08.java")).paramsAsText should contain only ("ActionEvent e")
+		}
+		it("09.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedParams/09.java")).paramsAsText should contain only ("String[] param")
 		}
 	}
 

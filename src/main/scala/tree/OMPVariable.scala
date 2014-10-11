@@ -13,7 +13,7 @@ object OMPVariableType extends Enumeration {
 
 import OMPVariableType._
 
-/** Static OMPVariable constructor */
+/** Static OMPVariable locator */
 object OMPVariable {
 	def apply(id: String, locals: Set[OMPVariable], params: Set[OMPVariable], ompClass: OMPClass) = {
 
