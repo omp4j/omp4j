@@ -29,9 +29,10 @@ trait Nonreflectable extends ClassTrait {
 			.map(_.classMemberDeclaration)
 			.filter(f => f.fieldDeclaration != null)
 			.map(_.fieldDeclaration)	// fields
+			.filter(f => f.fieldModifier == null || ! f.fieldModifier.asScala.map(_.getText).contains("final"))
 			.map(f =>
 				f.variableDeclaratorList.variableDeclarator.asScala
-				 .map(g => new OMPVariable(g.variableDeclaratorId.Identifier.getText, f.unannType.getText, OMPVariableType.Field, ! f.fieldModifier.asScala.exists(m => m.getText == "public" || m.getText == "protected")))
+					.map(g => new OMPVariable(g.variableDeclaratorId.Identifier.getText, f.unannType.getText, OMPVariableType.Field, ! f.fieldModifier.asScala.exists(m => m.getText == "public" || m.getText == "protected")))
 			)
 			.flatten
 			.toArray
@@ -101,7 +102,7 @@ trait Nonreflectable extends ClassTrait {
 				val superName = ctx.normalClassDeclaration.superclass.classType.getText
 				inheritedFields = findInheritedFields(superName)
 			} catch {
-				case e: NullPointerException => ;	// no superclass, it's ok to be as other exceptions pass
+				case e: NullPointerException => ;	// no superclass, it's ok to be here like this since other exceptions pass
 			}
 
 		} catch {

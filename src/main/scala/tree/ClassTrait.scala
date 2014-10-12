@@ -51,11 +51,29 @@ trait ClassTrait {
 		val superClazz = clazz.getSuperclass
 		superClazz match {
 			case null =>
-				if (firstRun) clazz.getDeclaredFields.map(f => new OMPVariable(f.getName, f.getType.getName, OMPVariableType.Field, Modifier.isPrivate(f.getModifiers)))
-				else clazz.getDeclaredFields.filter(f => ! Modifier.isPrivate(f.getModifiers)).map(f => new OMPVariable(f.getName, f.getType.getName, OMPVariableType.Field, false))
+				if (firstRun) {
+					clazz.getDeclaredFields
+						.filter(f => ! Modifier.isFinal(f.getModifiers))
+						.map(f => new OMPVariable(f.getName, f.getType.getName, OMPVariableType.Field, Modifier.isPrivate(f.getModifiers)))
+				} else {
+					clazz.getDeclaredFields
+						.filter(f => ! Modifier.isPrivate(f.getModifiers))
+						.filter(f => ! Modifier.isFinal(f.getModifiers))
+						.map(f => new OMPVariable(f.getName, f.getType.getName, OMPVariableType.Field, false))
+				}
 			case _    =>
-				if (firstRun) concat(clazz.getDeclaredFields.map(f => new OMPVariable(f.getName, f.getType.getName, OMPVariableType.Field, Modifier.isPrivate(f.getModifiers))), findAllFieldsRecursively(superClazz, false))
-				else concat(clazz.getDeclaredFields.filter(f => ! Modifier.isPrivate(f.getModifiers)).map(f => new OMPVariable(f.getName, f.getType.getName, OMPVariableType.Field, false)), findAllFieldsRecursively(superClazz, false))
+				if (firstRun) {
+					(clazz.getDeclaredFields
+						.filter(f => ! Modifier.isFinal(f.getModifiers))
+						.map(f => new OMPVariable(f.getName, f.getType.getName, OMPVariableType.Field, Modifier.isPrivate(f.getModifiers)))
+					) ++ findAllFieldsRecursively(superClazz, false)
+				} else {
+					(clazz.getDeclaredFields
+						.filter(f => ! Modifier.isPrivate(f.getModifiers))
+						.filter(f => ! Modifier.isFinal(f.getModifiers))
+						.map(f => new OMPVariable(f.getName, f.getType.getName, OMPVariableType.Field, false))
+					) ++ findAllFieldsRecursively(superClazz, false)
+				}
 		}
 	}
 

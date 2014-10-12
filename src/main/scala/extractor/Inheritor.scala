@@ -71,13 +71,17 @@ object Inheritor {
 					val firsts = list.formalParameters	// TODO: receiver??
 					if (firsts != null) {
 						firsts.formalParameter.asScala.foreach{ p =>
-							result += new OMPVariable(p.variableDeclaratorId.Identifier.getText, p.unannType.getText, OMPVariableType.Param)
+							if (! p.variableModifier.asScala.map(_.getText).contains("final")) {
+								result += new OMPVariable(p.variableDeclaratorId.Identifier.getText, p.unannType.getText, OMPVariableType.Param)
+							}
 						}
 					}
 
 					val last = list.lastFormalParameter.formalParameter
 					if (last != null) {
-						result += new OMPVariable(last.variableDeclaratorId.Identifier.getText, last.unannType.getText, OMPVariableType.Param)
+						if (! last.variableModifier.asScala.map(_.getText).contains("final")) {
+							result += new OMPVariable(last.variableDeclaratorId.Identifier.getText, last.unannType.getText, OMPVariableType.Param)
+						}
 					}
 				}
 			} catch {

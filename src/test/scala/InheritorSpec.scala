@@ -138,4 +138,21 @@ class InheritorSpec extends AbstractSpec {
 		}
 	}
 
+	describe("Final parameters must be ignored - in file") {
+		it("01.java") {
+			(new InheritorLoadedContext("/finalParamIgnorance/01.java")).paramsAsText should contain only ("String param1")
+		}
+		it("02.java") {
+			(new InheritorLoadedContext("/finalParamIgnorance/02.java")).paramsAsText should contain only ("String yes1", "double yes2")
+		}
+		it("03.java") {
+			(new InheritorLoadedContext("/finalParamIgnorance/03.java")).paramsAsText should contain only ("int yes1")
+		}
+	}
+
+	describe("Final locals must be ignored - in file") {
+		it("01.java") {
+			(new InheritorLoadedContext("/finalLocalIgnorance/01.java")).localsAsText should contain only ("int yes1", "int yes2")
+		}
+	}
 }

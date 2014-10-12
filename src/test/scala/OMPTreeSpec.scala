@@ -106,7 +106,7 @@ class OMPTreeSpec extends AbstractSpec {
 
 	}
 
-	describe("Fileds of ompT1 class") {
+	describe("Fields of ompT1 class") {
 		
 		it("#0 should contain only...") {
 			ompT1.fields(0) should contain only ("publicSuperInheritedField", "protectedSuperInheritedField", "privateSuperInheritedField")
@@ -174,7 +174,7 @@ class OMPTreeSpec extends AbstractSpec {
 
 	}
 
-	describe("Find class should thow IllegalArgumentException when applying") {
+	describe("Find class should throw IllegalArgumentException when applying") {
 		
 		it("Middle1.Bottom32 to ompt2#top(0)") {
 			an [IllegalArgumentException] should be thrownBy ompT2.topClass(0).findClass("Middle1.Bottom32".split("\\."))
@@ -225,7 +225,7 @@ class OMPTreeSpec extends AbstractSpec {
 		}
 
 		it("ompt6#0,0 should contain all of...") {
-			ompT6.localClassFields(0,0) should contain allOf ("publicLocal01Field", "protectedLocal01Field", "privateLocal01Field", "separator")
+			ompT6.localClassFields(0,0) should contain allOf ("publicLocal01Field", "protectedLocal01Field", "privateLocal01Field") // "separator" is final
 		}
 
 		it("ompt9#0,0 should contain all of...") {
@@ -290,6 +290,16 @@ class OMPTreeSpec extends AbstractSpec {
 
 		it("ompT9#top(0) should equal 5") {
 			ompT9.topClass(0).localClasses.size should equal (5)
+		}
+
+	}
+
+	describe("Final fields should be ignored in") {
+		it("01.java") {
+			(new OMPTreeLoadedContext("/finalFieldIgnorance/01.java")).fields(0) should contain only ("publicSuperInheritedField", "protectedSuperInheritedField", "privateSuperInheritedField")
+		}
+		it("02.java") {
+			(new OMPTreeLoadedContext("/finalFieldIgnorance/02.java")).localClassFields(0,0) should contain allOf ("publicLocal01Field", "protectedLocal01Field", "privateLocal01Field")
 		}
 
 	}

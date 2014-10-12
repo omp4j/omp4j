@@ -15,17 +15,21 @@ class FirstLevelLocalVariableExtractor extends Java8BaseVisitor[Set[OMPVariable]
 
 	/** Add local variable declaration context */
 	override def visitLocalVariableDeclaration(variableCtx: Java8Parser.LocalVariableDeclarationContext) = {
-		var result = Set[OMPVariable]()
-		val varList = variableCtx.variableDeclaratorList.variableDeclarator
-		val varType = variableCtx.unannType.getText
-		varList.asScala.foreach{v =>
-			result += new OMPVariable(
-				v.variableDeclaratorId.getText,
-				varType,
-				OMPVariableType.Local
-			)
+		if (variableCtx.variableModifier.asScala.map(_.getText).contains("final")) {
+			Set[OMPVariable]()
+		} else {
+			var result = Set[OMPVariable]()
+			val varList = variableCtx.variableDeclaratorList.variableDeclarator.asScala
+			val varType = variableCtx.unannType.getText
+			varList.foreach { v =>
+				result += new OMPVariable(
+					v.variableDeclaratorId.getText,
+					varType,
+					OMPVariableType.Local
+				)
+			}
+			result
 		}
-		result
 	}
 
 	/** Don't get into nested statements */
