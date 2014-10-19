@@ -71,11 +71,30 @@ class Preprocessor(args: Array[String]) {
 		val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath))
 		val tokens = new CommonTokenStream(lexer)
 		val parser = new Java8Parser(tokens)
-		val t: Java8Parser.CompilationUnitContext = parser.compilationUnit
 
+		val cunit = try {
+				// try faster SLL(*)
+				parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
+				parser.removeErrorListeners
+				parser.setErrorHandler(new BailErrorStrategy)
+				parser.compilationUnit
+			} catch {
+				case ex: RuntimeException =>
+				if (ex.isInstanceOf[RuntimeException] && ex.getCause.isInstanceOf[RecognitionException]) {
+					tokens.reset
+					// back to standard listeners/handlers
+					parser.addErrorListener(ConsoleErrorListener.INSTANCE)
+					parser.setErrorHandler(new DefaultErrorStrategy)
+					// try standard LL(*)
+					parser.getInterpreter.setPredictionMode(PredictionMode.LL)
+					parser.compilationUnit
+				} else {
+					throw new ParseException("Both parsing strategies SLL(*) and LL(*) failed", ex)
+				}
+			}
 		// t.inspect(parser);	// display gui tree
 
-		val transVis = new TranslationVisitor(tokens, parser, t)
+		val transVis = new TranslationVisitor(tokens, parser, cunit)
 		saveResult(file, transVis.translate)
 	}
 
