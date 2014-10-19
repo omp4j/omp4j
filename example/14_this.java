@@ -93,4 +93,17 @@ class Recurs {
 	public Recurs get() { return r; }
 	public void set(Recurs n_r) {}
 	public Recurs set2(Recurs n_r) { return n_r; }
+
+	public int x = 5;
+	void use() {
+		// omp parallel
+		{
+			x++;
+			{x++;}
+
+			int x = 4;
+			{if (x < 5) x--;}
+
+		}
+	}
 }

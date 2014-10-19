@@ -153,19 +153,21 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 					_.ambiguousName,
 					_.Identifier.getText,
 					_.Identifier.getText)
-				try {
-					val v = OMPVariable(id, locals, params, directiveClass)
+				if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
+					try {
+						val v = OMPVariable(id, locals, params, directiveClass)
 
-					val tkns = translator.getContextTokens(ctx)
-					if (tkns.head.getText == id) {
-						rewriter.replace(tkns.head, s"$contextName.${v.fullName}")
-					} else {
-						rewriter.replace(ctx.start, ctx.stop, s"$contextName.${v.fullName}")
+						val tkns = translator.getContextTokens(ctx)
+						if (tkns.head.getText == id) {
+							rewriter.replace(tkns.head, s"$contextName.${v.fullName}")
+						} else {
+							rewriter.replace(ctx.start, ctx.stop, s"$contextName.${v.fullName}")
+						}
+
+						captured += v
+					} catch {
+						case e: IllegalArgumentException => ; // local (ok)
 					}
-
-					captured += v
-				} catch {
-					case e: IllegalArgumentException => ;	// local (ok)
 				}
 
 				// TODO: don't use field if local (in omp block) is found!
@@ -196,16 +198,17 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 				_.Identifier.getText,
 				_.Identifier.getText)
 
-				try {
-					val v = OMPVariable(id, locals, params, directiveClass)
-					val firstToken = translator.getContextTokens(ctx).head
-					rewriter.replace(firstToken, s"$contextName.${v.fullName}")
+				if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
+					try {
+						val v = OMPVariable(id, locals, params, directiveClass)
+						val firstToken = translator.getContextTokens(ctx).head
+						rewriter.replace(firstToken, s"$contextName.${v.fullName}")
 
-					captured += v
-				} catch {
-					case e: IllegalArgumentException => ; // local (ok)
+						captured += v
+					} catch {
+						case e: IllegalArgumentException => ; // local (ok)
+					}
 				}
-
 			}
 		}
 		super.visitMethodInvocation(ctx)
@@ -286,11 +289,14 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 					_.packageOrTypeName,
 					_.Identifier.getText,
 					_.Identifier.getText)
-					try {
-						val v = OMPVariable(id, locals, params, directiveClass)
-						rewriter.replace(first.start, first.stop, s"$contextName.${v.fullName}")
-					} catch {
-						case e: IllegalArgumentException => ; // local (ok)
+
+					if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
+						try {
+							val v = OMPVariable(id, locals, params, directiveClass)
+							rewriter.replace(first.start, first.stop, s"$contextName.${v.fullName}")
+						} catch {
+							case e: IllegalArgumentException => ; // local (ok)
+						}
 					}
 
 				} else if (first.methodInvocation_lfno_primary != null) {
@@ -305,16 +311,18 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 							_.packageOrTypeName,
 							_.Identifier.getText,
 							_.Identifier.getText)
-						try {
-							val v = OMPVariable(id, locals, params, directiveClass)
-							val firstToken = translator.getContextTokens(first).head
-							rewriter.replace(firstToken, s"$contextName.${v.fullName}")
-							captured += v
 
-						} catch {
-							case e: IllegalArgumentException => ; // local (ok)
+						if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
+							try {
+								val v = OMPVariable(id, locals, params, directiveClass)
+								val firstToken = translator.getContextTokens(first).head
+								rewriter.replace(firstToken, s"$contextName.${v.fullName}")
+								captured += v
+
+							} catch {
+								case e: IllegalArgumentException => ; // local (ok)
+							}
 						}
-
 					} else {
 						// TODO:
 					}

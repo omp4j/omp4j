@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.tree._
 import org.omp4j.exception._
 import org.omp4j.grammar._
 import org.omp4j.tree._
+import org.omp4j.preprocessor.Directive
 
 /** Extracts various inherited stuff */
 object Inheritor {
@@ -29,9 +30,19 @@ object Inheritor {
 	  * @return Set of variables
 	  */
 	def getPossiblyInheritedLocals(pt: ParseTree): Set[OMPVariable] = {
+		val neck = getParentList(pt)	// list of parent
+		getLocals(pt, neck)
+	}
+
+	// TODO: map
+	def getDirectiveLocals(pt: ParseTree, d: Directive) = {
+		val neck = getParentList(pt).reverse.takeWhile(_ != d.ctx).reverse	// list of parent restricted to directive
+		getLocals(pt, neck)
+	}
+
+	private def getLocals(pt: ParseTree, neck: Seq[ParseTree]) = {
 		// result set - TODO: rewrite more functionally
 		var result = Set[OMPVariable]()
-		val neck = getParentList(pt)	// list of parent
 
 		// iterate through the list of tuples (tree-node, follower-in-neck)
 		for {(t, follower) <- (neck zip neck.tail)} {
@@ -45,6 +56,7 @@ object Inheritor {
 			}
 		}
 		result
+
 	}
 
 	/** Get set of method parameters that can be reffered

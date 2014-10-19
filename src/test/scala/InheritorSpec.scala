@@ -35,6 +35,12 @@ class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 	/** Return set of directly visible non-local classes */
 	def nonlocalClassesAsText = Inheritor.getVisibleNonLocalClasses(directives.head.ctx, ompFile).map(_.name)
+
+	/** */
+	def directiveLocalsAsText(i: Int) = {
+//		println(directives(i).ctx.getText)
+		Inheritor.getDirectiveLocals(directives(i).ctx, directives.head).map(varAsText)
+	}
 }
 
 /** Unit test for Iheritor */
@@ -153,6 +159,15 @@ class InheritorSpec extends AbstractSpec {
 	describe("Final locals must be ignored - in file") {
 		it("01.java") {
 			(new InheritorLoadedContext("/finalLocalIgnorance/01.java")).localsAsText should contain only ("int yes1", "int yes2")
+		}
+	}
+
+	describe("Directive locals should be found correctly in file") {
+		it("08.java | 1") {
+			(new InheritorLoadedContext("/inheritedLocals/08.java")).directiveLocalsAsText(1) should equal (Set())
+		}
+		it("08.java | 2") {
+			(new InheritorLoadedContext("/inheritedLocals/08.java")).directiveLocalsAsText(2) should contain only ("int x")
 		}
 	}
 }
