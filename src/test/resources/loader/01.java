@@ -12,12 +12,8 @@ class Simple {
 
 		ClassLoader cl = ClassLoader.getSystemClassLoader();
 		System.out.println(cl.loadClass("org.pack.Simple").getName());
-
-
-		// 
 	}
 }
-
 
 class Another {
 	class Inner {}

@@ -11,7 +11,7 @@ object OMPVariableType extends Enumeration {
 	val This  = Value("this")
 }
 
-import OMPVariableType._
+import org.omp4j.tree.OMPVariableType._
 
 /** Static OMPVariable locator */
 object OMPVariable {

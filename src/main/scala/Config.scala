@@ -1,13 +1,11 @@
 package org.omp4j
 
-import Array._
-
 import java.io._
 
 import org.omp4j.system._
-import org.omp4j.exception._
 import org.omp4j.utils.TmpDir
-import org.omp4j.preprocessor.Preprocessor
+
+import scala.Array._
 
 /** Configuration for compiler and other classes. Use implicitally. */
 class Config(args: Array[String]) {

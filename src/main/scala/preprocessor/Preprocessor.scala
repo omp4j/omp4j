@@ -1,19 +1,14 @@
 package org.omp4j.preprocessor
 
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
-import org.antlr.v4.runtime._
-
-import scala.collection.JavaConverters._
-
-import java.io.File
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 import java.net.MalformedURLException
 
+import org.antlr.v4.runtime._
+import org.antlr.v4.runtime.atn._
 import org.omp4j.Config
-import org.omp4j.system._
-import org.omp4j.grammar._
 import org.omp4j.exception._
+import org.omp4j.grammar._
+import org.omp4j.system._
 import org.omp4j.utils.FileTreeWalker
 
 /** Class representing the preprocessor itself.

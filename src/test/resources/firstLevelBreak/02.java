@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 class FirstLevelBreakExtractorTest02 {
 	public static void main(String[] args) {
 		int i =0;

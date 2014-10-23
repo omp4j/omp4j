@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 class FirstLevelBreakExtractorTest01 {
 	public static void main(String[] args) {
 		// omp parallel for

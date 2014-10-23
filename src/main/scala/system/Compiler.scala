@@ -3,13 +3,13 @@ package org.omp4j.system
 import java.io._
 import java.util.jar._
 import javax.tools._
-import scala.collection.JavaConverters._
-import scala.util.control.Breaks._
-import scala.util.matching.Regex
 
 import org.omp4j.Config
 import org.omp4j.exception._
 import org.omp4j.utils.FileTreeWalker
+
+import scala.collection.JavaConverters._
+import scala.util.control.Breaks._
 
 /** Handler for JavaCompiler. All settings are passed (implicitelly) by Config */
 class Compiler(files: Array[File], flags: Array[String])(implicit conf: Config) {

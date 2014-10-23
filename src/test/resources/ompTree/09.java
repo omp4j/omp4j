@@ -1,4 +1,4 @@
-import java.awt.*;
+import java.awt.Point;
 
 class Top {
 	class Inner1 {

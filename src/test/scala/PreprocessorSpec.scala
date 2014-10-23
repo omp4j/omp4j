@@ -1,10 +1,7 @@
 package org.omp4j.test
 
-import java.io.File
-import java.io.FilenameFilter
-import org.scalatest._
+import java.io.{File, FilenameFilter}
 
-import org.omp4j.utils.FileTreeWalker
 import org.omp4j.preprocessor.Preprocessor
 
 /** Unit test for Preprocessor */

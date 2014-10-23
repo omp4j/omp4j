@@ -1,5 +1,3 @@
-import java.lang.String;
-
 class InheritedLocals07 {
 
 	void use() {

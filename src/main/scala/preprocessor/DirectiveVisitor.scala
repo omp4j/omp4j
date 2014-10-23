@@ -1,25 +1,32 @@
 package org.omp4j.preprocessor
 
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.dfa.DFA
-
-import java.util.BitSet
-import scala.collection.mutable.ListBuffer
-import scala.util.control.Breaks._
-
+import org.omp4j.directive._
 import org.omp4j.exception._
 import org.omp4j.grammar._
 
+import scala.collection.immutable.ListMap
+import scala.collection.mutable.Stack
+import scala.util.control.Breaks._
+
+/** Static DirectiveVisitor properties */
+object DirectiveVisitor {
+	/** Ordered map of key: ParserRuleContext; value: Directive */
+	type DirectiveMap = ListMap[ParserRuleContext, Directive]
+}
+
 /** Fetch list of Directives (aka OMPParseTree, corresponding statement and parsers) */
-class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends Java8BaseVisitor[List[Directive]] {
+class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends Java8BaseVisitor[DirectiveVisitor.DirectiveMap] {
+
+	/** List of all directive ancestors */
+	private val stack = Stack[Directive]()
 
 	/** Save proper statement */
-	override def visitStatement(stmtCtx: Java8Parser.StatementContext): List[Directive] = {
+	override def visitStatement(stmtCtx: Java8Parser.StatementContext): DirectiveVisitor.DirectiveMap = {
 
 		var result: Directive = null
 
+		// TODO: functionally
 		breakable {
 
 			val semi = stmtCtx.getStart
@@ -50,7 +57,11 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 					ompParser.addErrorListener(new OMPLexerErrorListener )
 					val ompCtx = ompParser.ompUnit
 
-					result = new Directive(cmt, ompCtx, ompParser, stmtCtx, parser)
+					result = stack.headOption match {
+						case Some(parent) => Directive(parent, ompCtx, cmt, stmtCtx)
+						case None => Directive(null, ompCtx, cmt, stmtCtx)
+					}
+
 				} catch {
 					case e: SyntaxErrorException => throw new SyntaxErrorException("Syntax error before line " + stmtCtx.start.getLine + "': " + e.getMessage + "'", e)
 					case e: Exception => throw new ParseException("Unexpected exception", e)
@@ -61,12 +72,16 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends J
 
 		result match {
 			case null => super.visitStatement(stmtCtx)
-			case _    => result :: super.visitStatement(stmtCtx)
+			case _    =>
+				stack.push(result)
+				val rr = ListMap(stmtCtx -> result) ++ super.visitStatement(stmtCtx)
+				stack.pop()
+				rr
 		}
 	}
 
-	override def defaultResult() = List[Directive]()
-	override def aggregateResult(a: List[Directive], b: List[Directive]) = a ::: b
+	override def defaultResult() = ListMap()
+	override def aggregateResult(a: DirectiveVisitor.DirectiveMap, b: DirectiveVisitor.DirectiveMap) = a ++ b
 
 	/** Error listener implementation for simple throwing syntax exceptions */
 	private class OMPLexerErrorListener extends BaseErrorListener {

@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 class InitExprUniqueness01 {
 	public static void main(String[] args) {
 		// omp parallel for

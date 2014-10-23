@@ -1,5 +1,3 @@
-import java.io.File;
-
 class Top {
 
 	void foo() {

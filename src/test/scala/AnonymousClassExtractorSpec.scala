@@ -1,23 +1,13 @@
 package org.omp4j.test
 
-import java.io.File
-import org.scalatest._
-
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
-import org.antlr.v4.runtime._
-
-import org.omp4j.grammar._
-import org.omp4j.exception._
 import org.omp4j.extractor._
-import org.omp4j.preprocessor._
 
 /** LoadedContext with TranslationListener */
 class ACELoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 	/** Return number of found anonymous classes */
 	def firstAnonClassCount = {
-		val breaks = (new AnonymousClassExtractor ).visit(directives.head.ctx)
+		val breaks = (new AnonymousClassExtractor ).visit(directives.head._2.ctx)
 		breaks.size
 	}
 

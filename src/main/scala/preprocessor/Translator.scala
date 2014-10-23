@@ -1,21 +1,18 @@
 package org.omp4j.preprocessor
 
-import scala.io.Source
-import scala.util.control.Breaks._
-import scala.collection.JavaConverters._
-
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
-
+import org.antlr.v4.runtime.tree._
 import org.omp4j.Config
-import org.omp4j.tree._
+import org.omp4j.directive._
 import org.omp4j.exception._
 import org.omp4j.extractor._
 import org.omp4j.grammar._
+import org.omp4j.tree._
+
+import scala.collection.JavaConverters._
 
 /** Translate context given with respect to directives */
-class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives: List[Directive], ompFile: OMPFile)(implicit conf: Config) {
+class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives: DirectiveVisitor.DirectiveMap, ompFile: OMPFile)(implicit conf: Config) {
 
 	/** Get tokens matching to context given
 	  */
@@ -32,11 +29,19 @@ class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives:
 
 	/** Translate directive given using special methods for each directive type */
 	def translate(directive: Directive, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
-		if      (directive.ompCtx.ompParallel    != null) translateParallel(new ContextContainer(directive.ompCtx.ompParallel, directive.ctx, locals, params, captured, capturedThis, currentClass, false))
-		else if (directive.ompCtx.ompParallelFor != null) translateParallelFor(new ContextContainer(directive.ompCtx.ompParallel, directive.ctx, locals, params, captured, capturedThis, currentClass, true))
-		else if (directive.ompCtx.ompSections    != null) translateSections(directive.ompCtx.ompSections, directive.ctx, locals, params, captured, capturedThis, currentClass)
-		else if (directive.ompCtx.ompFor         != null) translateFor(directive.ompCtx.ompFor, directive.ctx, locals, params, captured, capturedThis, currentClass)
-		else throw new IllegalArgumentException("Unsupported directive")
+		directive match {
+			case Parallel(_,_,_) => translateParallel(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
+			case ParallelFor(_,_,_) => translateParallelFor(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
+			case For(_,_,_) => translateFor(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
+			case Sections(_) => translateSections(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
+			case Section(_) => ; // translateSection(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
+			case _ => throw new IllegalArgumentException("Unsupported directive")
+		}
+//		if      (directive.ompCtx.ompParallel    != null) translateParallel(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
+//		else if (directive.ompCtx.ompParallelFor != null) translateParallelFor(new ContextContainer(directive, directive.ctx, locals, params, captured, capturedThis, currentClass, true))
+//		else if (directive.ompCtx.ompSections    != null) translateSections(directive, directive.ctx, locals, params, captured, capturedThis, currentClass)
+//		else if (directive.ompCtx.ompFor         != null) translateFor(directive, directive.ctx, locals, params, captured, capturedThis, currentClass)
+//		else throw new IllegalArgumentException("Unsupported directive")
 		rewriter.replace(directive.cmt, "\n")
 	}
 
@@ -164,12 +169,12 @@ class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives:
 	}
 
 	/** Translate "omp sections" */
-	private def translateSections(ompCtx: OMPParser.OmpSectionsContext, ctx: Java8Parser.StatementContext, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+	private def translateSections(cc: ContextContainer) = {
 		// TODO
 	}
 
 	/** Translate "omp for" */
-	private def translateFor(ompCtx: OMPParser.OmpForContext, ctx: Java8Parser.StatementContext, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String) = {
+	private def translateFor(cc: ContextContainer) = {
 		// TODO
 	}
 }

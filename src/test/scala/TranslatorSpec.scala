@@ -1,23 +1,16 @@
 package org.omp4j.test
 
-import java.io.File
-import org.scalatest._
-
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
-
-import org.omp4j.tree._
-import org.omp4j.grammar._
 import org.omp4j.exception._
 import org.omp4j.preprocessor._
+import org.omp4j.tree._
 
 /** LoadedContext with TranslationListener */
 class TranslatorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 	/** Execute translation of the first directive */
 	def tryTranslation = {
-		(new Translator(new TokenStreamRewriter(tokens), parser, directives, null)(null)).translate(directives.head, Set[OMPVariable](), Set[OMPVariable](), Set[OMPVariable](), false, "")
+		(new Translator(new TokenStreamRewriter(tokens), parser, directives, null)(null)).translate(directives.head._2, Set[OMPVariable](), Set[OMPVariable](), Set[OMPVariable](), false, "")
 	}
 }
 

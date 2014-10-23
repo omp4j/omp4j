@@ -1,23 +1,13 @@
 package org.omp4j.test
 
-import java.io.File
-import org.scalatest._
-
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
-import org.antlr.v4.runtime._
-
-import org.omp4j.grammar._
-import org.omp4j.exception._
 import org.omp4j.extractor._
-import org.omp4j.preprocessor._
 
 /** LoadedContext with TranslationListener */
 class FLBELoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 	/** Return number of found directives or throw SyntaxErrorException */
 	def firstLevetBreakCount = {
-		val breaks = (new FirstLevelBreakExtractor ).visit(directives.head.ctx.forStatement.basicForStatement)
+		val breaks = (new FirstLevelBreakExtractor ).visit(directives.head._2.ctx.forStatement.basicForStatement)
 		breaks.size
 	}
 

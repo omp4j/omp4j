@@ -1,6 +1,7 @@
 package org.omp4j.utils
 
 import java.io._
+
 import scala.util.Random
 
 class TmpDir(path: File, prefix: String) {

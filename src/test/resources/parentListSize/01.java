@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 class ParentListSize01 {
 	public static void main(String[] args) {
 

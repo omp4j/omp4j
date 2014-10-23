@@ -1,18 +1,16 @@
-import java.lang.String;
-
 class InheritedLocals08 {
 
 	public int x = 5;
 
 	void use() {
-		// omp parallel
+		// omp parallel public(a)
 		{
 			x++;
-			// omp parallel
+			// omp parallel public(b)
 			{x++;}
 
 			int x = 4;
-			// omp parallel
+			// omp parallel public(c)
 			{if (x < 5) x--;}
 
 		}

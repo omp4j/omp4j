@@ -1,12 +1,8 @@
 package org.omp4j.test
 
 import java.io.File
-import org.scalatest._
 
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
-
 import org.omp4j.Config
 import org.omp4j.grammar._
 import org.omp4j.preprocessor._
@@ -24,5 +20,5 @@ abstract class AbstractLoadedContext(path: String) {
 	conf.init
 
 	// TODO: delete really all
-	override protected def finalize: Unit = FileTreeWalker.recursiveDelete(conf.workDir)
+	override protected def finalize() = FileTreeWalker.recursiveDelete(conf.workDir)
 }

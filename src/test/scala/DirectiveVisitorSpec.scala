@@ -1,13 +1,5 @@
 package org.omp4j.test
 
-import java.io.File
-import org.scalatest._
-
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
-import org.antlr.v4.runtime._
-
-import org.omp4j.grammar._
 import org.omp4j.exception._
 import org.omp4j.preprocessor._
 
@@ -35,7 +27,7 @@ class DirectiveVisitorSpec extends AbstractSpec {
 		it("03.java should equal 4") {
 			(new DCLoadedContext("/directiveCount/03.java")).directiveCount should equal (4)
 		}
-		it("04.java should equal 4") {
+		it("07.java should equal 4") {
 			(new DCLoadedContext("/directiveCount/07.java")).directiveCount should equal (4)
 		}
 	}

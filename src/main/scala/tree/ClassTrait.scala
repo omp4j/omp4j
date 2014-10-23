@@ -1,18 +1,14 @@
 package org.omp4j.tree
 
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
-import org.antlr.v4.runtime._
-
 import java.lang.reflect.Modifier
 
-import Array._
-import scala.collection.JavaConverters._
-
-import org.omp4j.tree._
+import org.antlr.v4.runtime._
 import org.omp4j.Config
 import org.omp4j.extractor._
 import org.omp4j.grammar._
+
+import scala.Array._
+import scala.collection.JavaConverters._
 
 /** The basic class trait. Reflectable and Nonreflectable traits inherits from this trait. */
 trait ClassTrait {

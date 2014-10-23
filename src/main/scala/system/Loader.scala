@@ -1,12 +1,11 @@
 package org.omp4j.system
 
 import java.io.File
-import java.net.URL;
-import java.net.URLClassLoader;
-
-import scala.collection.JavaConverters._
+import java.net.{URL, URLClassLoader}
 
 import org.omp4j.grammar._
+
+import scala.collection.JavaConverters._
 
 /** JAR loader */
 class Loader(jar: File) {

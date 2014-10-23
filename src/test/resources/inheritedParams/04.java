@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 @FunctionalInterface
 interface IntInterface {
 	public void work(int a);

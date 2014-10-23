@@ -1,21 +1,16 @@
 package org.omp4j.preprocessor
 
-import scala.io.Source
-import scala.util.control.Breaks._
-import scala.collection.JavaConverters._
-
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
-
 import org.omp4j.Config
-import org.omp4j.exception._
-import org.omp4j.extractor._
+import org.omp4j.directive.{Directive, ParallelFor}
 import org.omp4j.tree.OMPVariable
-import org.omp4j.grammar._
 
 /** Context for Translator class */
-case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Parser.StatementContext, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String, secondIter: Boolean)(implicit conf: Config) {
+case class ContextContainer (directive: Directive, locals: Set[OMPVariable], params: Set[OMPVariable], captured: Set[OMPVariable], capturedThis: Boolean, currentClass: String)(implicit conf: Config) {
+
+	/** Shortcut */
+	lazy val ctx = directive.ctx
+
 	/** Number of threads */
 	lazy val threadCount    = "(4)"	// TODO
 
@@ -37,9 +32,13 @@ case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Par
 	/** exception name */
 	lazy val exceptionName  = uniqueName("ompE")
 
+	lazy val secondIter = directive match {
+		case ParallelFor(_,_,_) => true
+		case _ => false
+	}
+
 	/** Initialization of 2. iterator */
 	private lazy val secondIterInit = if (secondIter) s"\tfinal int $iter2 = $iter;\n" else ""
-
 
 	/** Declaration of THAT (captured this) */
 	private lazy val thatDecl = if (capturedThis) s"\tpublic $currentClass THAT;\n" else ""
@@ -48,7 +47,7 @@ case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Par
 	lazy val classDeclar    = 
 		"/* === OMP CONTEXT === */\n" + 
 		s"class $contextClass {\n" + 
-			(for {c <- captured} yield s"\tpublic ${c.varType} ${c.meaning}_${c.name};\n").toList.mkString + 
+			(for {c <- captured} yield s"\tpublic ${c.varType} ${c.fullName};\n").toList.mkString +
 			thatDecl + 
 		"}\n"
 
@@ -59,7 +58,7 @@ case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Par
 	private lazy val thatInit = if (capturedThis) s"$contextVar.THAT = this;\n" else ""
 
 	/** Initialization of captured variables + THAT */
-	lazy val init           = thatInit + (for {c <- captured} yield s"$contextVar.${c.meaning}_${c.name} = ${c.name};\n").toList.mkString 
+	lazy val init           = thatInit + (for {c <- captured} yield s"$contextVar.${c.fullName} = ${c.name};\n").toList.mkString
 
 	/** Top part of thread wrap */
 	lazy val threadsBegin   =
@@ -84,18 +83,24 @@ case class ContextContainer (ompCtx: OMPParser.OmpParallelContext, ctx: Java8Par
 		"} catch (InterruptedException $exceptionName) {\n"+
 		"\tSystem.out.println(\"omp4j: interrupted exception\");\n" + 
 		"\tSystem.exit(1);\n" +
-		"}"
+		"}\n"
+
+	/** Java8 value types*/
+	private lazy val primitiveDataTypes = List("boolean", "byte", "short", "int", "long", "char", "float", "double")
+
+	/** Assing primitive values */
+	lazy val primitiveAssigments = (for {c <- captured if (primitiveDataTypes contains c.varType)} yield s"\t${c.name} = $contextVar.${c.fullName};\n").toList.mkString
 
 	/** Code to be prepended */
 	lazy val toPrepend = classDeclar + instance + init + threadsBegin
 
 	/** Code to be appended*/
-	lazy val toAppend  = threadsEnd
+	lazy val toAppend  = threadsEnd + primitiveAssigments
 
 	/** Modify code according to toPrepend and toAppend */
 	def wrap(rewriter: TokenStreamRewriter) = {
-		rewriter.insertBefore(ctx.start, toPrepend)
-		rewriter.insertAfter(ctx.stop, toAppend)
+		rewriter.insertBefore(directive.ctx.start, toPrepend)
+		rewriter.insertAfter(directive.ctx.stop, toAppend)
 	}
 
 	/** Create unique name for variable, based on text given*/

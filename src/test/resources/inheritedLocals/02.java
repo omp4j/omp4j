@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 class InheritedLocal02 {
 	public static void main(String[] args) {
 

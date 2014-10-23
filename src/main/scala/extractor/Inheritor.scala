@@ -1,16 +1,13 @@
 package org.omp4j.extractor
 
-import scala.util.control.Breaks._
-import scala.collection.JavaConverters._
-
-import org.antlr.v4.runtime._
-import org.antlr.v4.runtime.atn._
 import org.antlr.v4.runtime.tree._
-
+import org.omp4j.directive.Directive
 import org.omp4j.exception._
 import org.omp4j.grammar._
 import org.omp4j.tree._
-import org.omp4j.preprocessor.Directive
+
+import scala.collection.JavaConverters._
+import scala.util.control.Breaks._
 
 /** Extracts various inherited stuff */
 object Inheritor {

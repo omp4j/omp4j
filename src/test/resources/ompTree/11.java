@@ -1,6 +1,6 @@
-import javax.swing.JButton;
-import java.awt.event.ActionListener;
+import javax.swing.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 abstract class MyActionListener extends java.awt.Point implements ActionListener {
 	public abstract void actionPerformed(ActionEvent e);

@@ -1,19 +1,15 @@
 package org.omp4j.preprocessor
 
-import scala.io.Source
-import scala.util.control.Breaks._
-import scala.collection.mutable.Stack
-import scala.collection.JavaConverters._
-
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
 import org.antlr.v4.runtime._
-
-import org.omp4j.tree._
 import org.omp4j.Config
+import org.omp4j.directive._
 import org.omp4j.exception._
 import org.omp4j.extractor.Inheritor
 import org.omp4j.grammar._
+import org.omp4j.tree._
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable.Stack
 
 /** Listener for directive application */
 class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: Java8Parser.CompilationUnitContext)(implicit conf: Config) extends Java8BaseVisitor[Unit] {
@@ -67,7 +63,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		if (currentDirective != null) {
 			super.visitStatement(ctx)	// continue visiting
 		} else {	// no directive
-			directives.find(_.ctx == ctx) match {	// TODO: nested directives
+			directives.get(ctx) match {	// TODO: nested directives
 				case Some(d) => {	// accessing new directive
 					// set things up
 					currentDirective = d

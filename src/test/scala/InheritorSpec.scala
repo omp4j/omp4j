@@ -1,17 +1,8 @@
 package org.omp4j.test
 
-import java.io.File
-import org.scalatest._
-
-import org.antlr.v4.runtime.atn._
-import org.antlr.v4.runtime.tree._
-import org.antlr.v4.runtime._
-
-import org.omp4j.tree._
-import org.omp4j.grammar._
 import org.omp4j.exception._
-import org.omp4j.preprocessor._
 import org.omp4j.extractor.Inheritor
+import org.omp4j.tree._
 
 /** LoadedContext with TranslationListener */
 class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
@@ -22,24 +13,24 @@ class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 	private def varAsText(v: OMPVariable) = s"${v.varType} ${v.name}"
 
 	/** Return set of possible inherited local variables as formated strings */
-	def localsAsText = Inheritor.getPossiblyInheritedLocals(directives.head.ctx).map(varAsText)
+	def localsAsText = Inheritor.getPossiblyInheritedLocals(directives.head._2.ctx).map(varAsText)
 
 	/** Return set of possible inherited params as formated strings */
-	def paramsAsText = Inheritor.getPossiblyInheritedParams(directives.head.ctx).map(varAsText)
+	def paramsAsText = Inheritor.getPossiblyInheritedParams(directives.head._2.ctx).map(varAsText)
 
 	/** Return size of parent-list */
-	def getParentListSize = Inheritor.getParentList(directives.head.ctx).size
+	def getParentListSize = Inheritor.getParentList(directives.head._2.ctx).size
 
 	/** Return set of possible inherited local classes as formated strings */
-	def localClassesAsText = Inheritor.getVisibleLocalClasses(directives.head.ctx, ompFile).map(_.name)
+	def localClassesAsText = Inheritor.getVisibleLocalClasses(directives.head._2.ctx, ompFile).map(_.name)
 
 	/** Return set of directly visible non-local classes */
-	def nonlocalClassesAsText = Inheritor.getVisibleNonLocalClasses(directives.head.ctx, ompFile).map(_.name)
+	def nonlocalClassesAsText = Inheritor.getVisibleNonLocalClasses(directives.head._2.ctx, ompFile).map(_.name)
 
 	/** */
 	def directiveLocalsAsText(i: Int) = {
 //		println(directives(i).ctx.getText)
-		Inheritor.getDirectiveLocals(directives(i).ctx, directives.head).map(varAsText)
+		Inheritor.getDirectiveLocals(directives.toList(i)._2.ctx, directives.head._2).map(varAsText)
 	}
 }
 
@@ -161,6 +152,7 @@ class InheritorSpec extends AbstractSpec {
 			(new InheritorLoadedContext("/finalLocalIgnorance/01.java")).localsAsText should contain only ("int yes1", "int yes2")
 		}
 	}
+
 
 	describe("Directive locals should be found correctly in file") {
 		it("08.java | 1") {
