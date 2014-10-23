@@ -16,8 +16,9 @@ ompUnit : OMP (
 ompParallel    : PARALLEL     ompSchedule? ompModifier* ;
 ompParallelFor : PARALLEL FOR ompSchedule? ompModifier* ;
 ompFor         :          FOR ompSchedule? ompModifier* ;
-ompSections    : SECTIONS                               ;
+ompSections    : SECTIONS     ompSchedule?              ;
 ompSection     : SECTION                                ;
+
 ompModifier    : ( PUBLIC | PRIVATE ) '(' ompVars ')'   ;
 ompVars        : ( ompVar | ( ompVar ',' )+ ompVar )    ;
 ompVar         : VAR                                    ;
