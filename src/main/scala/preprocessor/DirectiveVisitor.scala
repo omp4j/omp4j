@@ -1,6 +1,7 @@
 package org.omp4j.preprocessor
 
 import org.antlr.v4.runtime._
+import org.omp4j.Config
 import org.omp4j.directive._
 import org.omp4j.exception._
 import org.omp4j.grammar._
@@ -16,7 +17,7 @@ object DirectiveVisitor {
 }
 
 /** Fetch list of Directives (aka OMPParseTree, corresponding statement and parsers) */
-class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser) extends Java8BaseVisitor[DirectiveVisitor.DirectiveMap] {
+class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser)(implicit conf: Config) extends Java8BaseVisitor[DirectiveVisitor.DirectiveMap] {
 
 	/** List of all directive ancestors */
 	private val stack = Stack[Directive]()

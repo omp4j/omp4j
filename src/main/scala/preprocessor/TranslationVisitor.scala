@@ -47,8 +47,11 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** Does 'this' keyword appears in parallel statement? */
 	private var capturedThis = false
 
-	/** Name of OMPContext variable; TODO: unique */
-	private val contextName = "ompContext"
+	/** Name of OMPContext variable */
+	private def contextName = currentDirective match {
+		case null => throw new RuntimeException("Not existing directive context name required")
+		case _    => currentDirective.contextVar
+	}
 
 	/** Run translator and return modified source as String */
 	def translate: String = {
@@ -167,9 +170,6 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 						case e: IllegalArgumentException => ; // local (ok)
 					}
 				}
-
-				// TODO: don't use field if local (in omp block) is found!
-
 			} catch {
 				// TODO: exceptions?
 				case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
@@ -216,7 +216,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		if (currentDirective != null) {
 
 			if (ctx.primaryNoNewArray_lfno_primary == null) {
-				// TODO
+				// TODO: primaryNoNewArray_lfno_primary
 			}
 			else {
 				val first = ctx.primaryNoNewArray_lfno_primary
@@ -322,7 +322,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 							}
 						}
 					} else {
-						// TODO:
+						// TODO: mip is not method or typename
 					}
 				}
 			}

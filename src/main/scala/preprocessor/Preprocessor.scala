@@ -2,6 +2,7 @@ package org.omp4j.preprocessor
 
 import java.io.{File, PrintWriter}
 import java.net.MalformedURLException
+import scala.collection.JavaConverters._
 
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.atn._
@@ -29,8 +30,15 @@ class Preprocessor(args: Array[String]) {
 			// init conf (compile, pack and load)
 			conf.init
 
-			// run pre-processing
-			conf.files.foreach(f => parseFile(f))
+			// parse sources        TODO: parallelly
+			val parsed = conf.files.map(f => (f, parseFile(f)))
+			// register tokens
+			parsed.foreach {case (f, (tok, par, cun)) => registerTokens(tok)}
+			// translate and save   TODO: parallelly
+			for {(f, (tok, par, cun)) <- parsed} {
+				val res = translate(tok, par, cun)
+				saveResult(f, res)
+			}
 
 			// compile again -> result
 			val compiler = new Compiler(FileTreeWalker.recursiveListFiles(conf.prepDir), conf.flags)
@@ -56,6 +64,11 @@ class Preprocessor(args: Array[String]) {
 
 	/** Delete workdir */
 	private def cleanup = FileTreeWalker.recursiveDelete(conf.workDir)
+
+	/** Insert all tokens to tokenSet in order to prevent their usage */
+	private def registerTokens(toks: CommonTokenStream) = {
+		toks.getTokens.asScala.toList.foreach(t => conf.tokenSet.testAndSet(t.getText))
+	}
 
 	/** Parse one particular file.
 	  * @param file Valid source file to be parsed
@@ -89,12 +102,17 @@ class Preprocessor(args: Array[String]) {
 			}
 		// t.inspect(parser);	// display gui tree
 
+		(tokens, parser, cunit)
+	}
+	/** Use TranslationVisitor to get translated code (as a String) */
+	private def translate(tokens: CommonTokenStream, parser: Java8Parser, cunit: Java8Parser.CompilationUnitContext): String = {
 		val transVis = new TranslationVisitor(tokens, parser, cunit)
-		saveResult(file, transVis.translate)
+		transVis.translate
 	}
 
+	/** Save results to file*/
 	private def saveResult(origFile: File, text: String) = {
-		println(text)	// TODO: DEBUG
+//		println(text)	// TODO: DEBUG
 
 		val newFile: File = File.createTempFile(s"${origFile.getName}-", ".java", conf.prepDir)
 		val writer = new PrintWriter(newFile, "UTF-8")

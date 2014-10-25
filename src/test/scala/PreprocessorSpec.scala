@@ -7,7 +7,6 @@ import org.omp4j.preprocessor.Preprocessor
 /** Unit test for Preprocessor */
 class PreprocessorSpec extends AbstractSpec {
 
-	// TODO: add exmaple/ to resources
 	describe("Preprocessor should run example") {
 
 		val exDir = new File("example/")

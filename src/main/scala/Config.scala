@@ -2,6 +2,7 @@ package org.omp4j
 
 import java.io._
 
+import org.omp4j.preprocessor.TokenSet
 import org.omp4j.system._
 import org.omp4j.utils.TmpDir
 
@@ -30,6 +31,9 @@ class Config(args: Array[String]) {
 
 	/** flags for first compilation */
 	lazy val (optDir: File, firstCompFlags: Array[String]) = getOptDirAndFirstCompFlags
+
+	/** set of all used strings */
+	val tokenSet = new TokenSet
 
 	def init = {
 		initCompile

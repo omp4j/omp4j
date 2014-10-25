@@ -11,26 +11,26 @@ case class ContextContainer (directive: Directive, locals: Set[OMPVariable], par
 	/** Shortcut */
 	lazy val ctx = directive.ctx
 
-	/** Number of threads */
-	lazy val threadCount    = "(4)"	// TODO
+	/** [Shortcut] Number of threads */
+	lazy val threadCount = "(4)"	// TODO: thread count
 
-	/** Context variable name */
-	lazy val contextVar     = uniqueName("ompContext")
+	/** [Shortcut] Context variable name */
+	lazy val contextVar = directive.contextVar
 
-	/** Context class name */
-	lazy val contextClass   = uniqueName("OMPContext")
+	/** [Shortcut] Context class name */
+	lazy val contextClass = directive.contextClass
 
-	/** Thread array name*/
-	lazy val threadArr      = uniqueName("ompThreads")
+	/** [Shortcut] Thread array name*/
+	lazy val threadArr = directive.threadArr
 
-	/** 1. iterator name */
-	lazy val iter           = uniqueName("ompI")
+	/** [Shortcut] 1. iterator name */
+	lazy val iter = directive.iter
 
-	/** 2. iterator name */
-	lazy val iter2          = uniqueName("ompJ")
+	/** [Shortcut] 2. iterator name */
+	lazy val iter2 = directive.iter2
 
-	/** exception name */
-	lazy val exceptionName  = uniqueName("ompE")
+	/** [Shortcut] exception name */
+	lazy val exceptionName = directive.exceptionName
 
 	lazy val secondIter = directive match {
 		case _: ParallelFor => true
@@ -45,7 +45,7 @@ case class ContextContainer (directive: Directive, locals: Set[OMPVariable], par
 	private lazy val thatDecl = if (capturedThis) s"\tpublic $currentClass THAT;\n" else ""
 
 	/** Class declaration */
-	lazy val classDeclar    = 
+	lazy val classDeclar =
 		"/* === OMP CONTEXT === */\n" + 
 		s"class $contextClass {\n" + 
 			(for {c <- captured} yield s"\tpublic ${c.varType} ${c.fullName};\n").toList.mkString +
@@ -53,13 +53,13 @@ case class ContextContainer (directive: Directive, locals: Set[OMPVariable], par
 		"}\n"
 
 	/** Instance of context class */
-	lazy val instance       = s"final $contextClass $contextVar = new ${contextClass}();\n"
+	lazy val instance = s"final $contextClass $contextVar = new ${contextClass}();\n"
 
 	/** THAT initialization*/
 	private lazy val thatInit = if (capturedThis) s"$contextVar.THAT = this;\n" else ""
 
 	/** Initialization of captured variables + THAT */
-	lazy val init           = thatInit + (for {c <- captured} yield s"$contextVar.${c.fullName} = ${c.name};\n").toList.mkString
+	lazy val init = thatInit + (for {c <- captured} yield s"$contextVar.${c.fullName} = ${c.name};\n").toList.mkString
 
 	/** Top part of thread wrap */
 	lazy val threadsBegin   =
@@ -103,12 +103,4 @@ case class ContextContainer (directive: Directive, locals: Set[OMPVariable], par
 		rewriter.insertBefore(directive.ctx.start, toPrepend)
 		rewriter.insertAfter(directive.ctx.stop, toAppend)
 	}
-
-	/** Create unique name for variable, based on text given*/
-	def uniqueName(baseName: String): String = {
-	// TODO: check tokens
-	// TODO: check reflection
-		baseName
-	}
-
 }

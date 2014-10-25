@@ -1,6 +1,5 @@
 class Sections {
 	public static void main(String[] args) {
-		/* TODO: replace overlap */
 		// omp sections
 		{
 			// omp section

@@ -144,10 +144,10 @@ class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives:
 		} else throw new ParseException("Iter. variable must be modified")
 
 		// get names of for-bounds vars
-		val initVal     = cc.uniqueName("ompForInit")
-		val condVal     = cc.uniqueName("ompForCond")
-		val incVal      = cc.uniqueName("ompForInc")
-		val cycleLength = cc.uniqueName("ompCycleLength")
+		val initVal     = cc.directive.uniqueName("ompForInit")
+		val condVal     = cc.directive.uniqueName("ompForCond")
+		val incVal      = cc.directive.uniqueName("ompForInc")
+		val cycleLength = cc.directive.uniqueName("ompCycleLength")
 
 		val forVars = "/* OMP for boundaries */\n" +
 			s"final int $initVal = ${getRewrittenText(initExpr)};\n" +
@@ -167,9 +167,8 @@ class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives:
 	private def translateSections(secs: Sections, cc: ContextContainer) = {
 
 		def translateSection(id: Int, s: Section): Unit = {
-			// TODO: iterator name
-			if (id == 0) rewriter.insertBefore(s.ctx.start, "if (ompJ == 0) {\n")
-			else rewriter.insertBefore(s.ctx.start, s"else if (ompJ == $id) {\n")
+			rewriter.insertBefore(s.ctx.start, s"if (${cc.iter2} == $id) {\n")
+			if (id > 0) rewriter.insertBefore(s.ctx.start, "else ")
 			rewriter.insertAfter(s.ctx.stop, "}\n")
 
 			rewriter.delete(s.cmt)
@@ -185,6 +184,6 @@ class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives:
 
 	/** Translate "omp for" */
 	private def translateFor(cc: ContextContainer) = {
-		// TODO
+		// TODO: omp for
 	}
 }

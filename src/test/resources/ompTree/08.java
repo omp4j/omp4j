@@ -20,7 +20,7 @@ class Simple {
 			}
 		}
 	}
-	// TODO: complex example - params and locals must be declared final
+	// complex example - params and locals must be declared final
 	class Nested1 {
 		int f1 = 0;
 		void m1(final int n1) {
