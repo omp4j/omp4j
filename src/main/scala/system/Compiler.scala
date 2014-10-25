@@ -48,9 +48,10 @@ class Compiler(files: Array[File], flags: Array[String])(implicit conf: Config) 
 		
 		// pack each file
 		classFiles.foreach{ f =>
-			if (f == null || !f.exists || !f.isFile) throw new IllegalArgumentException("File corruption during JAR creation - '" + f.getAbsolutePath + "'")
+			if (f == null) throw new IllegalArgumentException("File corruption during JAR creation - null file passed")
+			else if (!f.exists || !f.isFile) throw new IllegalArgumentException("File corruption during JAR creation - '" + f.getAbsolutePath + "'")
 
-			var relativePath = s"${conf.workDir.getAbsolutePath}/".r.replaceFirstIn(f.getAbsolutePath, "")	// always works
+			val relativePath = s"${conf.workDir.getAbsolutePath}/".r.replaceFirstIn(f.getAbsolutePath, "")	// always works
 			val jarAdd = new JarEntry(relativePath)
 			jarAdd.setTime(f.lastModified)
 			out.putNextEntry(jarAdd)
