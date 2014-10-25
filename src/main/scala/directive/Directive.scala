@@ -65,10 +65,12 @@ object Directive {
 
 		/** Extracts variables from public/private statement */
 		def getVars(vars: OMPParser.OmpVarsContext): List[String] = {
-			if (vars == null) return List()
-			val v = vars.ompVar
-			if (v == null) return List()
-			v.asScala.map(_.VAR.getText).toList
+			if (vars == null) List()
+			else {
+				val v = vars.ompVar
+				if (v == null) List()
+				else v.asScala.map(_.VAR.getText).toList
+			}
 
 		}
 

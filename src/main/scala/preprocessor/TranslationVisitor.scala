@@ -59,10 +59,12 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 	/** Translate statements having directive */
 	override def visitStatement(ctx: Java8Parser.StatementContext) = {
 
-		// already getting directive
+		// already processing directive; continue rewriting
 		if (currentDirective != null) {
-			super.visitStatement(ctx)	// continue visiting
-		} else {	// no directive
+			super.visitStatement(ctx)
+		}
+		// no current directive; check existence
+		else {
 			directives.get(ctx) match {	// TODO: nested directives
 				case Some(d) => {	// accessing new directive
 					// set things up

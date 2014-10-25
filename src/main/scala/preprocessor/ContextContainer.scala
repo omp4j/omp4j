@@ -2,7 +2,7 @@ package org.omp4j.preprocessor
 
 import org.antlr.v4.runtime._
 import org.omp4j.Config
-import org.omp4j.directive.{Directive, ParallelFor}
+import org.omp4j.directive.{Sections, Directive, ParallelFor}
 import org.omp4j.tree.OMPVariable
 
 /** Context for Translator class */
@@ -33,7 +33,8 @@ case class ContextContainer (directive: Directive, locals: Set[OMPVariable], par
 	lazy val exceptionName  = uniqueName("ompE")
 
 	lazy val secondIter = directive match {
-		case ParallelFor(_,_,_) => true
+		case _: ParallelFor => true
+		case _: Sections => true
 		case _ => false
 	}
 

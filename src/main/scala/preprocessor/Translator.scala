@@ -33,15 +33,10 @@ class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives:
 			case Parallel(_,_,_) => translateParallel(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
 			case ParallelFor(_,_,_) => translateParallelFor(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
 			case For(_,_,_) => translateFor(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
-			case Sections(_) => translateSections(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
-			case Section(_) => ; // translateSection(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
+			case secs: Sections => translateSections(secs, new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
+			case Section(_) => ;
 			case _ => throw new IllegalArgumentException("Unsupported directive")
 		}
-//		if      (directive.ompCtx.ompParallel    != null) translateParallel(new ContextContainer(directive, locals, params, captured, capturedThis, currentClass))
-//		else if (directive.ompCtx.ompParallelFor != null) translateParallelFor(new ContextContainer(directive, directive.ctx, locals, params, captured, capturedThis, currentClass, true))
-//		else if (directive.ompCtx.ompSections    != null) translateSections(directive, directive.ctx, locals, params, captured, capturedThis, currentClass)
-//		else if (directive.ompCtx.ompFor         != null) translateFor(directive, directive.ctx, locals, params, captured, capturedThis, currentClass)
-//		else throw new IllegalArgumentException("Unsupported directive")
 		rewriter.replace(directive.cmt, "\n")
 	}
 
@@ -169,9 +164,24 @@ class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives:
 	}
 
 	/** Translate "omp sections" */
-	private def translateSections(cc: ContextContainer) = {
-		// TODO
+	private def translateSections(secs: Sections, cc: ContextContainer) = {
+
+		def translateSection(id: Int, s: Section): Unit = {
+			// TODO: iterator name
+			if (id == 0) rewriter.insertBefore(s.ctx.start, "if (ompJ == 0) {\n")
+			else rewriter.insertBefore(s.ctx.start, s"else if (ompJ == $id) {\n")
+			rewriter.insertAfter(s.ctx.stop, "}\n")
+
+			rewriter.delete(s.cmt)
+		}
+
+		val sections = secs.sections
+		for {i <- 0 until sections.size} {
+			translateSection(i, sections(i))
+		}
+		cc.wrap(rewriter)
 	}
+
 
 	/** Translate "omp for" */
 	private def translateFor(cc: ContextContainer) = {
