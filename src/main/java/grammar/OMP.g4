@@ -10,14 +10,16 @@ ompUnit : OMP (
                ompParallelFor |
                ompFor         |
                ompSections    |
-               ompSection
+               ompSection     |
+               ompBarrier
           ) ;
 
 ompParallel    : PARALLEL     ompSchedule? ompModifier* ;
 ompParallelFor : PARALLEL FOR ompSchedule? ompModifier* ;
-ompFor         :          FOR ompSchedule? ompModifier* ;
+ompFor         :          FOR              ompModifier* ;
 ompSections    : SECTIONS     ompSchedule?              ;
 ompSection     : SECTION                                ;
+ompBarrier     : BARRIER                                ;
 
 ompModifier    : ( PUBLIC | PRIVATE ) '(' ompVars ')'   ;
 ompVars        : ( ompVar | ( ompVar ',' )+ ompVar )    ;

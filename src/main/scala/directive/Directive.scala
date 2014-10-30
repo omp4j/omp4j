@@ -32,6 +32,12 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	/** exception name */
 	lazy val exceptionName  = uniqueName("ompE")
 
+	/** Closest omp-parallel directive or null if none exists */
+	val parentOmpParallel: Directive = parent match {
+		case null => null
+		case _    => parent.parentOmpParallel
+	}
+
 	// TODO: use some trait together with omptree
 	private def cunit(t: ParserRuleContext = ctx): Java8Parser.CompilationUnitContext = {
 		t.isInstanceOf[Java8Parser.CompilationUnitContext] match {
@@ -99,6 +105,7 @@ object Directive {
 		val nonParFor = ompCtx.ompFor
 		val sections = ompCtx.ompSections
 		val section = ompCtx.ompSection
+		val barrier = ompCtx.ompBarrier
 
 		if (parallel != null) {
 			val (pub, pri) = separate(parallel.ompModifier.asScala.toList)
@@ -108,11 +115,13 @@ object Directive {
 			new ParallelFor(parent, pub, pri)(DirectiveSchedule(parallelFor.ompSchedule), ctx, cmt, getLine(ctx), conf)
 		} else if (nonParFor != null) {
 			val (pub, pri) = separate(nonParFor.ompModifier.asScala.toList)
-			new For(parent, pub, pri)(DirectiveSchedule(nonParFor.ompSchedule), ctx, cmt, getLine(ctx), conf)
+			new For(parent, pub, pri)(ctx, cmt, getLine(ctx), conf)
 		} else if (sections != null) {
 			new Sections(parent)(DirectiveSchedule(sections.ompSchedule), ctx, cmt, getLine(ctx), conf)
 		} else if (section != null) {
 			new Section(parent)(ctx, cmt, getLine(ctx), conf)
+		} else if (barrier != null) {
+			new Barrier(parent)(ctx, cmt, getLine(ctx), conf)
 		} else {
 			throw new SyntaxErrorException("Invalid directive")
 		}
