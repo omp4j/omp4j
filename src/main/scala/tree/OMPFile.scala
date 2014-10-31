@@ -1,6 +1,7 @@
 package org.omp4j.tree
 
 import org.antlr.v4.runtime._
+import org.antlr.v4.runtime.tree.ParseTree
 import org.omp4j.Config
 import org.omp4j.extractor._
 import org.omp4j.grammar._
@@ -9,14 +10,14 @@ import scala.collection.mutable.Map
 
 object OMPFile {
 	/** Type alias for classMap*/
-	type ClassMap = Map[ParserRuleContext, OMPClass]
+	type ClassMap = Map[ParseTree, OMPClass]
 }
 
 /** File representation containing list of classes */
 class OMPFile(ctx: Java8Parser.CompilationUnitContext, parser: Java8Parser)(implicit conf: Config) extends Findable {
 
 	/** (ctx -> OMPClass) mapping*/
-	implicit val classMap = Map[ParserRuleContext, OMPClass]()
+	implicit val classMap = Map[ParseTree, OMPClass]()
 
 	/** Classes in file */
 	val classes = (new ClassExtractor ).visit(ctx).map(new TopClass(_, null, parser)(conf, this))

@@ -10,7 +10,7 @@ class TranslatorLoadedContext(path: String) extends AbstractLoadedContext(path) 
 
 	/** Execute translation of the first directive */
 	def tryTranslation = {
-		(new Translator(new TokenStreamRewriter(tokens), parser, directives, null)(null)).translate(directives.head._2, Set[OMPVariable](), Set[OMPVariable](), Set[OMPVariable](), false, "")
+		(new Translator(new TokenStreamRewriter(tokens))(null)).translate(directives.head._2, Set[OMPVariable](), Set[OMPVariable](), Set[OMPVariable](), false, "")
 	}
 }
 

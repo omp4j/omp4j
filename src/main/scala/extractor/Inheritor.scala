@@ -21,6 +21,20 @@ object Inheritor {
 		else getParentList(t.getParent) :+ t
 	}
 
+	/** Filters all possible OMPClass keys and return Seq of OMPClass (without duplicates) */
+	def getParentClasses(t: ParseTree, ompFile: OMPFile): Seq[OMPClass] = {
+		val neck: Seq[ParseTree] = getParentList(t)
+		val classMap = ompFile.classMap
+
+		val duplicates: Seq[OMPClass] = neck.foldLeft(Seq[OMPClass]())((res, el) =>
+			classMap.get(el) match {
+				case Some(x) => res :+ x
+				case None => res
+			}
+		)
+		duplicates.distinct
+	}
+
 	/** Get set of variables (their declarations) whose can be reffered
 	  * but are not declared in the tree given
 	  * @param pt Tree whose variable are about to be fetched

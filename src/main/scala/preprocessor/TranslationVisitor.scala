@@ -11,35 +11,20 @@ import org.omp4j.tree._
 import scala.collection.JavaConverters._
 import scala.collection.mutable.Stack
 
-/** Listener for directive application */
-class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: Java8Parser.CompilationUnitContext)(implicit conf: Config) extends Java8BaseVisitor[Unit] {
-
-	/** Reflected file structure */
-	private lazy val ompFile = new OMPFile(tree, parser)
-
-	/** List of directives */
-	private lazy val directives = (new DirectiveVisitor(tokens, parser)).visit(tree)
-
-	/** Rewriter for directive expansions*/
-	private lazy val rewriter = new TokenStreamRewriter(tokens)
-
-	/** Directive translator */
-	private lazy val translator = new Translator(rewriter, parser, directives, ompFile)
-
-	/** Directive currently being processed */
-	private var currentDirective: Directive = null
+/** Walks through the directive ctx and save translations into rewriter */
+class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, ompFile: OMPFile, currentDirective: Directive)(implicit conf: Config) extends Java8BaseVisitor[Unit] {
 
 	/** Stack of nested classes (Class name, isLocal) */
-	private val clStack = Stack[OMPClass]()
+	private val clStack = Stack[OMPClass]() ++ Inheritor.getParentClasses(currentDirective.ctx, ompFile).reverse
 
 	/** Set of local variables */
-	private var locals = Set[OMPVariable]()
+	private val locals = Inheritor.getPossiblyInheritedLocals(currentDirective.ctx)
 
 	/** Last visited class when directive was discovered */
-	private var directiveClass: OMPClass = null
+	private val directiveClass: OMPClass = clStack.head     // TODO fill
 
 	/** Set of parameters */
-	private var params = Set[OMPVariable]()
+	private val params = Inheritor.getPossiblyInheritedParams(currentDirective.ctx)
 
 	/** Set of variables to be added to context*/
 	private var captured = Set[OMPVariable]()
@@ -53,46 +38,10 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		case _    => currentDirective.contextVar
 	}
 
-	/** Run translator and return modified source as String */
-	def translate: String = {
-		visit(tree)
-		rewriter.getText
-	}
-	
-	/** Translate statements having directive */
-	override def visitStatement(ctx: Java8Parser.StatementContext) = {
-
-		// already processing directive; continue rewriting
-		if (currentDirective != null) {
-			super.visitStatement(ctx)
-		}
-		// no current directive; check existence
-		else {
-			directives.get(ctx) match {	// TODO: nested directives
-				case Some(d) => {	// accessing new directive
-					// set things up
-					currentDirective = d
-					directiveClass = clStack.head
-					locals = Inheritor.getPossiblyInheritedLocals(ctx)
-					params = Inheritor.getPossiblyInheritedParams(ctx)
-
-					// process the statement
-					super.visitStatement(ctx)
-
-					// translate (into rewriter)
-					translator.translate(currentDirective, locals, params, captured, capturedThis, clStack.head.name)
-
-					// reset
-					currentDirective = null
-					directiveClass = null
-					capturedThis = false
-					captured = Set()
-					locals = Set()
-					params = Set()
-				}
-				case None => super.visitStatement(ctx)	// continue visiting
-			}
-		}
+	/** Run translator
+	  * TODO: remove*/
+	def translate() = {
+		translator.translate(currentDirective, locals, params, captured, capturedThis, clStack.head.name)
 	}
 
 	/** Handle class stack */
@@ -106,10 +55,12 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		}
 	}
 
+	// TODO: doc
 	override def visitClassDeclaration(ctx: Java8Parser.ClassDeclarationContext) = {
 		handleStack(ctx, super.visitClassDeclaration)
 	}
 
+	// TODO: doc
 	override def visitClassBody(ctx: Java8Parser.ClassBodyContext) = {
 		if (
 			ctx.parent.isInstanceOf[Java8Parser.ClassInstanceCreationExpressionContext] ||
@@ -178,6 +129,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		super.visitExpressionName(ctx)
 	}
 
+	// TODO: doc
 	override def visitMethodInvocation(ctx: Java8Parser.MethodInvocationContext) = {
 		if (currentDirective != null) {
 
@@ -212,6 +164,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		super.visitMethodInvocation(ctx)
 	}
 
+	// TODO: doc
 	override def visitPrimary(ctx: Java8Parser.PrimaryContext) = {
 		if (currentDirective != null) {
 
@@ -230,6 +183,7 @@ class TranslationVisitor(tokens: CommonTokenStream, parser: Java8Parser, tree: J
 		super.visitPrimary(ctx)
 	}
 
+	// TODO: doc
 	private def handlePrimary(ctx: Java8Parser.PrimaryContext, first: Java8Parser.PrimaryNoNewArray_lfno_primaryContext, seconds: List[Java8Parser.PrimaryNoNewArray_lf_primaryContext]) = {
 
 		// is primary expression of method invocation

@@ -1,9 +1,11 @@
 package org.omp4j.directive
 
 import org.omp4j.Config
+import org.omp4j.preprocessor.{Translator, TranslationVisitor}
+import org.omp4j.tree.OMPFile
 
-import scala.collection.mutable.{HashSet, SynchronizedSet}
-import org.antlr.v4.runtime.{ParserRuleContext, Token}
+import scala.collection.mutable.{ListBuffer, HashSet, SynchronizedSet}
+import org.antlr.v4.runtime.{TokenStreamRewriter, ParserRuleContext, Token}
 import org.omp4j.directive.DirectiveSchedule._
 import org.omp4j.exception._
 import org.omp4j.grammar._
@@ -12,7 +14,16 @@ import scala.collection.JavaConverters._
 import scala.util.Random
 /** Abstract omp directive class; implemented by several case classes */
 abstract class Directive(val parent: Directive, val publicVars: List[String], val privateVars: List[String])(implicit val schedule: DirectiveSchedule, val ctx: Java8Parser.StatementContext, val cmt: Token, val line: Int, conf: Config) {
+
+	// constructor
 	validate()
+	parent match {
+		case null => ;
+		case _    => parent.registerChild(this)
+	}
+
+	/** Directly nested directives builder */
+	private var childrenBuff = ListBuffer[Directive]()
 
 	/** Context variable name */
 	lazy val contextVar     = uniqueName("ompContext")
@@ -38,6 +49,15 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 		case _    => parent.parentOmpParallel
 	}
 
+	/** Register child */
+	def registerChild(child: Directive) = childrenBuff += child
+
+	/** Directly nested directives*/
+	def children = childrenBuff.toList
+
+	/** Transitive closure*/
+	def allChildren: List[Directive] = children ++ children.flatMap(_.allChildren)
+
 	// TODO: use some trait together with omptree
 	private def cunit(t: ParserRuleContext = ctx): Java8Parser.CompilationUnitContext = {
 		t.isInstanceOf[Java8Parser.CompilationUnitContext] match {
@@ -57,14 +77,10 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	/** Generate unique name (different from every token used and every loadable class) */
 	def uniqueName(baseName: String): String = {
 
-//		if (conf == null) throw new Error("null conf")
-
 		val rand = new Random
 
 		/** Static name generator*/
 		def getName(prefix: String): String = {
-//			"foo"
-
 			if (Directive.JAVA_KEYWORDS contains prefix) {
 				val suff = rand.alphanumeric.take(3).mkString("")
 				getName(s"${prefix}_${suff}")
@@ -80,7 +96,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 		/** Dynamic name generator */
 		val name = getName(baseName)
-//		name
+		// name
 		try {
 			conf.loader.load(name, cunit())
 			val suff = rand.alphanumeric.take(3).mkString("")
@@ -88,6 +104,14 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 		} catch {
 			case _: ClassNotFoundException => name
 		}
+	}
+
+	// TODO: thread-safe rewriter
+	def translate(rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
+		val translator = new Translator(rewriter)
+		val tv = new TranslationVisitor(rewriter, translator, ompFile, this)
+		tv.visit(ctx)
+		tv.translate()
 	}
 }
 
@@ -147,7 +171,6 @@ object Directive {
 				if (v == null) List()
 				else v.asScala.map(_.VAR.getText).toList
 			}
-
 		}
 
 		if (list == null || list.size == 0) (List(), List())

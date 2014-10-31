@@ -2,6 +2,9 @@ package org.omp4j.preprocessor
 
 import java.io.{File, PrintWriter}
 import java.net.MalformedURLException
+import org.omp4j.directive.Directive
+import org.omp4j.tree.OMPFile
+
 import scala.collection.JavaConverters._
 
 import org.antlr.v4.runtime._
@@ -106,8 +109,21 @@ class Preprocessor(args: Array[String]) {
 	}
 	/** Use TranslationVisitor to get translated code (as a String) */
 	private def translate(tokens: CommonTokenStream, parser: Java8Parser, cunit: Java8Parser.CompilationUnitContext): String = {
-		val transVis = new TranslationVisitor(tokens, parser, cunit)
-		transVis.translate
+
+		// List of directives
+		val directives = (new DirectiveVisitor(tokens, parser)).visit(cunit)
+		val rewriter = new TokenStreamRewriter(tokens)
+		val ompFile = new OMPFile(cunit, parser)
+
+		// top level directives
+		directives.filter(_._2.parent == null).foreach { case (ctx, d) =>
+			d.translate(rewriter, ompFile)
+		}
+
+		rewriter.getText
+
+//		val transVis = new TranslationVisitor(tokens, parser, cunit)
+//		transVis.translate
 	}
 
 	/** Save results to file*/

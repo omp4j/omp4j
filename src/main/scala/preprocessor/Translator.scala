@@ -11,8 +11,9 @@ import org.omp4j.tree._
 
 import scala.collection.JavaConverters._
 
-/** Translate context given with respect to directives */
-class Translator(rewriter: TokenStreamRewriter, parser: Java8Parser, directives: DirectiveVisitor.DirectiveMap, ompFile: OMPFile)(implicit conf: Config) {
+/** Translate context given with respect to directives
+  * TODO: trnslator doc*/
+class Translator(rewriter: TokenStreamRewriter)(implicit conf: Config) {
 
 	/** Get tokens matching to context given
 	  */
