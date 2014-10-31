@@ -1,6 +1,7 @@
 package org.omp4j.preprocessor
 
 import org.antlr.v4.runtime._
+import org.antlr.v4.runtime.tree.SyntaxTree
 import org.omp4j.Config
 import org.omp4j.directive._
 import org.omp4j.exception._
@@ -12,16 +13,16 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.Stack
 
 /** Walks through the directive ctx and save translations into rewriter */
-class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, ompFile: OMPFile, currentDirective: Directive)(implicit conf: Config) extends Java8BaseVisitor[Unit] {
+class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, currentDirective: Directive)(implicit conf: Config) extends Java8BaseVisitor[Unit] {
 
 	/** Stack of nested classes (Class name, isLocal) */
 	private val clStack = Stack[OMPClass]() ++ Inheritor.getParentClasses(currentDirective.ctx, ompFile).reverse
 
+	/** Last visited class when directive was discovered */
+	private val directiveClass: OMPClass = clStack.head
+
 	/** Set of local variables */
 	private val locals = Inheritor.getPossiblyInheritedLocals(currentDirective.ctx)
-
-	/** Last visited class when directive was discovered */
-	private val directiveClass: OMPClass = clStack.head     // TODO fill
 
 	/** Set of parameters */
 	private val params = Inheritor.getPossiblyInheritedParams(currentDirective.ctx)
@@ -38,11 +39,25 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 		case _    => currentDirective.contextVar
 	}
 
-	/** Run translator
-	  * TODO: remove*/
-	def translate() = {
-		translator.translate(currentDirective, locals, params, captured, capturedThis, clStack.head.name)
+	/** captured getters (since mutability, it can't be accessed publicly) */
+	def getCaptured = captured
+
+	/** capturedThis getters (since mutability, it can't be accessed publicly) */
+	def getCapturedThis = capturedThis
+
+	/** directiveClass getters (since mutability, it can't be accessed publicly) */
+	def getDirectiveClass = directiveClass
+
+	/** Get tokens matching to context given
+	  */
+	private def getContextTokens(ctx: SyntaxTree): List[Token] = {
+		val interval = ctx.getSourceInterval
+		val tokenStream = rewriter.getTokenStream
+
+		val toks = for {i <- interval.a to interval.b} yield tokenStream.get(i)
+		toks.toList
 	}
+
 
 	/** Handle class stack */
 	private def handleStack[T <: ParserRuleContext](ctx: T, f: (T) => Unit) = {
@@ -55,12 +70,12 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 		}
 	}
 
-	// TODO: doc
+	/** Class declaration requires stack handling */
 	override def visitClassDeclaration(ctx: Java8Parser.ClassDeclarationContext) = {
 		handleStack(ctx, super.visitClassDeclaration)
 	}
 
-	// TODO: doc
+	/** Class body may require stack handling */
 	override def visitClassBody(ctx: Java8Parser.ClassBodyContext) = {
 		if (
 			ctx.parent.isInstanceOf[Java8Parser.ClassInstanceCreationExpressionContext] ||
@@ -71,10 +86,9 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 		} else {
 			super.visitClassBody(ctx)
 		}
-
 	}
 
-	// TODO: doc
+	/** Based on functions given, this method fetches the left-most "token" */
 	private def getLeftName[T, S](
 		top: T,
 		topF: (T) => S,
@@ -109,7 +123,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 					try {
 						val v = OMPVariable(id, locals, params, directiveClass)
 
-						val tkns = translator.getContextTokens(ctx)
+						val tkns = getContextTokens(ctx)
 						if (tkns.head.getText == id) {
 							rewriter.replace(tkns.head, s"$contextName.${v.fullName}")
 						} else {
@@ -129,14 +143,14 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 		super.visitExpressionName(ctx)
 	}
 
-	// TODO: doc
+	/** Translate method invocation (caller and params) */
 	override def visitMethodInvocation(ctx: Java8Parser.MethodInvocationContext) = {
 		if (currentDirective != null) {
 
 			if (ctx.primary != null && ctx.primary.getText == "this") {
 				if (clStack.head == directiveClass) {
 					// handle only the '.' as 'this' will be handled automatically later on
-					val dot = translator.getContextTokens(ctx)(1)
+					val dot = getContextTokens(ctx)(1)
 					rewriter.delete(dot)
 				}
 			} else if (ctx.typeName != null) {
@@ -151,7 +165,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 				if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
 					try {
 						val v = OMPVariable(id, locals, params, directiveClass)
-						val firstToken = translator.getContextTokens(ctx).head
+						val firstToken = getContextTokens(ctx).head
 						rewriter.replace(firstToken, s"$contextName.${v.fullName}")
 
 						captured += v
@@ -164,7 +178,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 		super.visitMethodInvocation(ctx)
 	}
 
-	// TODO: doc
+	/** Handle primary if no-array expression occures */
 	override def visitPrimary(ctx: Java8Parser.PrimaryContext) = {
 		if (currentDirective != null) {
 
@@ -183,7 +197,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 		super.visitPrimary(ctx)
 	}
 
-	// TODO: doc
+	/** Translate this primary */
 	private def handlePrimary(ctx: Java8Parser.PrimaryContext, first: Java8Parser.PrimaryNoNewArray_lfno_primaryContext, seconds: List[Java8Parser.PrimaryNoNewArray_lf_primaryContext]) = {
 
 		// is primary expression of method invocation
@@ -223,7 +237,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 							// getting rid of 'this.'
 							rewriter.delete(first.start, first.stop)
 
-							val dot = translator.getContextTokens(ctx)(1)
+							val dot = getContextTokens(ctx)(1)
 							rewriter.delete(dot)
 						}
 
@@ -267,7 +281,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, translator: Translator, 
 						if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
 							try {
 								val v = OMPVariable(id, locals, params, directiveClass)
-								val firstToken = translator.getContextTokens(first).head
+								val firstToken = getContextTokens(first).head
 								rewriter.replace(firstToken, s"$contextName.${v.fullName}")
 								captured += v
 

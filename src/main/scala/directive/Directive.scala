@@ -1,8 +1,10 @@
 package org.omp4j.directive
 
+import org.antlr.v4.runtime.tree.SyntaxTree
 import org.omp4j.Config
-import org.omp4j.preprocessor.{Translator, TranslationVisitor}
-import org.omp4j.tree.OMPFile
+import org.omp4j.preprocessor.TranslationVisitor
+import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
+import org.omp4j.utils.Keywords
 
 import scala.collection.mutable.{ListBuffer, HashSet, SynchronizedSet}
 import org.antlr.v4.runtime.{TokenStreamRewriter, ParserRuleContext, Token}
@@ -12,6 +14,8 @@ import org.omp4j.grammar._
 
 import scala.collection.JavaConverters._
 import scala.util.Random
+import scala.collection.JavaConverters._
+
 /** Abstract omp directive class; implemented by several case classes */
 abstract class Directive(val parent: Directive, val publicVars: List[String], val privateVars: List[String])(implicit val schedule: DirectiveSchedule, val ctx: Java8Parser.StatementContext, val cmt: Token, val line: Int, conf: Config) {
 
@@ -19,69 +23,80 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	validate()
 	parent match {
 		case null => ;
-		case _    => parent.registerChild(this)
+		case _ => parent.registerChild(this)
+	}
+
+	/** [Shortcut] Number of threads */
+	lazy val threadCount = "(4)"	// TODO: thread count
+
+	/** Context variable name */
+	lazy val contextVar = uniqueName("ompContext")
+
+	/** Context class name */
+	lazy val contextClass = uniqueName("OMPContext")
+
+	/** Thread array name */
+	lazy val threadArr = uniqueName("ompThreads")
+
+	/** 1. iterator name */
+	lazy val iter = uniqueName("ompI")
+
+	/** 2. iterator name */
+	lazy val iter2 = uniqueName("ompJ")
+
+	/** Is second iterator used? */
+	lazy val secondIter = false
+
+	/** exception name */
+	lazy val exceptionName = uniqueName("ompE")
+
+	/** Closest omp-parallel directive or null if none exists */
+	val parentOmpParallel: Directive = parent match {
+		case null => null
+		case _ => parent.parentOmpParallel
 	}
 
 	/** Directly nested directives builder */
 	private var childrenBuff = ListBuffer[Directive]()
 
-	/** Context variable name */
-	lazy val contextVar     = uniqueName("ompContext")
-
-	/** Context class name */
-	lazy val contextClass   = uniqueName("OMPContext")
-
-	/** Thread array name*/
-	lazy val threadArr      = uniqueName("ompThreads")
-
-	/** 1. iterator name */
-	lazy val iter           = uniqueName("ompI")
-
-	/** 2. iterator name */
-	lazy val iter2          = uniqueName("ompJ")
-
-	/** exception name */
-	lazy val exceptionName  = uniqueName("ompE")
-
-	/** Closest omp-parallel directive or null if none exists */
-	val parentOmpParallel: Directive = parent match {
-		case null => null
-		case _    => parent.parentOmpParallel
-	}
-
 	/** Register child */
 	def registerChild(child: Directive) = childrenBuff += child
 
-	/** Directly nested directives*/
+	/** Directly nested directives */
 	def children = childrenBuff.toList
 
-	/** Transitive closure*/
+	/** Transitive closure */
 	def allChildren: List[Directive] = children ++ children.flatMap(_.allChildren)
 
+	/** Delete directive comment from source code */
+	protected def deleteCmt(implicit rewriter: TokenStreamRewriter) = rewriter.replace(cmt, "\n")
+
 	// TODO: use some trait together with omptree
+	/** Fetch CompilationUnitContext associated with this file */
 	private def cunit(t: ParserRuleContext = ctx): Java8Parser.CompilationUnitContext = {
 		t.isInstanceOf[Java8Parser.CompilationUnitContext] match {
-			case true  => t.asInstanceOf[Java8Parser.CompilationUnitContext]
+			case true => t.asInstanceOf[Java8Parser.CompilationUnitContext]
 			case false => cunit(t.getParent)
 		}
 	}
 
-	/** Validation of parent */
-	def validate(): Unit = parent match {
+	/** Directive validation */
+	def validate(): Unit = parent match {   // parent validation
 		case _: Sections => throw new SyntaxErrorException("In block 'omp sections' only 'omp section' blocks are allowed.")
 		case _ => ;
 	}
 
-	override def toString =	s"Before line $line: ${cmt.getText}"
+	/** Source code line and directive text */
+	override def toString = s"Before line $line: ${cmt.getText}"
 
 	/** Generate unique name (different from every token used and every loadable class) */
 	def uniqueName(baseName: String): String = {
 
 		val rand = new Random
 
-		/** Static name generator*/
+		/** Static name generator */
 		def getName(prefix: String): String = {
-			if (Directive.JAVA_KEYWORDS contains prefix) {
+			if (Keywords.JAVA_KEYWORDS contains prefix) {
 				val suff = rand.alphanumeric.take(3).mkString("")
 				getName(s"${prefix}_${suff}")
 			} else {
@@ -107,18 +122,94 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	}
 
 	// TODO: thread-safe rewriter
-	def translate(rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
-		val translator = new Translator(rewriter)
-		val tv = new TranslationVisitor(rewriter, translator, ompFile, this)
-		tv.visit(ctx)
-		tv.translate()
+	/** Translate this directive and delete the directive comment */
+	def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
+		val (captured, capturedThis, directiveClass) = preTranslate
+		postTranslate(captured, capturedThis, directiveClass)
+		deleteCmt
 	}
+
+	/** First level of translation - rewrite used variables */
+	protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
+		val tv = new TranslationVisitor(rewriter, ompFile, this)
+		tv.visit(ctx)
+		(tv.getCaptured, tv.getCapturedThis, tv.getDirectiveClass)
+	}
+
+	/** Second level of translation - make paralelism */
+	protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter)
+
+///////////////////////////////////////////////////////////////////
+
+	/** Initialization of 2. iterator (if required) */
+	protected def secondIterInit = if (secondIter) s"\tfinal int $iter2 = $iter;\n" else ""
+
+	/** Declaration of THAT (captured this) */
+	protected def thatDecl(implicit capturedThis: Boolean, directiveClass: OMPClass) = if (capturedThis) s"\tpublic ${directiveClass.name} THAT;\n" else ""
+
+	/** Class declaration */
+	protected def classDeclar(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) =
+		"/* === OMP CONTEXT === */\n" +
+			s"class $contextClass {\n" +
+			(for {c <- captured} yield s"\tpublic ${c.varType} ${c.fullName};\n").toList.mkString +
+			thatDecl +
+			"}\n"
+
+	/** Instance of context class */
+	protected def instance = s"final $contextClass $contextVar = new $contextClass();\n"
+
+	/** THAT initialization*/
+	protected def thatInit(implicit capturedThis: Boolean) = if (capturedThis) s"$contextVar.THAT = this;\n" else ""
+
+	/** Initialization of captured variables + THAT */
+	protected def init(implicit captured: Set[OMPVariable], capturedThis: Boolean) = thatInit + (for {c <- captured} yield s"$contextVar.${c.fullName} = ${c.name};\n").toList.mkString
+
+	/** Top part of thread wrap */
+	protected def threadsBegin   =
+		"/* === /OMP CONTEXT === */\n" +
+			s"Thread $threadArr[] = new Thread[$threadCount];\n" +
+			s"for (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" +
+			secondIterInit +
+			s"\t${threadArr}[$iter] = new Thread(new Runnable(){\n" +
+			"\t\t@Override\n" +
+			"\t\tpublic void run() {\n"
+
+	/** Bottom part of thread wrap */
+	protected def  threadsEnd =
+		"\t\t}\n" +
+			"\t});\n" +
+			s"\t${threadArr}[$iter].start();\n"+
+			"}\n" +
+			"try {\n" +
+			s"\tfor (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" +
+			s"\t\t ${threadArr}[$iter].join();\n" +
+			"\t}\n" +
+			"} catch (InterruptedException $exceptionName) {\n"+
+			"\tSystem.out.println(\"omp4j: interrupted exception\");\n" +
+			"\tSystem.exit(1);\n" +
+			"}\n"
+
+	/** Assing primitive values */
+	protected def primitiveAssigments(implicit captured: Set[OMPVariable]) = (for {c <- captured if (Keywords.JAVA_VALUE_TYPES contains c.varType)} yield s"\t${c.name} = $contextVar.${c.fullName};\n").toList.mkString
+
+	/** Code to be prepended */
+	protected def toPrepend(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) = classDeclar + instance + init + threadsBegin
+
+	/** Code to be appended*/
+	protected def toAppend(implicit captured: Set[OMPVariable]) = threadsEnd + primitiveAssigments
+
+	/** Modify code according to toPrepend and toAppend */
+	def wrap(rewriter: TokenStreamRewriter)(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) = {
+		rewriter.insertBefore(ctx.start, toPrepend)
+		rewriter.insertAfter(ctx.stop, toAppend)
+	}
+
+	/** Wrapper of TokenStreamRewriter.getText(SyntaxTree) until it is officially supported */
+	protected def getRewrittenText(ctx: SyntaxTree)(implicit rewriter: TokenStreamRewriter) = rewriter.getText(ctx.getSourceInterval)
 }
 
 /** Static directive procedures */
 object Directive {
-
-	val JAVA_KEYWORDS = List("abstract", "continue", "for", "new", "switch", "assert", "default", "goto", "package", "synchronized", "boolean", "do", "if", "private", "this", "break", "double", "implements", "protected", "throw", "byte", "else", "import", "public", "throws", "case", "enum", "instanceof", "return", "transient", "catch", "extends", "int", "short", "try", "char", "final", "interface", "static", "void", "class", "finally", "long", "strictfp", "volatile", "const", "float", "native", "super", "while")
 
 	/** Directive constructor */
 	def apply(parent: Directive, ompCtx: OMPParser.OmpUnitContext, cmt: Token, ctx: Java8Parser.StatementContext)(implicit conf: Config): Directive = {

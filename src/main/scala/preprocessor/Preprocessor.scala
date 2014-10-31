@@ -2,7 +2,6 @@ package org.omp4j.preprocessor
 
 import java.io.{File, PrintWriter}
 import java.net.MalformedURLException
-import org.omp4j.directive.Directive
 import org.omp4j.tree.OMPFile
 
 import scala.collection.JavaConverters._

@@ -7,8 +7,6 @@ import org.omp4j.tree._
 /** LoadedContext with TranslationListener */
 class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
-	val ompFile = new OMPFile(t, parser)
-
 	/** Variable string in format: "<type> <identifier>" e.g. "int ok1" etc. */
 	private def varAsText(v: OMPVariable) = s"${v.varType} ${v.name}"
 

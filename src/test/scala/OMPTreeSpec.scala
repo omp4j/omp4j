@@ -5,9 +5,6 @@ import org.omp4j.tree._
 /** LoadedContext with TranslationListener */
 class OMPTreeLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
-	/** Tested OMPFile*/
-	lazy val ompFile = new OMPFile(t, parser)
-
 	/** Total number of all (registred) classes*/
 	def totalClassCount = ompFile.classMap.size
 

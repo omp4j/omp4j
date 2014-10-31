@@ -6,6 +6,7 @@ import org.antlr.v4.runtime._
 import org.omp4j.Config
 import org.omp4j.grammar._
 import org.omp4j.preprocessor._
+import org.omp4j.tree.OMPFile
 import org.omp4j.utils.FileTreeWalker
 
 /** Loads given file */
@@ -16,6 +17,7 @@ abstract class AbstractLoadedContext(path: String) {
 	val tokens = new CommonTokenStream(lexer)
 	val parser = new Java8Parser(tokens)
 	val t = parser.compilationUnit
+	val ompFile = new OMPFile(t, parser)
 	val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
 	conf.init
 
