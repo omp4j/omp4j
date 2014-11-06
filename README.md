@@ -25,14 +25,14 @@ For other users, this is the list of required software:
 **Note:** After the assemblation, **only proper JRE is required** to run `.jar` as all dependencies are packed into the package. One can distribute `.jar` to machines not having scala/ANTLR/ScalaTest installed at all.
 
 ### Fetching code
-1. `$ git clone git@github.com:omp4j/omp4j.git`
+1. `$ git clone git@github.com:omp4j/omp4j.git --recursive`
 2. `$ cd omp4j & ./install-dependencies.sh`
  
 Step 2 alternative:
 
 1. download [ANTLR runtime](http://www.antlr.org/download/antlr-runtime-4.2.2.jar) into `lib/` directory
 2. donwload ANTLRv4 and set shell alias `antlr4`
-2. compile grammar in `src/main/java/grammar` using both commands `$ antlr4 -visitor Java8.g4` and `$ antlr4 -visitor OMP.g4`. Please read [getting started](https://theantlrguy.atlassian.net/wiki/display/ANTLR4/Getting+Started+with+ANTLR+v4) in order to get familiar with setting up and using `antlr4` command.
+3. compile grammar in `src/main/java/grammar` using both commands `$ antlr4 -visitor Java8.g4` and `$ antlr4 -visitor OMP.g4`. Please read [getting started](https://theantlrguy.atlassian.net/wiki/display/ANTLR4/Getting+Started+with+ANTLR+v4) in order to get familiar with setting up and using `antlr4` command.
 
 ### Compilation
 ```
