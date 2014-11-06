@@ -1,0 +1,3 @@
+[submodule "src/main/resources/runtime"]
+	path = src/main/resources/runtime
+	url = git@github.com:omp4j/runtime.git

@@ -9,13 +9,10 @@ import scala.collection.mutable.ListBuffer
 import org.omp4j.Config
 
 case class Sections(override val parent: Directive)(implicit schedule: DirectiveSchedule, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List()) {
-	private var secBuffer = ListBuffer[Section]()
-	def registerSection(s: Section) = secBuffer += s
-	def sections = secBuffer.toList
 	override lazy val secondIter = true
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		sections.zipWithIndex.foreach{case (s, i) =>
+		childrenOfType[Section].zipWithIndex.foreach{case (s, i) =>
 			s.postTranslate(i)
 		}
 

@@ -13,6 +13,7 @@ import org.omp4j.exception._
 import org.omp4j.grammar._
 
 import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
 import scala.util.Random
 import scala.collection.JavaConverters._
 
@@ -27,10 +28,13 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	}
 
 	/** [Shortcut] Number of threads */
-	lazy val threadCount = "(4)"	// TODO: thread count
+	lazy val threadCount = "4"	// TODO: thread count
 
 	/** Context variable name */
 	lazy val contextVar = uniqueName("ompContext")
+
+	/** Context variable name */
+	lazy val executor = uniqueName("ompExecutor")
 
 	/** Context class name */
 	lazy val contextClass = uniqueName("OMPContext")
@@ -50,6 +54,12 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	/** exception name */
 	lazy val exceptionName = uniqueName("ompE")
 
+	val executorClass = schedule match {
+		case Dynamic => "org.omp4j.runtime.DynamicExecutor"
+		case Static  => "org.omp4j.runtime.DynamicExecutor"     // TODO:
+//		case Static  => "org.omp4j.runtime.StaticExecutor"
+	}
+
 	/** Closest omp-parallel directive or null if none exists */
 	val parentOmpParallel: Directive = parent match {
 		case null => null
@@ -67,6 +77,12 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 	/** Transitive closure */
 	def allChildren: List[Directive] = children ++ children.flatMap(_.allChildren)
+
+	/** Extract children of type T and return them as list of T */
+	def childrenOfType[T <: Directive : ClassTag]: List[T] = children.filter(_ match {
+		case _: T => true
+		case _    => false
+	}).map{case x: T => x}
 
 	/** Delete directive comment from source code */
 	protected def deleteCmt(implicit rewriter: TokenStreamRewriter) = rewriter.replace(cmt, "\n")
@@ -164,39 +180,32 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	/** Initialization of captured variables + THAT */
 	protected def init(implicit captured: Set[OMPVariable], capturedThis: Boolean) = thatInit + (for {c <- captured} yield s"$contextVar.${c.fullName} = ${c.name};\n").toList.mkString
 
-	/** Top part of thread wrap */
-	protected def threadsBegin   =
+	/**  First part of executor */
+	protected def executorBegin =
 		"/* === /OMP CONTEXT === */\n" +
-			s"Thread $threadArr[] = new Thread[$threadCount];\n" +
+			s"org.omp4j.runtime.IOMPExecutor $executor = new $executorClass($threadCount);\n" +
 			s"for (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" +
 			secondIterInit +
-			s"\t${threadArr}[$iter] = new Thread(new Runnable(){\n" +
+			s"\t$executor.execute(new Runnable(){\n" +
 			"\t\t@Override\n" +
 			"\t\tpublic void run() {\n"
 
-	/** Bottom part of thread wrap */
-	protected def  threadsEnd =
+	/** Closing task and executor */
+	protected def executorEnd =
 		"\t\t}\n" +
 			"\t});\n" +
-			s"\t${threadArr}[$iter].start();\n"+
 			"}\n" +
-			"try {\n" +
-			s"\tfor (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" +
-			s"\t\t ${threadArr}[$iter].join();\n" +
-			"\t}\n" +
-			"} catch (InterruptedException $exceptionName) {\n"+
-			"\tSystem.out.println(\"omp4j: interrupted exception\");\n" +
-			"\tSystem.exit(1);\n" +
-			"}\n"
+			s"$executor.waitForExecution();\n"
+
 
 	/** Assing primitive values */
 	protected def primitiveAssigments(implicit captured: Set[OMPVariable]) = (for {c <- captured if (Keywords.JAVA_VALUE_TYPES contains c.varType)} yield s"\t${c.name} = $contextVar.${c.fullName};\n").toList.mkString
 
 	/** Code to be prepended */
-	protected def toPrepend(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) = classDeclar + instance + init + threadsBegin
+	protected def toPrepend(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) = classDeclar + instance + init + executorBegin
 
 	/** Code to be appended*/
-	protected def toAppend(implicit captured: Set[OMPVariable]) = threadsEnd + primitiveAssigments
+	protected def toAppend(implicit captured: Set[OMPVariable]) = executorEnd + primitiveAssigments
 
 	/** Modify code according to toPrepend and toAppend */
 	def wrap(rewriter: TokenStreamRewriter)(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) = {

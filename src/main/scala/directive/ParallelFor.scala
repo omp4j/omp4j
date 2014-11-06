@@ -15,7 +15,6 @@ case class ParallelFor(override val parent: Directive, override val publicVars: 
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 
-
 		val forStatement = ctx.forStatement
 		if (forStatement == null) throw new ParseException("For directive before non-for statement")
 		val basicForStatement = forStatement.basicForStatement

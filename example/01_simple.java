@@ -9,5 +9,6 @@ class Simple {
 			System.out.println(foo);
 		}
 
+		System.out.println("last line");
 	}
 }

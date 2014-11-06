@@ -15,4 +15,10 @@ object FileTreeWalker {
 		recursiveListFiles(f).map(_.delete)
 		f.delete
 	}
+
+	/** Get array of files that could be used in result binary */
+	def getRuntimeFiles = {
+		val runtimeDir = new File(getClass.getResource("/runtime").toURI.getPath)
+		recursiveListFiles(runtimeDir).filter(_.getAbsolutePath.endsWith(".java"))
+	}
 }

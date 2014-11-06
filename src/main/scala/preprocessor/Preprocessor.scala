@@ -43,7 +43,7 @@ class Preprocessor(args: Array[String]) {
 			}
 
 			// compile again -> result
-			val compiler = new Compiler(FileTreeWalker.recursiveListFiles(conf.prepDir), conf.flags)
+			val compiler = new Compiler(FileTreeWalker.recursiveListFiles(conf.prepDir) ++ FileTreeWalker.getRuntimeFiles, conf.flags)
 			compiler.compile
 
 			exitCode = 0
@@ -120,14 +120,11 @@ class Preprocessor(args: Array[String]) {
 		}
 
 		rewriter.getText
-
-//		val transVis = new TranslationVisitor(tokens, parser, cunit)
-//		transVis.translate
 	}
 
 	/** Save results to file*/
 	private def saveResult(origFile: File, text: String) = {
-//		println(text)	// TODO: DEBUG
+		println(text)	// TODO: DEBUG
 
 		val newFile: File = File.createTempFile(s"${origFile.getName}-", ".java", conf.prepDir)
 		val writer = new PrintWriter(newFile, "UTF-8")
