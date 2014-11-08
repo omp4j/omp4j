@@ -20,6 +20,12 @@ import scala.collection.JavaConverters._
 /** Abstract omp directive class; implemented by several case classes */
 abstract class Directive(val parent: Directive, val publicVars: List[String], val privateVars: List[String])(implicit val schedule: DirectiveSchedule, val ctx: Java8Parser.StatementContext, val cmt: Token, val line: Int, conf: Config) {
 
+	/** Closest omp-parallel directive or null if none exists */
+	val parentOmpParallel: Directive = parent match {
+		case null => null
+		case _ => parent.parentOmpParallel
+	}
+
 	// constructor
 	validate()
 	parent match {
@@ -59,12 +65,6 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 		case Static  => "org.omp4j.runtime.StaticExecutor"
 	}
 
-	/** Closest omp-parallel directive or null if none exists */
-	val parentOmpParallel: Directive = parent match {
-		case null => null
-		case _ => parent.parentOmpParallel
-	}
-
 	/** Directly nested directives builder */
 	private var childrenBuff = ListBuffer[Directive]()
 
@@ -96,7 +96,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	}
 
 	/** Directive validation */
-	def validate(): Unit = parent match {   // parent validation
+	def validate() = parent match {   // parent validation
 		case _: Sections => throw new SyntaxErrorException("In block 'omp sections' only 'omp section' blocks are allowed.")
 		case _ => ;
 	}
@@ -154,8 +154,6 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	/** Second level of translation - make paralelism */
 	protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter)
 
-///////////////////////////////////////////////////////////////////
-
 	/** Initialization of 2. iterator (if required) */
 	protected def secondIterInit = if (secondIter) s"\tfinal int $iter2 = $iter;\n" else ""
 
@@ -166,7 +164,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	protected def classDeclar(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) =
 		"/* === OMP CONTEXT === */\n" +
 			s"class $contextClass {\n" +
-			(for {c <- captured} yield s"\tpublic ${c.varType} ${c.fullName};\n").toList.mkString +
+			(for {c <- captured} yield s"\t${c.declaration}\n").toList.mkString +
 			thatDecl +
 			"}\n"
 
@@ -177,7 +175,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	protected def thatInit(implicit capturedThis: Boolean) = if (capturedThis) s"$contextVar.THAT = this;\n" else ""
 
 	/** Initialization of captured variables + THAT */
-	protected def init(implicit captured: Set[OMPVariable], capturedThis: Boolean) = thatInit + (for {c <- captured} yield s"$contextVar.${c.fullName} = ${c.name};\n").toList.mkString
+	protected def init(implicit captured: Set[OMPVariable], capturedThis: Boolean) = thatInit + (for {c <- captured} yield s"$contextVar.${c.fullName} = ${c.arrayLessName};\n").toList.mkString
 
 	/**  First part of executor */
 	protected def executorBegin =
@@ -198,7 +196,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 
 	/** Assing primitive values */
-	protected def primitiveAssigments(implicit captured: Set[OMPVariable]) = (for {c <- captured if (Keywords.JAVA_VALUE_TYPES contains c.varType)} yield s"\t${c.name} = $contextVar.${c.fullName};\n").toList.mkString
+	protected def primitiveAssigments(implicit captured: Set[OMPVariable]) = (for {c <- captured if (Keywords.JAVA_VALUE_TYPES contains c.varType)} yield s"\t${c.arrayLessName} = $contextVar.${c.fullName};\n").toList.mkString
 
 	/** Code to be prepended */
 	protected def toPrepend(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) = classDeclar + instance + init + executorBegin

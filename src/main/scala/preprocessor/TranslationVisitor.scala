@@ -71,7 +71,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 	}
 
 	/** Class declaration requires stack handling */
-	override def visitClassDeclaration(ctx: Java8Parser.ClassDeclarationContext) = {
+	override def visitClassDeclaration(ctx: Java8Parser.ClassDeclarationContext): Unit = {
 		handleStack(ctx, super.visitClassDeclaration)
 	}
 
@@ -108,91 +108,87 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 	/** Capture variables/fields */
 	override def visitExpressionName(ctx: Java8Parser.ExpressionNameContext) = {
-		if (currentDirective != null) {
-			// globals (not actually functional, TODO)
-			try {
+		// globals (not actually functional, TODO)
+		try {
 
-				// println(s"-> ${ctx.getText}")
-				val id = getLeftName[Java8Parser.ExpressionNameContext, Java8Parser.AmbiguousNameContext](
-					ctx,
-					_.ambiguousName,
-					_.ambiguousName,
-					_.Identifier.getText,
-					_.Identifier.getText)
-				if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
-					try {
-						val v = OMPVariable(id, locals, params, directiveClass)
+			val id = getLeftName[Java8Parser.ExpressionNameContext, Java8Parser.AmbiguousNameContext](
+				ctx,
+				_.ambiguousName,
+				_.ambiguousName,
+				_.Identifier.getText,
+				_.Identifier.getText)
 
-						val tkns = getContextTokens(ctx)
-						if (tkns.head.getText == id) {
-							rewriter.replace(tkns.head, s"$contextName.${v.fullName}")
-						} else {
-							rewriter.replace(ctx.start, ctx.stop, s"$contextName.${v.fullName}")
-						}
+			if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
+				try {
+					val v = OMPVariable(id, locals, params, directiveClass)
 
-						captured += v
-					} catch {
-						case e: IllegalArgumentException => ; // local (ok)
+					val tkns = getContextTokens(ctx)
+					if (tkns.head.getText == id) {
+						rewriter.replace(tkns.head, s"$contextName.${v.fullName}")
+					} else {
+						rewriter.replace(ctx.start, ctx.stop, s"$contextName.${v.fullName}")
 					}
+
+					captured += v
+				} catch {
+					case e: IllegalArgumentException => ; // local (ok)
 				}
-			} catch {
-				// TODO: exceptions?
-				case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
 			}
+		} catch {
+			// TODO: exceptions?
+			case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
 		}
+
 		super.visitExpressionName(ctx)
 	}
 
 	/** Translate method invocation (caller and params) */
 	override def visitMethodInvocation(ctx: Java8Parser.MethodInvocationContext) = {
-		if (currentDirective != null) {
 
-			if (ctx.primary != null && ctx.primary.getText == "this") {
-				if (clStack.head == directiveClass) {
-					// handle only the '.' as 'this' will be handled automatically later on
-					val dot = getContextTokens(ctx)(1)
-					rewriter.delete(dot)
-				}
-			} else if (ctx.typeName != null) {
+		if (ctx.primary != null && ctx.primary.getText == "this") {
+			if (clStack.head == directiveClass) {
+				// handle only the '.' as 'this' will be handled automatically later on
+				val dot = getContextTokens(ctx)(1)
+				rewriter.delete(dot)
+			}
+		} else if (ctx.typeName != null) {
 
-				val id = getLeftName[Java8Parser.TypeNameContext, Java8Parser.PackageOrTypeNameContext](
-				ctx.typeName,
-				_.packageOrTypeName,
-				_.packageOrTypeName,
-				_.Identifier.getText,
-				_.Identifier.getText)
+			val id = getLeftName[Java8Parser.TypeNameContext, Java8Parser.PackageOrTypeNameContext](
+			ctx.typeName,
+			_.packageOrTypeName,
+			_.packageOrTypeName,
+			_.Identifier.getText,
+			_.Identifier.getText)
 
-				if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
-					try {
-						val v = OMPVariable(id, locals, params, directiveClass)
-						val firstToken = getContextTokens(ctx).head
-						rewriter.replace(firstToken, s"$contextName.${v.fullName}")
+			if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
+				try {
+					val v = OMPVariable(id, locals, params, directiveClass)
+					val firstToken = getContextTokens(ctx).head
+					rewriter.replace(firstToken, s"$contextName.${v.fullName}")
 
-						captured += v
-					} catch {
-						case e: IllegalArgumentException => ; // local (ok)
-					}
+					captured += v
+				} catch {
+					case e: IllegalArgumentException => ; // local (ok)
 				}
 			}
 		}
+
 		super.visitMethodInvocation(ctx)
 	}
 
 	/** Handle primary if no-array expression occures */
 	override def visitPrimary(ctx: Java8Parser.PrimaryContext) = {
-		if (currentDirective != null) {
 
-			if (ctx.primaryNoNewArray_lfno_primary == null) {
-				// TODO: primaryNoNewArray_lfno_primary
-			}
-			else {
-				val first = ctx.primaryNoNewArray_lfno_primary
-				val seconds: List[Java8Parser.PrimaryNoNewArray_lf_primaryContext] =
-					if (ctx.primaryNoNewArray_lf_primary != null) ctx.primaryNoNewArray_lf_primary.asScala.toList
-					else List[Java8Parser.PrimaryNoNewArray_lf_primaryContext]()
+		if (ctx.primaryNoNewArray_lfno_primary == null) {
+			// TODO: primaryNoNewArray_lfno_primary
+		}
+		else {
+			val first = ctx.primaryNoNewArray_lfno_primary
+			val seconds: List[Java8Parser.PrimaryNoNewArray_lf_primaryContext] =
+				if (ctx.primaryNoNewArray_lf_primary != null) ctx.primaryNoNewArray_lf_primary.asScala.toList
+				else List[Java8Parser.PrimaryNoNewArray_lf_primaryContext]()
 
-				handlePrimary(ctx, first, seconds)
-			}
+			handlePrimary(ctx, first, seconds)
 		}
 		super.visitPrimary(ctx)
 	}
@@ -256,7 +252,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 					_.Identifier.getText,
 					_.Identifier.getText)
 
-					if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
+					if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
 						try {
 							val v = OMPVariable(id, locals, params, directiveClass)
 							rewriter.replace(first.start, first.stop, s"$contextName.${v.fullName}")
@@ -278,7 +274,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 							_.Identifier.getText,
 							_.Identifier.getText)
 
-						if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.name) contains id)) {
+						if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
 							try {
 								val v = OMPVariable(id, locals, params, directiveClass)
 								val firstToken = getContextTokens(first).head

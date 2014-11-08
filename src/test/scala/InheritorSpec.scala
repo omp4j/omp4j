@@ -7,9 +7,6 @@ import org.omp4j.tree._
 /** LoadedContext with TranslationListener */
 class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
-	/** Variable string in format: "<type> <identifier>" e.g. "int ok1" etc. */
-	private def varAsText(v: OMPVariable) = s"${v.varType} ${v.name}"
-
 	/** Return set of possible inherited local variables as formated strings */
 	def localsAsText = Inheritor.getPossiblyInheritedLocals(directives.head._2.ctx).map(varAsText)
 
@@ -56,6 +53,9 @@ class InheritorSpec extends AbstractSpec {
 		}
 		it("07.java should contain only...") {
 			(new InheritorLoadedContext("/inheritedLocals/07.java")).localsAsText should contain only ("int[] arr1", "int[] arr2", "int[] arr3")
+		}
+		it("09.java should contain only...") {
+			(new InheritorLoadedContext("/inheritedLocals/09.java")).localsAsText should contain only ("int arr[][]")
 		}
 	}
 

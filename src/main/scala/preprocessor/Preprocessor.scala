@@ -102,7 +102,7 @@ class Preprocessor(args: Array[String]) {
 					throw new ParseException("Both parsing strategies SLL(*) and LL(*) failed", ex)
 				}
 			}
-		// t.inspect(parser);	// display gui tree
+//		cunit.inspect(parser);	// display gui tree
 
 		(tokens, parser, cunit)
 	}

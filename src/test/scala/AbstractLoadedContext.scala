@@ -6,7 +6,7 @@ import org.antlr.v4.runtime._
 import org.omp4j.Config
 import org.omp4j.grammar._
 import org.omp4j.preprocessor._
-import org.omp4j.tree.OMPFile
+import org.omp4j.tree.{OMPVariable, OMPFile}
 import org.omp4j.utils.FileTreeWalker
 
 /** Loads given file */
@@ -23,4 +23,8 @@ abstract class AbstractLoadedContext(path: String) {
 
 	// TODO: delete really all
 	override protected def finalize() = FileTreeWalker.recursiveDelete(conf.workDir)
+
+	/** Variable string in format: "<type> <identifier>" e.g. "int ok1" etc. */
+	protected def varAsText(v: OMPVariable) = s"${v.varType} ${v.name}"
+
 }
