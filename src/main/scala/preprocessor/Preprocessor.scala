@@ -124,7 +124,7 @@ class Preprocessor(args: Array[String]) {
 
 	/** Save results to file*/
 	private def saveResult(origFile: File, text: String) = {
-		println(text)	// TODO: DEBUG
+//		println(text)	// TODO: DEBUG
 
 		val newFile: File = File.createTempFile(s"${origFile.getName}-", ".java", conf.prepDir)
 		val writer = new PrintWriter(newFile, "UTF-8")

@@ -56,8 +56,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 	val executorClass = schedule match {
 		case Dynamic => "org.omp4j.runtime.DynamicExecutor"
-		case Static  => "org.omp4j.runtime.DynamicExecutor"     // TODO:
-//		case Static  => "org.omp4j.runtime.StaticExecutor"
+		case Static  => "org.omp4j.runtime.StaticExecutor"
 	}
 
 	/** Closest omp-parallel directive or null if none exists */
