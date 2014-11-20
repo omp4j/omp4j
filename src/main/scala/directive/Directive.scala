@@ -2,6 +2,7 @@ package org.omp4j.directive
 
 import org.antlr.v4.runtime.tree.SyntaxTree
 import org.omp4j.Config
+import org.omp4j.grammar.OMPParser.OmpCriticalContext
 import org.omp4j.preprocessor.TranslationVisitor
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 import org.omp4j.utils.Keywords
@@ -11,6 +12,7 @@ import org.antlr.v4.runtime.{TokenStreamRewriter, ParserRuleContext, Token}
 import org.omp4j.directive.DirectiveSchedule._
 import org.omp4j.exception._
 import org.omp4j.grammar._
+
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -97,7 +99,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 	/** Directive validation */
 	def validate() = parent match {   // parent validation
-		case _: Sections => throw new SyntaxErrorException("In block 'omp sections' only 'omp section' blocks are allowed.")
+		case _: Sections | _: Master | _: Critical | _: Single | _: Barrier | _: Atomic => throw new SyntaxErrorException("In block 'omp sections' only 'omp section' blocks are allowed.")
 		case _ => ;
 	}
 
@@ -141,6 +143,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
 		val (captured, capturedThis, directiveClass) = preTranslate
 		postTranslate(captured, capturedThis, directiveClass)
+		translateChildren(captured, capturedThis, directiveClass)
 		deleteCmt
 	}
 
@@ -151,8 +154,20 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 		(tv.getCaptured, tv.getCapturedThis, tv.getDirectiveClass)
 	}
 
-	/** Second level of translation - make paralelism */
+	/** Method where children translation is invoked (if any) */
+	protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {}
+
+	/** Second level of translation - make parallelism */
 	protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter)
+
+	/** Default implementation, should be mixed with LockMemory trait */
+	def addAtomicBool(baseName: String): String = parent match {
+		case null => throw new SyntaxErrorException("Unable to register AtomicBoolean. Please make sure the directive is in 'omp parallel [for]' block.")
+		case _    => parent.addAtomicBool(baseName)
+	}
+
+	/** Storage for some additional elements */
+	protected var additionalItems = scala.collection.mutable.Set[String]()
 
 	/** Initialization of 2. iterator (if required) */
 	protected def secondIterInit = if (secondIter) s"\tfinal int $iter2 = $iter;\n" else ""
@@ -166,6 +181,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 			s"class $contextClass {\n" +
 			(for {c <- captured} yield s"\t${c.declaration}\n").toList.mkString +
 			thatDecl +
+			(for {a <- additionalItems} yield s"\t$a\n").toList.mkString +
 			"}\n"
 
 	/** Instance of context class */
@@ -226,23 +242,49 @@ object Directive {
 		val nonParFor = ompCtx.ompFor
 		val sections = ompCtx.ompSections
 		val section = ompCtx.ompSection
+		val single = ompCtx.ompSingle
+		val master= ompCtx.ompMaster
 		val barrier = ompCtx.ompBarrier
+		val atomic = ompCtx.ompAtomic
+		val critical = ompCtx.ompCritical
 
 		if (parallel != null) {
-			val (pub, pri) = separate(parallel.ompModifier.asScala.toList)
-			new Parallel(parent, pub, pri)(DirectiveSchedule(parallel.ompSchedule), ctx, cmt, getLine(ctx), conf)
+			// TODO: pass num
+			val (sch, num, privates, publics) = getModifiers[OMPParser.OmpParallelModifiersContext, OMPParser.OmpParallelModifierContext](parallel.ompParallelModifiers)(
+				_.ompParallelModifier,
+				_.ompParallelModifiers,
+				_.ompSchedule,
+				_.ompThreadNum,
+				_.ompAccessModifier
+			)
+			new Parallel(parent, publics, privates)(DirectiveSchedule(sch), ctx, cmt, getLine(ctx), conf)
 		} else if (parallelFor != null) {
-			val (pub, pri) = separate(parallelFor.ompModifier.asScala.toList)
-			new ParallelFor(parent, pub, pri)(DirectiveSchedule(parallelFor.ompSchedule), ctx, cmt, getLine(ctx), conf)
+			// TODO: pass num
+			val (sch, num, privates, publics) = getModifiers[OMPParser.OmpParallelForModifiersContext, OMPParser.OmpParallelForModifierContext](parallelFor.ompParallelForModifiers)(
+				_.ompParallelForModifier,
+				_.ompParallelForModifiers,
+				_.ompSchedule,
+				_.ompThreadNum,
+				_.ompAccessModifier
+			)
+			new ParallelFor(parent, publics, privates)(DirectiveSchedule(sch), ctx, cmt, getLine(ctx), conf)
 		} else if (nonParFor != null) {
-			val (pub, pri) = separate(nonParFor.ompModifier.asScala.toList)
-			new For(parent, pub, pri)(ctx, cmt, getLine(ctx), conf)
+			val (publics, privates) = separate(nonParFor.ompAccessModifier.asScala.toList)
+			new For(parent, publics, privates)(ctx, cmt, getLine(ctx), conf)
 		} else if (sections != null) {
 			new Sections(parent)(DirectiveSchedule(sections.ompSchedule), ctx, cmt, getLine(ctx), conf)
 		} else if (section != null) {
 			new Section(parent)(ctx, cmt, getLine(ctx), conf)
+		} else if (single != null) {
+			new Single(parent)(ctx, cmt, getLine(ctx), conf)
+		} else if (master != null) {
+			new Master(parent)(ctx, cmt, getLine(ctx), conf)
 		} else if (barrier != null) {
 			new Barrier(parent)(ctx, cmt, getLine(ctx), conf)
+		} else if (atomic != null) {
+			new Atomic(parent)(ctx, cmt, getLine(ctx), conf)
+		} else if (critical != null) {
+			new Critical(parent)(ctx, cmt, getLine(ctx), conf)
 		} else {
 			throw new SyntaxErrorException("Invalid directive")
 		}
@@ -254,11 +296,50 @@ object Directive {
 		else ctx.start.getLine
 	}
 
+	/** Get tuple of (schedule, threadNum, privates, publics)*/
+	private def getModifiers[ML, M](mList: ML)(modifier: ML => M, nextList: ML => ML, schedule: M => OMPParser.OmpScheduleContext, threadNum: M => OMPParser.OmpThreadNumContext, access: M => OMPParser.OmpAccessModifierContext): (OMPParser.OmpScheduleContext, Int, List[String], List[String]) = {
+		if (mList == null || modifier(mList) == null) {
+			(null, -1, List(), List())
+		} else {
+			val (sch, num, privates, publics) = getModifiers(nextList(mList))(modifier, nextList, schedule, threadNum, access)
+			val mod = modifier(mList)
+			val newSch = if (schedule(mod) != null) schedule(mod) else sch
+			val newTN  = if (threadNum(mod) != null) threadNum(mod).ompNumber.getText.toInt else num
+			val newPri = try {
+				val acc = access(mod)
+				val res = getVars(acc.ompVars)
+				if (acc.PRIVATE != null) privates ::: res
+				else privates
+			} catch {
+				case e: NullPointerException => privates
+			}
+			val newPub = try {
+				val acc = access(mod)
+				val res = getVars(acc.ompVars)
+				if (acc.PUBLIC != null) publics ::: res
+				else publics
+			} catch {
+				case e: NullPointerException => publics
+			}
+			(newSch, newTN, newPri, newPub)
+		}
+	}
+
+	/** Extracts variables from public/private statement */
+	private def getVars(vars: OMPParser.OmpVarsContext): List[String] = {
+		if (vars == null) List()
+		else {
+			val v = vars.ompVar
+			if (v == null) List()
+			else v.asScala.map(_.VAR.getText).toList
+		}
+	}
+
 	/**
 	  * Separate public and private variables
 	  * @return tuple of (Public, Private)
 	  */
-	private def separate(list: List[OMPParser.OmpModifierContext]): (List[String], List[String]) = {
+	private def separate(list: List[OMPParser.OmpAccessModifierContext]): (List[String], List[String]) = {
 
 		/** Extracts variables from public/private statement */
 		def getVars(vars: OMPParser.OmpVarsContext): List[String] = {

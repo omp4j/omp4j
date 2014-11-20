@@ -11,11 +11,14 @@ import org.omp4j.Config
 case class Sections(override val parent: Directive)(implicit schedule: DirectiveSchedule, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List()) {
 	override lazy val secondIter = true
 
-	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		childrenOfType[Section].zipWithIndex.foreach{case (s, i) =>
+	/** Translate directives of type Section */
+	override protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
+		childrenOfType[Section].zipWithIndex.foreach{ case (s, i) =>
 			s.postTranslate(i)
 		}
+	}
 
+	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 		wrap(rewriter)(captured, capturedThis, directiveClass)
 	}
 

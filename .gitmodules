@@ -1,3 +1,6 @@
 [submodule "src/main/resources/runtime"]
 	path = src/main/resources/runtime
 	url = git@github.com:omp4j/runtime.git
+[submodule "src/main/java/grammar"]
+	path = src/main/java/grammar
+	url = git@github.com:omp4j/grammar.git

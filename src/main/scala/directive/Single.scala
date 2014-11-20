@@ -1,16 +1,13 @@
 package org.omp4j.directive
 
 import org.antlr.v4.runtime.{TokenStreamRewriter, Token}
+import org.omp4j.Config
+import org.omp4j.directive.DirectiveSchedule._
 import org.omp4j.exception.SyntaxErrorException
 import org.omp4j.grammar.Java8Parser
-import org.omp4j.Config
-import org.omp4j.tree.{OMPFile, OMPClass, OMPVariable}
+import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 
-case class Section(override val parent: Directive)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, ctx, cmt, line, conf) {
-	override def validate = parent match {
-		case secPar: Sections => ;
-		case _ => throw new SyntaxErrorException("'omp section' must by located directly in 'omp sections' block.")
-	}
+class Single(override val parent: Directive)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, ctx, cmt, line, conf) {
 
 	// inherit all
 	override lazy val threadCount = parent.threadCount
@@ -24,23 +21,28 @@ case class Section(override val parent: Directive)(implicit ctx: Java8Parser.Sta
 	override lazy val exceptionName = parent.exceptionName
 	override val executorClass = parent.executorClass
 
+	val singleLock = addAtomicBool("singleLock")
+
+	override def validate = parent match {
+		case _: Parallel | _: ParallelFor => ;
+		case _ => throw new SyntaxErrorException("'omp single' must by located directly in 'omp parallel [for]' block.")
+	}
+
 	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
-		throw new RuntimeException("translate can't be run on Section!")
+		throw new RuntimeException("translate can't be run on Single!")
 	}
 
 	override protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
-		throw new RuntimeException("preTranslate can't be run on Section!")
+		throw new RuntimeException("preTranslate can't be run on Single!")
 	}
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		throw new RuntimeException("postTranslate can't be run on Section!")
+		throw new RuntimeException("postTranslate can't be run on Single!")
 	}
 
-	def postTranslate(id: Int)(implicit rewriter: TokenStreamRewriter) = {
-		rewriter.insertBefore(ctx.start, s"if ($iter2 == $id) {\n")
-		if (id > 0) rewriter.insertBefore(ctx.start, "else ")
-		rewriter.insertAfter(ctx.stop, "}\n")
-
-		deleteCmt
+	def postTranslate(implicit rewriter: TokenStreamRewriter) = {
+		rewriter.insertBefore(ctx.start, s"if (! $contextVar.$singleLock.getAndSet(true)) {\n")
+		rewriter.insertAfter(ctx.start, "}\n")
 	}
+
 }

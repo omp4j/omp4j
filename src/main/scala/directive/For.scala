@@ -19,11 +19,14 @@ case class For(override val parent: Directive, override val publicVars: List[Str
 	// inherit all
 	override lazy val threadCount = parentOmpParallel.threadCount
 	override lazy val contextVar = parentOmpParallel.contextVar
+	override lazy val executor = parentOmpParallel.executor
 	override lazy val contextClass = parentOmpParallel.contextClass
 	override lazy val threadArr = parentOmpParallel.threadArr
 	override lazy val iter = parentOmpParallel.iter
 	override lazy val iter2 = parentOmpParallel.iter2
+	override lazy val secondIter = parentOmpParallel.secondIter
 	override lazy val exceptionName = parentOmpParallel.exceptionName
+	override val executorClass = parentOmpParallel.executorClass
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 		translateFor;
