@@ -196,7 +196,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	/**  First part of executor */
 	protected def executorBegin =
 		"/* === /OMP CONTEXT === */\n" +
-			s"org.omp4j.runtime.IOMPExecutor $executor = new $executorClass($threadCount);\n" +
+			s"final org.omp4j.runtime.IOMPExecutor $executor = new $executorClass($threadCount);\n" +
 			s"for (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" +
 			secondIterInit +
 			s"\t$executor.execute(new Runnable(){\n" +
