@@ -8,7 +8,7 @@ class Critical {
 			}
 		}
 
-		String lock = "myString";
+		final String lock = "myString";
 		// omp parallel
 		{
 			// omp critical(lock)
