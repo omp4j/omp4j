@@ -10,10 +10,11 @@ case class Parallel(override val parent: Directive, override val publicVars: Lis
 	override val parentOmpParallel = this
 	override def addAtomicBool(baseName: String) = super[LockMemory].addAtomicBool(baseName)
 
-	/** Translate directives of type Master, Single TODO: critical atomic */
+	/** Translate directives of type Master, Single*/
 	override protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		childrenOfType[Master].foreach{m => m.postTranslate}
-		childrenOfType[Single].foreach{m => m.postTranslate}
+		super.translateChildren(captured, capturedThis, directiveClass)
+		childrenOfType[Master].foreach{_.postTranslate}
+		childrenOfType[Single].foreach{_.postTranslate}
 	}
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {

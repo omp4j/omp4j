@@ -155,7 +155,10 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	}
 
 	/** Method where children translation is invoked (if any) */
-	protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {}
+	protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
+		childrenOfType[Critical].foreach{_.postTranslate}
+		// TODO: atomic
+	}
 
 	/** Second level of translation - make parallelism */
 	protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter)
@@ -195,8 +198,8 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 	/**  First part of executor */
 	protected def executorBegin =
-		"/* === /OMP CONTEXT === */\n" +
-			s"final org.omp4j.runtime.IOMPExecutor $executor = new $executorClass($threadCount);\n" +
+		s"final org.omp4j.runtime.IOMPExecutor $executor = new $executorClass($threadCount);\n" +
+			"/* === /OMP CONTEXT === */\n" +
 			s"for (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" +
 			secondIterInit +
 			s"\t$executor.execute(new Runnable(){\n" +
@@ -284,7 +287,7 @@ object Directive {
 		} else if (atomic != null) {
 			new Atomic(parent)(ctx, cmt, getLine(ctx), conf)
 		} else if (critical != null) {
-			new Critical(parent)(ctx, cmt, getLine(ctx), conf)
+			new Critical(parent, critical.ompVar)(ctx, cmt, getLine(ctx), conf)
 		} else {
 			throw new SyntaxErrorException("Invalid directive")
 		}

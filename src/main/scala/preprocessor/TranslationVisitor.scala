@@ -116,7 +116,8 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 				_.ambiguousName,
 				_.ambiguousName,
 				_.Identifier.getText,
-				_.Identifier.getText)
+				_.Identifier.getText
+			)
 
 			if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
 				try {
@@ -154,11 +155,12 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 		} else if (ctx.typeName != null) {
 
 			val id = getLeftName[Java8Parser.TypeNameContext, Java8Parser.PackageOrTypeNameContext](
-			ctx.typeName,
-			_.packageOrTypeName,
-			_.packageOrTypeName,
-			_.Identifier.getText,
-			_.Identifier.getText)
+				ctx.typeName,
+				_.packageOrTypeName,
+				_.packageOrTypeName,
+				_.Identifier.getText,
+				_.Identifier.getText
+			)
 
 			if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
 				try {

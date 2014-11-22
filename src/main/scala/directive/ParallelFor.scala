@@ -11,6 +11,13 @@ case class ParallelFor(override val parent: Directive, override val publicVars: 
 	override lazy val secondIter = true
 	override def addAtomicBool(baseName: String) = super[LockMemory].addAtomicBool(baseName)
 
+	/** Translate directives of type Master, Single*/
+	override protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
+		super.translateChildren(captured, capturedThis, directiveClass)
+		childrenOfType[Master].foreach{_.postTranslate}
+		childrenOfType[Single].foreach{_.postTranslate}
+	}
+
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 		translateFor
 		wrap(rewriter)(captured, capturedThis, directiveClass)

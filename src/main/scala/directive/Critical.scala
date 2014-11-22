@@ -3,10 +3,10 @@ package org.omp4j.directive
 import org.antlr.v4.runtime.{TokenStreamRewriter, Token}
 import org.omp4j.Config
 import org.omp4j.exception.SyntaxErrorException
-import org.omp4j.grammar.Java8Parser
+import org.omp4j.grammar.{OMPParser, Java8Parser}
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 
-class Critical(override val parent: Directive)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, ctx, cmt, line, conf) {
+class Critical(override val parent: Directive, syncVarCtx: OMPParser.OmpVarContext)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, ctx, cmt, line, conf) {
 
 	// inherit all
 	override lazy val threadCount = parent.threadCount
@@ -20,24 +20,32 @@ class Critical(override val parent: Directive)(implicit ctx: Java8Parser.Stateme
 	override lazy val exceptionName = parent.exceptionName
 	override val executorClass = parent.executorClass
 
+	// TODO: check variable existence
+	val syncVar = syncVarCtx match {
+		case null => contextVar
+		case _    => syncVarCtx.getText
+	}
+
 	override def validate() = {
 		if (parentOmpParallel == null) throw new SyntaxErrorException("'omp for' in no 'omp parallel [for]' block.")
 		super.validate()
 	}
 
-	// TODO: barrier critical
 	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
 		throw new RuntimeException("translate can't be run on Critical!")
 	}
 
-	// TODO: barrier critical
 	override protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
 		throw new RuntimeException("preTranslate can't be run on Critical!")
 	}
 
-	// TODO: barrier critical
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 		throw new RuntimeException("postTranslate can't be run on Critical!")
+	}
+
+	def postTranslate(implicit rewriter: TokenStreamRewriter) = {
+		rewriter.insertBefore(ctx.start, s"synchronized($syncVar) {\n")
+		rewriter.insertAfter(ctx.start, "}\n")
 	}
 
 }

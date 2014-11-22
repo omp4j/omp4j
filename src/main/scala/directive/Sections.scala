@@ -13,6 +13,7 @@ case class Sections(override val parent: Directive)(implicit schedule: Directive
 
 	/** Translate directives of type Section */
 	override protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
+		super.translateChildren(captured, capturedThis, directiveClass)
 		childrenOfType[Section].zipWithIndex.foreach{ case (s, i) =>
 			s.postTranslate(i)
 		}
