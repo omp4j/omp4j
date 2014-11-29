@@ -19,6 +19,7 @@ case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementCon
 	override lazy val secondIter = parent.secondIter
 	override lazy val exceptionName = parent.exceptionName
 	override val executorClass = parent.executorClass
+	val barrierVar = uniqueName("barrier")
 
 	// validate existence of some omp parent block
 	override def validate() = {
@@ -27,19 +28,20 @@ case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementCon
 		super.validate()
 	}
 
-	// TODO: barrier translation
 	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
 		throw new RuntimeException("translate can't be run on Barrier!")
 	}
 
-	// TODO: barrier translation
 	override protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
 		throw new RuntimeException("preTranslate can't be run on Barrier!")
 	}
 
-	// TODO: barrier translation
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 		throw new RuntimeException("postTranslate can't be run on Barrier!")
+	}
+
+	def postTranslate(implicit rewriter: TokenStreamRewriter) = {
+		rewriter.insertBefore(ctx.start, s"""$executor.hitBarrier("$barrierVar");\n""")
 	}
 
 }

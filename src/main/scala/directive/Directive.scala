@@ -157,6 +157,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	/** Method where children translation is invoked (if any) */
 	protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 		childrenOfType[Critical].foreach{_.postTranslate}
+		childrenOfType[Barrier].foreach{_.postTranslate}
 		// TODO: atomic
 	}
 
