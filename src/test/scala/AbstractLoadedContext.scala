@@ -19,7 +19,12 @@ abstract class AbstractLoadedContext(path: String) {
 	val t = parser.compilationUnit
 	val ompFile = new OMPFile(t, parser)
 	val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
-	conf.init
+
+	/* make jar etc. */
+	/**/ private val prep = new Preprocessor()(conf)
+	/**/ private val parsed = conf.files.map(f => (f, prep.parseFile(f)))
+	/**/ prep.validate(parsed)
+	/* end */
 
 	// TODO: delete really all
 	override protected def finalize() = FileTreeWalker.recursiveDelete(conf.workDir)

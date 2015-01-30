@@ -48,8 +48,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 	/** directiveClass getters (since mutability, it can't be accessed publicly) */
 	def getDirectiveClass = directiveClass
 
-	/** Get tokens matching to context given
-	  */
+	/** Get tokens matching to context given */
 	private def getContextTokens(ctx: SyntaxTree): List[Token] = {
 		val interval = ctx.getSourceInterval
 		val tokenStream = rewriter.getTokenStream

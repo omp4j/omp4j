@@ -47,6 +47,7 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser)(implicit 
 					case None    => break	// TODO: log
 				}
 
+				// TODO: maybe one instance is sufficient
 				try {
 					val ompLexer  = new OMPLexer(new ANTLRInputStream(raw))
 					ompLexer.removeErrorListeners
@@ -79,6 +80,32 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser)(implicit 
 				stack.pop()
 				rr
 		}
+	}
+
+	override def visitOmpThreadNum(stmtCtx: Java8Parser.OmpThreadNumContext): DirectiveVisitor.DirectiveMap = {
+		val parent = stack.headOption match {
+			case Some(p) => p
+			case None    => null
+		}
+		val result = new ThreadNum(parent)(stmtCtx, stmtCtx.start, Directive.getLine(stmtCtx), conf)
+
+		stack.push(result)
+		val rr = ListMap(stmtCtx -> result) ++ super.visitOmpThreadNum(stmtCtx)
+		stack.pop()
+		rr
+	}
+
+	override def visitOmpNumThreads(stmtCtx: Java8Parser.OmpNumThreadsContext): DirectiveVisitor.DirectiveMap = {
+		val parent = stack.headOption match {
+			case Some(p) => p
+			case None    => null
+		}
+		val result = new NumThreads(parent)(stmtCtx, stmtCtx.start, Directive.getLine(stmtCtx), conf)
+
+		stack.push(result)
+		val rr = ListMap(stmtCtx -> result) ++ super.visitOmpNumThreads(stmtCtx)
+		stack.pop()
+		rr
 	}
 
 	override def defaultResult() = ListMap()

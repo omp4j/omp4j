@@ -3,6 +3,8 @@ package org.omp4j.preprocessor
 import java.io.{File, PrintWriter}
 import java.net.MalformedURLException
 import org.omp4j.tree.OMPFile
+import preprocessor.ThreadIdRemover
+import utils.FileSaver
 
 import scala.collection.JavaConverters._
 
@@ -14,37 +16,52 @@ import org.omp4j.grammar._
 import org.omp4j.system._
 import org.omp4j.utils.FileTreeWalker
 
+import scala.collection.mutable.ArrayBuffer
+
 /** Class representing the preprocessor itself.
   * @constructor Create preprocessor for given files.
   * @param Files to be parsed
   * @throws ParseException TODO
   */
-class Preprocessor(args: Array[String]) {
-
-	/** Implicit and the only Config */
-	implicit val conf = new Config(args)
+class Preprocessor(implicit conf: Config) {
 
 	/** Start parsing file by file */
 	def run: Int = {
 
 		var exitCode: Int = 1
 		try {
-			// init conf (compile, pack and load)
-			conf.init
+
+			/* New lifecycle
+			- get config
+			- get parseTree for each file (check exceptions)
+			- remove threadId tokens and validate source using compiler
+			- using previously parsed trees, make one level translation
+			- run until a directive exists
+			 */
 
 			// parse sources        TODO: parallelly
 			val parsed = conf.files.map(f => (f, parseFile(f)))
+
+			// validate
+			validate(parsed)
+
 			// register tokens
-			parsed.foreach {case (f, (tok, par, cun)) => registerTokens(tok)}
+			for {(f, (tok, par, cun)) <- parsed} {
+				registerTokens(tok)
+			}
+
+			val finalSources = ArrayBuffer[File]()
+
 			// translate and save   TODO: parallelly
 			for {(f, (tok, par, cun)) <- parsed} {
-				val res = translate(tok, par, cun)
-				saveResult(f, res)
+				val translatedSource = translate(tok, par, cun)
+//				saveResult(f, res)
+				finalSources += FileSaver.saveToFile(translatedSource, conf.preprocessedDir, cun.packageDeclaration, f.getAbsolutePath.split(File.separator).last)
 			}
 
 			// compile again -> result
-			val compiler = new Compiler(FileTreeWalker.recursiveListFiles(conf.prepDir) ++ FileTreeWalker.getRuntimeFiles, conf.flags)
-			compiler.compile
+			val compiler = new Compiler(finalSources.toArray ++ FileTreeWalker.getRuntimeFiles)
+			compiler.compile()
 
 			exitCode = 0
 
@@ -64,6 +81,26 @@ class Preprocessor(args: Array[String]) {
 		exitCode
 	}
 
+	/** don't call externally */
+	def validate(parsed: Array[(File, (CommonTokenStream, Java8Parser, Java8Parser.CompilationUnitContext))]) = {
+		// TODO: parallelly
+		val toValidate = ArrayBuffer[File]()
+
+		// create tmp files without threadIds
+		parsed.foreach{case (f, (tok, par, cun)) =>
+			val tir = new ThreadIdRemover(cun, tok)
+			val threadLessText = tir.removedIds
+
+			toValidate += FileSaver.saveToFile(threadLessText, conf.validationDir, cun.packageDeclaration, f.getAbsolutePath.split(File.separator).last)
+		}
+
+		// compile them
+		val compiler = new Compiler(toValidate.toArray)
+		compiler.compile(List(("-d", conf.compilationDir.getAbsolutePath)))
+		compiler.jar()
+	}
+
+
 	/** Delete workdir */
 	private def cleanup = FileTreeWalker.recursiveDelete(conf.workDir)
 
@@ -77,7 +114,7 @@ class Preprocessor(args: Array[String]) {
 	  * @throws ParseException Unexpected exception
 	  * @throws SyntaxErrorException If OMP directive has invalid syntax
 	  */
-	private def parseFile(file: File) = {
+	def parseFile(file: File) = {
 		val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath))
 		val tokens = new CommonTokenStream(lexer)
 		val parser = new Java8Parser(tokens)
@@ -120,15 +157,5 @@ class Preprocessor(args: Array[String]) {
 		}
 
 		rewriter.getText
-	}
-
-	/** Save results to file*/
-	private def saveResult(origFile: File, text: String) = {
-//		println(text)	// TODO: DEBUG
-
-		val newFile: File = File.createTempFile(s"${origFile.getName}-", ".java", conf.prepDir)
-		val writer = new PrintWriter(newFile, "UTF-8")
-		writer.println(text)
-		writer.close
 	}
 }

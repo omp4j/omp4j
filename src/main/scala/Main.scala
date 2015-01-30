@@ -8,9 +8,10 @@ import org.omp4j.preprocessor.Preprocessor
   * @param args Same as javac = [ options ] [ sourcefiles ] [ classes ] [ @argfiles ]
   */
 object Main extends App {
-	val prep = new Preprocessor(args)
+	val conf = new Config(args)
+	val prep = new Preprocessor()(conf)
 	prep.run match {
 		case 0 => ;
-		case e => System.exit(e)
+		case e => System.exit(e)        // TODO: exceptions
 	}
 }

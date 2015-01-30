@@ -1,13 +1,14 @@
 package org.omp4j.test
 
 import org.omp4j.extractor._
+import org.omp4j.grammar.Java8Parser
 
 /** LoadedContext with TranslationListener */
 class FLCELoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 	/** Return number of found directives or throw SyntaxErrorException */
 	def firstLevetContinueCount = {
-		val breaks = (new FirstLevelContinueExtractor ).visit(directives.head._2.ctx.forStatement.basicForStatement)
+		val breaks = (new FirstLevelContinueExtractor ).visit(directives.head._2.ctx.asInstanceOf[Java8Parser.StatementContext].forStatement.basicForStatement)
 		breaks.size
 	}
 

@@ -25,7 +25,7 @@ trait Reflectable extends ClassTrait {
 			val cls = conf.loader.loadByFQN(FQN)
 			findAllFieldsRecursively(cls, true)
 		} catch {
-			case e: ClassNotFoundException => throw new ParseException(s"Class '$name' ($FQN) was not found in generated JAR (${conf.jar.getAbsolutePath}}) even though it was found by ANTLR", e)
+			case e: ClassNotFoundException => throw new ParseException(s"Class '$name' ($FQN) was not found in generated JAR (${conf.jar.getAbsolutePath}) even though it was found by ANTLR", e)
 		}
 	}
 

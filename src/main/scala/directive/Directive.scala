@@ -20,7 +20,7 @@ import scala.util.Random
 import scala.collection.JavaConverters._
 
 /** Abstract omp directive class; implemented by several case classes */
-abstract class Directive(val parent: Directive, val publicVars: List[String], val privateVars: List[String])(implicit val schedule: DirectiveSchedule, val ctx: Java8Parser.StatementContext, val cmt: Token, val line: Int, conf: Config) {
+abstract class Directive(val parent: Directive, val publicVars: List[String], val privateVars: List[String])(implicit val schedule: DirectiveSchedule, val ctx: ParserRuleContext, val cmt: Token, val line: Int, conf: Config) {
 
 	/** Closest omp-parallel directive or null if none exists */
 	val parentOmpParallel: Directive = parent match {
@@ -158,6 +158,8 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 		childrenOfType[Critical].foreach{_.postTranslate}
 		childrenOfType[Barrier].foreach{_.postTranslate}
+		childrenOfType[ThreadNum].foreach{_.postTranslate}
+		childrenOfType[NumThreads].foreach{_.postTranslate}
 		// TODO: atomic
 	}
 
@@ -216,13 +218,13 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 
 	/** Assing primitive values */
-	protected def primitiveAssigments(implicit captured: Set[OMPVariable]) = (for {c <- captured if (Keywords.JAVA_VALUE_TYPES contains c.varType)} yield s"\t${c.arrayLessName} = $contextVar.${c.fullName};\n").toList.mkString
+	protected def primitiveAssignments(implicit captured: Set[OMPVariable]) = (for {c <- captured if (Keywords.JAVA_VALUE_TYPES contains c.varType)} yield s"\t${c.arrayLessName} = $contextVar.${c.fullName};\n").toList.mkString
 
 	/** Code to be prepended */
 	protected def toPrepend(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) = classDeclar + instance + init + executorBegin
 
 	/** Code to be appended*/
-	protected def toAppend(implicit captured: Set[OMPVariable]) = executorEnd + primitiveAssigments
+	protected def toAppend(implicit captured: Set[OMPVariable]) = executorEnd + primitiveAssignments
 
 	/** Modify code according to toPrepend and toAppend */
 	def wrap(rewriter: TokenStreamRewriter)(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) = {
@@ -251,6 +253,8 @@ object Directive {
 		val barrier = ompCtx.ompBarrier
 		val atomic = ompCtx.ompAtomic
 		val critical = ompCtx.ompCritical
+		val threadNum = ompCtx.ompThreadNum
+		val numThreads = ompCtx.ompNumThreads
 
 		if (parallel != null) {
 			// TODO: pass num
@@ -258,7 +262,7 @@ object Directive {
 				_.ompParallelModifier,
 				_.ompParallelModifiers,
 				_.ompSchedule,
-				_.ompThreadNum,
+				_.threadNum,
 				_.ompAccessModifier
 			)
 			new Parallel(parent, publics, privates)(DirectiveSchedule(sch), ctx, cmt, getLine(ctx), conf)
@@ -268,7 +272,7 @@ object Directive {
 				_.ompParallelForModifier,
 				_.ompParallelForModifiers,
 				_.ompSchedule,
-				_.ompThreadNum,
+				_.threadNum,
 				_.ompAccessModifier
 			)
 			new ParallelFor(parent, publics, privates)(DirectiveSchedule(sch), ctx, cmt, getLine(ctx), conf)
@@ -289,19 +293,23 @@ object Directive {
 			new Atomic(parent)(ctx, cmt, getLine(ctx), conf)
 		} else if (critical != null) {
 			new Critical(parent, critical.ompVar)(ctx, cmt, getLine(ctx), conf)
+		} else if (threadNum != null) {
+			new ThreadNum(parent)(ctx, cmt, getLine(ctx), conf)
+//		} else if (numThreads != null) {
+//			new NumThreads(parent)(ctx, cmt, getLine(ctx), conf)
 		} else {
 			throw new SyntaxErrorException("Invalid directive")
 		}
 	}
 
 	/** Get approximate line number */
-	private def getLine(ctx: ParserRuleContext) = {
+	def getLine(ctx: ParserRuleContext) = {
 		if (ctx == null || ctx.start == null) -1
 		else ctx.start.getLine
 	}
 
 	/** Get tuple of (schedule, threadNum, privates, publics)*/
-	private def getModifiers[ML, M](mList: ML)(modifier: ML => M, nextList: ML => ML, schedule: M => OMPParser.OmpScheduleContext, threadNum: M => OMPParser.OmpThreadNumContext, access: M => OMPParser.OmpAccessModifierContext): (OMPParser.OmpScheduleContext, Int, List[String], List[String]) = {
+	private def getModifiers[ML, M](mList: ML)(modifier: ML => M, nextList: ML => ML, schedule: M => OMPParser.OmpScheduleContext, threadNum: M => OMPParser.ThreadNumContext, access: M => OMPParser.OmpAccessModifierContext): (OMPParser.OmpScheduleContext, Int, List[String], List[String]) = {
 		if (mList == null || modifier(mList) == null) {
 			(null, -1, List(), List())
 		} else {

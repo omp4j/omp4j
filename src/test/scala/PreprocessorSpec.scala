@@ -2,6 +2,7 @@ package org.omp4j.test
 
 import java.io.{File, FilenameFilter}
 
+import org.omp4j.Config
 import org.omp4j.preprocessor.Preprocessor
 
 /** Unit test for Preprocessor */
@@ -16,7 +17,7 @@ class PreprocessorSpec extends AbstractSpec {
 			// all JDK versions			
 			if (!(java8samples contains f.getName) || System.getProperty("java.version").startsWith("1.8.")) {
 				it(f.getName) {
-					(new Preprocessor(Array(f.getAbsolutePath))).run should equal (0)
+					(new Preprocessor()(new Config(Array(f.getAbsolutePath)))).run should equal (0)
 				}
 			} else {	// only for java8
 				it(f.getName) {pending}
@@ -29,7 +30,7 @@ class PreprocessorSpec extends AbstractSpec {
 
 		it("01.java") {
 			val f = new File(getClass.getResource("/preprocessor/01.java").toURI.getPath)
-			(new Preprocessor(Array(f.getAbsolutePath))).run should equal (0)
+			(new Preprocessor()(new Config(Array(f.getAbsolutePath)))).run should equal (0)
 		}
 	}
 

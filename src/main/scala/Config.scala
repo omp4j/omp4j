@@ -15,10 +15,16 @@ class Config(args: Array[String]) {
 	val workDir: File = createWorkingDir
 
 	/** directory of preprocessed sources */
-	lazy val prepDir: File = (new TmpDir(workDir, "preprocessed")).toFile
+	val preprocessedDir: File = new TmpDir(workDir, "preprocessed").toFile
+
+	/** directory of sources without threadId methods */
+	val validationDir: File = new TmpDir(workDir, "validation").toFile
+
+	/** directory of binary classes (without threadId methods) */
+	val compilationDir: File = new TmpDir(workDir, "compilation").toFile
 
 	/** tmp JAR file */
-	lazy val jar: File = new File(workDir.getAbsolutePath + "/output.jar")
+	val jar: File = new File(compilationDir.getAbsolutePath + File.separator + "output.jar")
 
 	/** javac flags and file names */
 	lazy val (flags: Array[String], fileNames: Array[String]) = splitArgs(args)
@@ -27,7 +33,7 @@ class Config(args: Array[String]) {
 	lazy val files: Array[File] = openFiles(fileNames)
 
 	/** Loader for the jar defined above */
-	var loader: Loader = null
+	var loader: Loader = new Loader(jar)
 
 	/** flags for first compilation */
 	lazy val (optDir: File, firstCompFlags: Array[String]) = getOptDirAndFirstCompFlags
@@ -35,24 +41,7 @@ class Config(args: Array[String]) {
 	/** set of all used strings */
 	val tokenSet = new TokenSet
 
-	def init = {
-		initCompile
-		load
-	}
-
-	/** compile before preprocessing */
-	private def initCompile = {
-		val compiler = new Compiler(files, firstCompFlags)(this)
-		compiler.compile
-		compiler.jar(jar)
-	}
-
-	/** set the loader */
-	private def load = {
-		loader = new Loader(jar)
-	}
-
-	/** */
+	/** TODO: doc */
 	private def getOptDirAndFirstCompFlags = {
 
 		// last index of flags
@@ -63,7 +52,7 @@ class Config(args: Array[String]) {
 				val od = new File(".")
 				val fcf = concat(flags, Array("-d", workDir.getAbsolutePath))
 				(od, fcf)
-			case `lastIdx` => throw new IllegalArgumentException("Missing value for '-d'")
+			case `lastIdx` => throw new IllegalArgumentException("Missing value for '-d'")  // TODO: default . ??
 			case idx: Int =>
 				val od = new File(flags(idx + 1))
 				val fcf = flags.updated(idx + 1, workDir.getAbsolutePath)
@@ -93,6 +82,7 @@ class Config(args: Array[String]) {
 
 		val files = fileNames.map(new File(_))
 		files.foreach{ f =>
+			// TODO: string format
 			if (!f.exists)  throw new IllegalArgumentException("File '" + f.getPath + "' does not exist")
 			if (!f.canRead) throw new IllegalArgumentException("Missing read permission for file '" + f.getPath + "'")
 		}
