@@ -5,15 +5,16 @@ import org.omp4j.Config
 import org.omp4j.directive.DirectiveSchedule._
 import org.omp4j.exception.SyntaxErrorException
 import org.omp4j.grammar.Java8Parser
+import org.omp4j.preprocessor.DirectiveVisitor
 import org.omp4j.tree.{OMPClass, OMPVariable}
 
 case class For(override val parent: Directive, override val publicVars: List[String], override val privateVars: List[String])(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, publicVars, privateVars)(DirectiveSchedule.Static, ctx, cmt, line, conf) with ForCycle {
 
 
 	// validate existence of omp-parallel parent block
-	override def validate() = {
+	override def validate(directives: DirectiveVisitor.DirectiveMap) = {
 		if (parentOmpParallel == null) throw new SyntaxErrorException("'omp for' in no 'omp parallel [for]' block.")
-		super.validate()
+		super.validate(directives)
 	}
 
 	// inherit all

@@ -16,7 +16,7 @@ class DCLoadedContext(path: String) extends AbstractLoadedContext(path) {
 	/** Execute translation of the first directive */
 	def tryTranslation = {
 		val rewriter = new TokenStreamRewriter(tokens)
-		directives.head._2.translate(rewriter, ompFile)
+		directives.head._2.translate(rewriter, ompFile, directives)
 	}
 
 }

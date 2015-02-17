@@ -66,15 +66,17 @@ class Preprocessor(implicit conf: Config) {
 			exitCode = 0
 
 		} catch {	// TODO: various behaviour and output
-			case e: IllegalArgumentException => e.printStackTrace
+/*
+			case e: IllegalArgumentException => e.printStackTrace; th
 			case e: MalformedURLException    => e.printStackTrace
 			case e: SecurityException        => e.printStackTrace
 			case e: CompilationException     => e.printStackTrace
 			case e: ParseException           => e.printStackTrace
 			case e: SyntaxErrorException     => e.printStackTrace
 			case e: RuntimeException         => e.printStackTrace
+*/
 			// unexpected exception
-			case e: Exception                => e.printStackTrace
+			case e: Exception                => throw e
 		} finally {
 			cleanup
 		}
@@ -153,7 +155,7 @@ class Preprocessor(implicit conf: Config) {
 
 		// top level directives
 		directives.filter(_._2.parent == null).foreach { case (ctx, d) =>
-			d.translate(rewriter, ompFile)
+			d.translate(rewriter, ompFile, directives)
 		}
 
 		rewriter.getText

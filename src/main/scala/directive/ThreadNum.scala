@@ -5,6 +5,7 @@ import org.omp4j.Config
 import org.omp4j.directive.DirectiveSchedule._
 import org.omp4j.exception.SyntaxErrorException
 import org.omp4j.grammar.Java8Parser
+import org.omp4j.preprocessor.DirectiveVisitor
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 
 class ThreadNum(override val parent: Directive)(implicit ctx: ParserRuleContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, ctx, cmt, line, conf) {
@@ -21,12 +22,12 @@ class ThreadNum(override val parent: Directive)(implicit ctx: ParserRuleContext,
 	override lazy val exceptionName = parent.exceptionName
 	override val executorClass = parent.executorClass
 
-	override def validate = parent match {
+	override def validate(directives: DirectiveVisitor.DirectiveMap) = parent match {
 		case null => throw new SyntaxErrorException("'threadNum' must by located directly in some other OMP block.")
 		case _    => ;
 	}
 
-	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
+	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
 		throw new RuntimeException("translate can't be run on ThreadNum!")
 	}
 

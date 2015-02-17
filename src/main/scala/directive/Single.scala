@@ -5,6 +5,7 @@ import org.omp4j.Config
 import org.omp4j.directive.DirectiveSchedule._
 import org.omp4j.exception.SyntaxErrorException
 import org.omp4j.grammar.Java8Parser
+import org.omp4j.preprocessor.DirectiveVisitor
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 
 class Single(override val parent: Directive)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, ctx, cmt, line, conf) {
@@ -23,12 +24,12 @@ class Single(override val parent: Directive)(implicit ctx: Java8Parser.Statement
 
 	val singleLock = addAtomicBool("singleLock")
 
-	override def validate = parent match {
+	override def validate(directives: DirectiveVisitor.DirectiveMap) = parent match {
 		case _: Parallel | _: ParallelFor => ;
 		case _ => throw new SyntaxErrorException("'omp single' must by located directly in 'omp parallel [for]' block.")
 	}
 
-	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
+	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
 		throw new RuntimeException("translate can't be run on Single!")
 	}
 

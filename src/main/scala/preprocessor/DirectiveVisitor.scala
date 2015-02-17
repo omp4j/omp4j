@@ -1,6 +1,7 @@
 package org.omp4j.preprocessor
 
 import org.antlr.v4.runtime._
+import org.antlr.v4.runtime.tree.ParseTree
 import org.omp4j.Config
 import org.omp4j.directive._
 import org.omp4j.exception._
@@ -13,7 +14,7 @@ import scala.util.control.Breaks._
 /** Static DirectiveVisitor properties */
 object DirectiveVisitor {
 	/** Ordered map of key: ParserRuleContext; value: Directive */
-	type DirectiveMap = ListMap[ParserRuleContext, Directive]
+	type DirectiveMap = ListMap[ParseTree, Directive]
 }
 
 /** Fetch list of Directives (aka OMPParseTree, corresponding statement and parsers) */

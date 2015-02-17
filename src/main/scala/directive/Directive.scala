@@ -3,7 +3,7 @@ package org.omp4j.directive
 import org.antlr.v4.runtime.tree.SyntaxTree
 import org.omp4j.Config
 import org.omp4j.grammar.OMPParser.OmpCriticalContext
-import org.omp4j.preprocessor.TranslationVisitor
+import org.omp4j.preprocessor.{TranslationVisitor, DirectiveVisitor}
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 import org.omp4j.utils.Keywords
 
@@ -29,7 +29,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	}
 
 	// constructor
-	validate()
+//	validate()      // lazy, on translation
 	parent match {
 		case null => ;
 		case _ => parent.registerChild(this)
@@ -98,8 +98,9 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	}
 
 	/** Directive validation */
-	def validate() = parent match {   // parent validation
-		case _: Sections | _: Master | _: Critical | _: Single | _: Barrier | _: Atomic => throw new SyntaxErrorException("In block 'omp sections' only 'omp section' blocks are allowed.")
+	def validate(directives: DirectiveVisitor.DirectiveMap) = parent match {   // parent validation
+		case _: Sections => throw new SyntaxErrorException("In block 'omp sections' only 'omp section' blocks are allowed.")
+		case _: Master | _: Critical | _: Single | _: Barrier | _: Atomic => throw new SyntaxErrorException("There can't be any directives in this block type")
 		case _ => ;
 	}
 
@@ -140,7 +141,9 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 	// TODO: thread-safe rewriter
 	/** Translate this directive and delete the directive comment */
-	def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
+	def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
+		validate(directives)
+
 		val (captured, capturedThis, directiveClass) = preTranslate
 		postTranslate(captured, capturedThis, directiveClass)
 		translateChildren(captured, capturedThis, directiveClass)

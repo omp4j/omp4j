@@ -10,7 +10,7 @@ class DirectiveLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 /** Unit test for directive */
 class DirectiveSpec extends AbstractSpec {
-	val dlc1= (new DirectiveLoadedContext("/directive/01.java"))
+	val dlc1 = (new DirectiveLoadedContext("/directive/01.java"))
 
 	describe("Used variable/class names should not be generated") {
 		val varsAndClasses = List("one", "two", "three", "Four", "five", "six", "seven", "eight", "nine")
