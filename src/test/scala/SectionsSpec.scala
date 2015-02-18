@@ -28,7 +28,7 @@ class SectionsSpec extends AbstractSpec {
 			an [SyntaxErrorException] should be thrownBy new Preprocessor()(new Config(new SectionsLoadedContext("/sections/03.java").getFile)).run
 		}
 
-		it("0.java") {
+		it("04.java") {
 			an [SyntaxErrorException] should be thrownBy new Preprocessor()(new Config(new SectionsLoadedContext("/sections/04.java").getFile)).run
 		}
 	}
