@@ -21,4 +21,15 @@ class SectionsSpec extends AbstractSpec {
 			an [SyntaxErrorException] should be thrownBy new Preprocessor()(new Config(new SectionsLoadedContext("/sections/02.java").getFile)).run
 		}
 	}
+
+	describe("Sections must be before {...} statement - in file...") {
+
+		it("03.java") {
+			an [SyntaxErrorException] should be thrownBy new Preprocessor()(new Config(new SectionsLoadedContext("/sections/03.java").getFile)).run
+		}
+
+		it("0.java") {
+			an [SyntaxErrorException] should be thrownBy new Preprocessor()(new Config(new SectionsLoadedContext("/sections/04.java").getFile)).run
+		}
+	}
 }

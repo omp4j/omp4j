@@ -35,7 +35,8 @@ case class Sections(override val parent: Directive)(implicit schedule: Directive
 
 			}
 		} catch {
-			case e: NullPointerException => throw new SyntaxErrorException("sth went wrong, TODO doc")
+			case e: ClassCastException   => throw new SyntaxErrorException("'omp sections' may be only before {...} statement.")
+			case e: NullPointerException => throw new SyntaxErrorException("Corrupted 'omp sections' structure.")
 		}
 	}
 

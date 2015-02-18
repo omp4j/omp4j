@@ -298,8 +298,8 @@ object Directive {
 			new Critical(parent, critical.ompVar)(ctx, cmt, getLine(ctx), conf)
 		} else if (threadNum != null) {
 			new ThreadNum(parent)(ctx, cmt, getLine(ctx), conf)
-//		} else if (numThreads != null) {
-//			new NumThreads(parent)(ctx, cmt, getLine(ctx), conf)
+		} else if (numThreads != null) {
+			new NumThreads(parent)(ctx, cmt, getLine(ctx), conf)
 		} else {
 			throw new SyntaxErrorException("Invalid directive")
 		}
