@@ -7,7 +7,7 @@ import org.omp4j.Config
 import org.omp4j.preprocessor.DirectiveVisitor
 import org.omp4j.tree.{OMPFile, OMPClass, OMPVariable}
 
-case class Section(override val parent: Directive)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, ctx, cmt, line, conf) {
+case class Section(override val parent: Directive)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, null, ctx, cmt, line, conf) {
 	override def validate(directives: DirectiveVisitor.DirectiveMap) = parent match {
 		case secPar: Sections => ;
 		case _ => throw new SyntaxErrorException("'omp section' must by located directly in 'omp sections' block.")

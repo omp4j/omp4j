@@ -15,8 +15,10 @@ import scala.util.control.Breaks._
 /** Handler for JavaCompiler. All settings are passed (implicitelly) by Config */
 class Compiler(files: Array[File])(implicit conf: Config) {
 
-	// TODO: doc
+	/** Java compiler provided by JVM */
 	private lazy val jc = ToolProvider.getSystemJavaCompiler
+
+	/** File manager used for file compilation*/
 	private lazy val fileManager = jc.getStandardFileManager(null, null, null)
 
 	/** Compile sources
@@ -44,7 +46,7 @@ class Compiler(files: Array[File])(implicit conf: Config) {
 			val flags = flagBuffer.toArray.toIterable.asJava
 
 			val units = fileManager.getJavaFileObjectsFromFiles(files.toIterable.asJava)
-			val result = jc.getTask(null, fileManager, null, flags, null, units).call // TODO
+			val result = jc.getTask(null, fileManager, null, flags, null, units).call
 
 			if (!result) throw new CompilationException("Compilation failed")
 		} catch {
@@ -57,13 +59,13 @@ class Compiler(files: Array[File])(implicit conf: Config) {
 	  * @throws IllegalArgumentException When class-file to be packed is corrupted or missing
 	  */
 	def jar() = {
-		val buffer = new Array[Byte](10*1024)	// TODO: size?
+		val buffer = new Array[Byte](10*1024)	// TODO: size? maybe configurable
 
 		val stream = new FileOutputStream(conf.jar)
 		val out = new JarOutputStream(stream, new Manifest)
 
 		// classes to be packed
-		val classFiles: Array[java.io.File] = FileTreeWalker.recursiveListFiles(conf.compilationDir)   // TODO: !!!! originally workdir
+		val classFiles: Array[File] = FileTreeWalker.recursiveListFiles(conf.compilationDir)
 			.filter(f => f.isFile && f.getName.endsWith(".class"))
 		
 		// pack each file

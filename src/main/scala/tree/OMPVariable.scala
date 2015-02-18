@@ -35,6 +35,7 @@ object OMPVariable {
 		}
 	}
 
+	// TODO: IllegalArgEx -> NoSuchElEx
 	private def find(id: String, set: Set[OMPVariable]): OMPVariable = {
 		(set find (_.arrayLessName == id)) match {
 			case Some(v) => v

@@ -8,7 +8,7 @@ import org.omp4j.grammar.Java8Parser
 import org.omp4j.preprocessor.DirectiveVisitor
 import org.omp4j.tree.{OMPClass, OMPVariable}
 
-case class For(override val parent: Directive, override val publicVars: List[String], override val privateVars: List[String])(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, publicVars, privateVars)(DirectiveSchedule.Static, ctx, cmt, line, conf) with ForCycle {
+case class For(override val parent: Directive, override val publicVars: List[String], override val privateVars: List[String])(implicit threadNum: String, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, publicVars, privateVars)(DirectiveSchedule.Static, threadNum, ctx, cmt, line, conf) with ForCycle {
 
 
 	// validate existence of omp-parallel parent block

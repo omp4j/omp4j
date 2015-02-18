@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 import org.omp4j.Config
 
-case class Sections(override val parent: Directive)(implicit schedule: DirectiveSchedule, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List()) {
+case class Sections(override val parent: Directive)(implicit schedule: DirectiveSchedule, threadNum: String, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List()) {
 	override lazy val secondIter = true
 
 	/** Check whether 'sections' directive consist only of 'section' directives */

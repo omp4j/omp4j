@@ -20,7 +20,7 @@ import scala.util.Random
 import scala.collection.JavaConverters._
 
 /** Abstract omp directive class; implemented by several case classes */
-abstract class Directive(val parent: Directive, val publicVars: List[String], val privateVars: List[String])(implicit val schedule: DirectiveSchedule, val ctx: ParserRuleContext, val cmt: Token, val line: Int, conf: Config) {
+abstract class Directive(val parent: Directive, val publicVars: List[String], val privateVars: List[String])(implicit val schedule: DirectiveSchedule, val threadNum: String, val ctx: ParserRuleContext, val cmt: Token, val line: Int, conf: Config) {
 
 	/** Closest omp-parallel directive or null if none exists */
 	val parentOmpParallel: Directive = parent match {
@@ -28,15 +28,16 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 		case _ => parent.parentOmpParallel
 	}
 
-	// constructor
-//	validate()      // lazy, on translation
 	parent match {
 		case null => ;
-		case _ => parent.registerChild(this)
+		case _    => parent.registerChild(this)
 	}
 
 	/** [Shortcut] Number of threads */
-	lazy val threadCount = "4"	// TODO: thread count
+	lazy val threadCount = threadNum match {
+		case null => "Runtime.getRuntime().availableProcessors()"
+		case _    => threadNum
+	}
 
 	/** Context variable name */
 	lazy val contextVar = uniqueName("ompContext")
@@ -260,30 +261,36 @@ object Directive {
 		val numThreads = ompCtx.ompNumThreads
 
 		if (parallel != null) {
-			// TODO: pass num
-			val (sch, num, privates, publics) = getModifiers[OMPParser.OmpParallelModifiersContext, OMPParser.OmpParallelModifierContext](parallel.ompParallelModifiers)(
+			val (sch, threads, privates, publics) = getModifiers[OMPParser.OmpParallelModifiersContext, OMPParser.OmpParallelModifierContext](parallel.ompParallelModifiers)(
 				_.ompParallelModifier,
 				_.ompParallelModifiers,
 				_.ompSchedule,
 				_.threadNum,
 				_.ompAccessModifier
 			)
-			new Parallel(parent, publics, privates)(DirectiveSchedule(sch), ctx, cmt, getLine(ctx), conf)
+			new Parallel(parent, publics, privates)(DirectiveSchedule(sch), threads, ctx, cmt, getLine(ctx), conf)
 		} else if (parallelFor != null) {
-			// TODO: pass num
-			val (sch, num, privates, publics) = getModifiers[OMPParser.OmpParallelForModifiersContext, OMPParser.OmpParallelForModifierContext](parallelFor.ompParallelForModifiers)(
+			val (sch, threads, privates, publics) = getModifiers[OMPParser.OmpParallelForModifiersContext, OMPParser.OmpParallelForModifierContext](parallelFor.ompParallelForModifiers)(
 				_.ompParallelForModifier,
 				_.ompParallelForModifiers,
 				_.ompSchedule,
 				_.threadNum,
 				_.ompAccessModifier
 			)
-			new ParallelFor(parent, publics, privates)(DirectiveSchedule(sch), ctx, cmt, getLine(ctx), conf)
+			new ParallelFor(parent, publics, privates)(DirectiveSchedule(sch), threads, ctx, cmt, getLine(ctx), conf)
 		} else if (nonParFor != null) {
 			val (publics, privates) = separate(nonParFor.ompAccessModifier.asScala.toList)
-			new For(parent, publics, privates)(ctx, cmt, getLine(ctx), conf)
+			// For can't affect scheduling type or number of cores since it is nested directive
+			new For(parent, publics, privates)(null, ctx, cmt, getLine(ctx), conf)
 		} else if (sections != null) {
-			new Sections(parent)(DirectiveSchedule(sections.ompSchedule), ctx, cmt, getLine(ctx), conf)
+			val (sch, threads, _, _) = getModifiers[OMPParser.SectionsModifiersContext, OMPParser.SectionsModifierContext](sections.sectionsModifiers)(
+				_.sectionsModifier,
+				_.sectionsModifiers,
+				_.ompSchedule,
+				_.threadNum,
+				_ => null
+			)
+			new Sections(parent)(DirectiveSchedule(sch), threads, ctx, cmt, getLine(ctx), conf)
 		} else if (section != null) {
 			new Section(parent)(ctx, cmt, getLine(ctx), conf)
 		} else if (single != null) {
@@ -312,14 +319,14 @@ object Directive {
 	}
 
 	/** Get tuple of (schedule, threadNum, privates, publics)*/
-	private def getModifiers[ML, M](mList: ML)(modifier: ML => M, nextList: ML => ML, schedule: M => OMPParser.OmpScheduleContext, threadNum: M => OMPParser.ThreadNumContext, access: M => OMPParser.OmpAccessModifierContext): (OMPParser.OmpScheduleContext, Int, List[String], List[String]) = {
+	private def getModifiers[ML, M](mList: ML)(modifier: ML => M, nextList: ML => ML, schedule: M => OMPParser.OmpScheduleContext, threadNum: M => OMPParser.ThreadNumContext, access: M => OMPParser.OmpAccessModifierContext): (OMPParser.OmpScheduleContext, String, List[String], List[String]) = {
 		if (mList == null || modifier(mList) == null) {
-			(null, -1, List(), List())
+			(null, null, List(), List())
 		} else {
 			val (sch, num, privates, publics) = getModifiers(nextList(mList))(modifier, nextList, schedule, threadNum, access)
 			val mod = modifier(mList)
 			val newSch = if (schedule(mod) != null) schedule(mod) else sch
-			val newTN  = if (threadNum(mod) != null) threadNum(mod).ompNumber.getText.toInt else num
+			val newTN  = if (threadNum(mod) != null) threadNum(mod).ompNumber.getText else num
 			val newPri = try {
 				val acc = access(mod)
 				val res = getVars(acc.ompVars)

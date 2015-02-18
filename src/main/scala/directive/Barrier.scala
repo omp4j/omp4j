@@ -7,7 +7,7 @@ import org.omp4j.grammar.Java8Parser
 import org.omp4j.preprocessor.DirectiveVisitor
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 
-case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, ctx, cmt, line, conf) {
+case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, null, ctx, cmt, line, conf) {
 
 	// inherit all
 	override lazy val threadCount = parent.threadCount
@@ -24,8 +24,9 @@ case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementCon
 
 	// validate existence of some omp parent block
 	override def validate(directives: DirectiveVisitor.DirectiveMap) = {
-		// TODO: only in parallel/for
 		if (parent == null) throw new SyntaxErrorException("'omp barrier' must be nested in some other omp block.")
+		// TODO: test condition
+		if (!parent.isInstanceOf[Parallel] && !parent.isInstanceOf[ParallelFor] && !parent.isInstanceOf[For]) throw new SyntaxErrorException("'omp barrier' may be located only in 'omp [parallel] [for]'.")
 		super.validate(directives)
 	}
 

@@ -7,7 +7,7 @@ import org.omp4j.extractor._
 trait Reflectable extends ClassTrait {
 
 	/** Get FQN using parent's name */
-	override lazy val FQN: String = parent match {	// TODO package?
+	override lazy val FQN: String = parent match {	// TODO package? seems to work
 		case null => packageNamePrefix() + name
 		case _    => parent.FQN + "$" + name
 	}
