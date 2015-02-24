@@ -7,38 +7,17 @@ import org.omp4j.grammar.Java8Parser
 import org.omp4j.preprocessor.DirectiveVisitor
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 
-class Atomic(override val parent: Directive)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, null, ctx, cmt, line, conf) {
+class Atomic(override val parent: Directive)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Critical(parent, null) {
 
 	// inherit all
-	override lazy val threadCount = parent.threadCount
-	override lazy val contextVar = parent.contextVar
-	override lazy val executor = parent.executor
-	override lazy val contextClass = parent.contextClass
-	override lazy val threadArr = parent.threadArr
-	override lazy val iter = parent.iter
-	override lazy val iter2 = parent.iter2
-	override lazy val secondIter = parent.secondIter
-	override lazy val exceptionName = parent.exceptionName
-	override val executorClass = parent.executorClass
-
-	override def validate(directives: DirectiveVisitor.DirectiveMap) = {
-		if (parentOmpParallel == null) throw new SyntaxErrorException("'omp for' in no 'omp parallel [for]' block.")
-		super.validate(directives)
-	}
-
-	// TODO: barrier atomic
-	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
-		throw new RuntimeException("translate can't be run on Atomic!")
-	}
-
-	// TODO: barrier atomic
-	override protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
-		throw new RuntimeException("preTranslate can't be run on Atomic!")
-	}
-
-	// TODO: barrier atomic
-	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		throw new RuntimeException("postTranslate can't be run on Atomic!")
-	}
-
+//	override lazy val threadCount = parent.threadCount
+//	override lazy val contextVar = parent.contextVar
+//	override lazy val executor = parent.executor
+//	override lazy val contextClass = parent.contextClass
+//	override lazy val threadArr = parent.threadArr
+//	override lazy val iter = parent.iter
+//	override lazy val iter2 = parent.iter2
+//	override lazy val secondIter = parent.secondIter
+//	override lazy val exceptionName = parent.exceptionName
+//	override val executorClass = parent.executorClass
 }
