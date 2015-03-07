@@ -160,11 +160,11 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 	/** Method where children translation is invoked (if any) */
 	protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		childrenOfType[Critical].foreach{_.postTranslate}
+		childrenOfType[Atomic].foreach{_.postTranslate}
 		childrenOfType[Barrier].foreach{_.postTranslate}
-		childrenOfType[ThreadNum].foreach{_.postTranslate}
+		childrenOfType[Critical].foreach{_.postTranslate}
 		childrenOfType[NumThreads].foreach{_.postTranslate}
-		// TODO: atomic
+		childrenOfType[ThreadNum].foreach{_.postTranslate}
 	}
 
 	/** Second level of translation - make parallelism */

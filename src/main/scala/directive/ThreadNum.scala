@@ -41,6 +41,7 @@ class ThreadNum(override val parent: Directive)(implicit ctx: ParserRuleContext,
 
 	def postTranslate(implicit rewriter: TokenStreamRewriter) = {
 		rewriter.replace(ctx.start, ctx.stop, s"$executor.getThreadNum()")
+		// do not delete cmt as it is replaced the line before
 	}
 
 }

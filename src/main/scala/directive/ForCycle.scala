@@ -11,20 +11,25 @@ trait ForCycle {
 
 	def uniqueName(baseName: String): String
 	protected def getRewrittenText(ctx: SyntaxTree)(implicit rewriter: TokenStreamRewriter): String
-	val iter2: String
-	val threadCount: String
 
-	def translateFor(implicit ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter) = {
-
+	/** Extract basicForStatement or throw ParseException giving the reason of failure */
+	def getBasicForStatement(ctx: Java8Parser.StatementContext) = {
 		val forStatement = ctx.forStatement
 		if (forStatement == null) throw new ParseException("For directive before non-for statement")
 		val basicForStatement = forStatement.basicForStatement
 		if (basicForStatement == null) throw new ParseException("For directive before enhanced for statement")
 
-		// banish break/continue
+		basicForStatement
+	}
+
+	/** Check whether the statement is break/continue-free or throw ParseException */
+	def validateBasicForStatement(basicForStatement: Java8Parser.BasicForStatementContext) = {
 		if ((new FirstLevelBreakExtractor ).visit(basicForStatement).size > 0) throw new ParseException("Break statements are not allowed")
 		if ((new FirstLevelContinueExtractor ).visit(basicForStatement).size > 0) throw new ParseException("Continue statements are not allowed")
+	}
 
+	/** Get tuple (iterName, initExpr) or throw ParseException if error occures */
+	def getInit(basicForStatement: Java8Parser.BasicForStatementContext)(implicit rewriter: TokenStreamRewriter) = {
 		// INIT
 		val forInit = basicForStatement.forInit
 		if (forInit == null) throw new ParseException("For directive before enhanced for statement")
@@ -33,7 +38,28 @@ trait ForCycle {
 		val iterName = getRewrittenText(forList.head.variableDeclaratorId.Identifier) //.getText	// var name
 		val initExpr = forList.head.variableInitializer.expression	// right side of init assignment
 
-		// COND
+		(iterName, initExpr)
+	}
+
+	/** Extract update part of the for cycle or throw ParseException giving the reason of failure */
+	def getUpdate(basicForStatement: Java8Parser.BasicForStatementContext) = {
+		val forUpdate = basicForStatement.forUpdate
+		val updateList = forUpdate.statementExpressionList.statementExpression.asScala
+		if (updateList.size != 1) throw new ParseException("For incrementation must containt exactly one statement")
+		val update = updateList.head
+
+		update
+	}
+
+	def translateFor(iter2: String, threadCount: String)(implicit ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter) = {
+
+		val basicForStatement = getBasicForStatement(ctx)
+		validateBasicForStatement(basicForStatement)
+
+		// init
+		val (iterName, initExpr) = getInit(basicForStatement)
+
+		// cond
 		val limitExpr = basicForStatement.expression
 		var cond: Java8Parser.ShiftExpressionContext = null	// for-cycle condition limit (right side)
 
@@ -71,14 +97,11 @@ trait ForCycle {
 
 			if (leftSide.getText != iterName) throw new NullPointerException
 		} catch {
-			case e: NullPointerException => throw new ParseException("Condition left side must contain only iter. variable")
+			case e: NullPointerException => throw new ParseException("Condition left side must contain only iter. variable", e)
 		}
 
 		// INC
-		val forUpdate = basicForStatement.forUpdate
-		val updateList = forUpdate.statementExpressionList.statementExpression.asScala
-		if (updateList.size != 1) throw new ParseException("For incrementation must containt exactly one statement")
-		val update = updateList.head
+		val update = getUpdate(basicForStatement)
 
 		//postIncrementExpression
 		var step: String = null

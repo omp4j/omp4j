@@ -47,6 +47,7 @@ class Critical(override val parent: Directive, syncVarCtx: OMPParser.OmpVarConte
 	def postTranslate(implicit rewriter: TokenStreamRewriter) = {
 		rewriter.insertBefore(ctx.start, s"synchronized($syncVar) {\n")
 		rewriter.insertAfter(ctx.stop, "}\n")
+		deleteCmt
 	}
 
 }

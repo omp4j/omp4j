@@ -44,6 +44,7 @@ case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementCon
 
 	def postTranslate(implicit rewriter: TokenStreamRewriter) = {
 		rewriter.insertBefore(ctx.start, s"""$executor.hitBarrier("$barrierVar");\n""")
+		deleteCmt
 	}
 
 }

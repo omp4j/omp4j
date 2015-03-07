@@ -20,67 +20,57 @@ import scala.collection.mutable.ArrayBuffer
 
 /** Class representing the preprocessor itself.
   * @constructor Create preprocessor for given files.
-  * @param Files to be parsed
+  * @param conf the preprocessor configuration
   * @throws ParseException TODO
   */
 class Preprocessor(implicit conf: Config) {
 
 	/** Start parsing file by file */
-	def run: Int = {
+	def run: Array[File] = {
+		/* New lifecycle, TODO: rewrite
+		- get config
+		- get parseTree for each file (check exceptions)
+		- remove threadId tokens and validate source using compiler
+		- using previously parsed trees, make one level translation
+		- run until a directive exists
+		 */
 
-		var exitCode: Int = 1
-		try {
+		// parse sources        TODO: parallelly
+		val parsed = conf.files.map(f => (f, parseFile(f)))
 
-			/* New lifecycle
-			- get config
-			- get parseTree for each file (check exceptions)
-			- remove threadId tokens and validate source using compiler
-			- using previously parsed trees, make one level translation
-			- run until a directive exists
-			 */
+		// validate
+		validate(parsed)
 
-			// parse sources        TODO: parallelly
-			val parsed = conf.files.map(f => (f, parseFile(f)))
-
-			// validate
-			validate(parsed)
-
-			// register tokens
-			for {(f, (tok, par, cun)) <- parsed} {
-				registerTokens(tok)
-			}
-
-			val finalSources = ArrayBuffer[File]()
-
-			// translate and save   TODO: parallelly
-			for {(f, (tok, par, cun)) <- parsed} {
-				val translatedSource = translate(tok, par, cun)
-//				saveResult(f, res)
-				finalSources += FileSaver.saveToFile(translatedSource, conf.preprocessedDir, cun.packageDeclaration, f.getAbsolutePath.split(File.separator).last)
-			}
-
-			// compile again -> result
-			val compiler = new Compiler(finalSources.toArray ++ FileTreeWalker.getRuntimeFiles)
-			compiler.compile()
-
-			exitCode = 0
-
-		} catch {	// TODO: various behaviour and output
-/*
-			case e: IllegalArgumentException => e.printStackTrace; th
-			case e: MalformedURLException    => e.printStackTrace
-			case e: SecurityException        => e.printStackTrace
-			case e: CompilationException     => e.printStackTrace
-			case e: ParseException           => e.printStackTrace
-			case e: SyntaxErrorException     => e.printStackTrace
-			case e: RuntimeException         => e.printStackTrace
-*/
-			// unexpected exception
-			case e: Exception                => throw e
-		} finally {
-			cleanup
+		// register tokens
+		for {(f, (tok, par, cun)) <- parsed} {
+			registerTokens(tok)
 		}
-		exitCode
+
+		val finalSourcesBuffer = ArrayBuffer[File]()
+		val nextLevelSourcesBuffer = ArrayBuffer[File]()
+
+		// translate and save   TODO: parallelly
+		for {(f, (tok, par, cun)) <- parsed} {
+			try {
+				val translatedSource = translate(tok, par, cun)
+				nextLevelSourcesBuffer += FileSaver.saveToFile(translatedSource, conf.preprocessedDir, cun.packageDeclaration, f.getAbsolutePath.split(File.separator).last)
+			} catch {
+				case e: NothingToTranslateException => finalSourcesBuffer += f
+			}
+		}
+
+		val finalSources : Array[File] = finalSourcesBuffer.toArray
+		val nextLevelSources : Array[File] = nextLevelSourcesBuffer.toArray
+
+		val result: Array[File] =
+			if (nextLevelSources.size == 0) finalSources.toArray
+			else {
+				val nextConf = conf.nextLevel(finalSources ++ nextLevelSources)
+				val P = new Preprocessor()(nextConf)
+				P.run
+			}
+		result
+		// TODO: cleanup
 	}
 
 	/** don't call externally */
@@ -97,7 +87,7 @@ class Preprocessor(implicit conf: Config) {
 		}
 
 		// compile them
-		val compiler = new Compiler(toValidate.toArray)
+		val compiler = new Compiler(toValidate.toArray ++ FileTreeWalker.getRuntimeFiles)
 		compiler.compile(List(("-d", conf.compilationDir.getAbsolutePath)))
 		compiler.jar()
 	}
@@ -141,7 +131,6 @@ class Preprocessor(implicit conf: Config) {
 					throw new ParseException("Both parsing strategies SLL(*) and LL(*) failed", ex)
 				}
 			}
-//		cunit.inspect(parser);	// display gui tree
 
 		(tokens, parser, cunit)
 	}
@@ -149,7 +138,9 @@ class Preprocessor(implicit conf: Config) {
 	private def translate(tokens: CommonTokenStream, parser: Java8Parser, cunit: Java8Parser.CompilationUnitContext): String = {
 
 		// List of directives
-		val directives = (new DirectiveVisitor(tokens, parser)).visit(cunit)
+		val directives = new DirectiveVisitor(tokens, parser).visit(cunit)
+		if (directives.size == 0) throw new NothingToTranslateException
+
 		val rewriter = new TokenStreamRewriter(tokens)
 		val ompFile = new OMPFile(cunit, parser)
 

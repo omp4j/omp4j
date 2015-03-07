@@ -44,6 +44,7 @@ class Single(override val parent: Directive)(implicit ctx: Java8Parser.Statement
 	def postTranslate(implicit rewriter: TokenStreamRewriter) = {
 		rewriter.insertBefore(ctx.start, s"if (! $contextVar.$singleLock.getAndSet(true)) {\n")
 		rewriter.insertAfter(ctx.start, "}\n")
+		deleteCmt
 	}
 
 }

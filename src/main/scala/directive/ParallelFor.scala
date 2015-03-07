@@ -19,7 +19,7 @@ case class ParallelFor(override val parent: Directive, override val publicVars: 
 	}
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		translateFor
+		translateFor(iter2, threadCount)
 		wrap(rewriter)(captured, capturedThis, directiveClass)
 	}
 

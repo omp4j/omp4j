@@ -9,7 +9,7 @@ import org.omp4j.utils.TmpDir
 import scala.Array._
 
 /** Configuration for compiler and other classes. Use implicitally. */
-class Config(args: Array[String]) {
+class Config(args: Array[String], level: Int = 1) {
 	
 	/** working directory */
 	val workDir: File = createWorkingDir
@@ -104,5 +104,16 @@ class Config(args: Array[String]) {
 
 		// TODO: use hidden (.*)
 		(new TmpDir(tmpRootFile, "omp4j")).toFile
+	}
+
+	def nextLevel(nextLvlFiles: Array[File]): Config = {
+		val c = this
+		new Config(args, level + 1) {
+			override lazy val files = nextLvlFiles
+			override lazy val flags: Array[String] = c.flags
+			override lazy val fileNames: Array[String] = nextLvlFiles.map(_.getAbsolutePath)
+			// lazy val (optDir: File, firstCompFlags: Array[String]) = getOptDirAndFirstCompFlags  // TODO:?
+
+		}
 	}
 }
