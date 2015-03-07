@@ -82,14 +82,16 @@ class Loader(jar: File) {
 	def load(name: String, cunit: Java8Parser.CompilationUnitContext): Class[_] = {
 		try {
 			loadByFQN(name)
-		} catch {
-			case e: ClassNotFoundException => 
+		} catch { case e: ClassNotFoundException =>
+			try {
+				loadByFQN("java.lang." + name)
+			} catch { case e: ClassNotFoundException =>
 				try {
 					loadByFQN(buildFQN(name, cunit))
 				} catch {
 					case e: ClassNotFoundException => loadByImport(name, cunit)
 				}
-			
+			}
 		}
 	}
 }
