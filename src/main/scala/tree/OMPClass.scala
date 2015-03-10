@@ -12,7 +12,7 @@ object OMPClass {
 }
 
 /** The abstract class representation */
-abstract class OMPClass(ec: OMPClass.EitherCtx, parent: OMPClass, parser: Java8Parser)(implicit val conf: Config, ompFile: OMPFile) extends Findable{
+abstract class OMPClass(ec: OMPClass.EitherCtx, parent: OMPClass, parser: Java8Parser)(implicit val conf: Config, val ompFile: OMPFile) extends Findable{
 
 	/** classMap key */
 	lazy val key: ParserRuleContext = ctx

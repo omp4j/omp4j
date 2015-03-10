@@ -140,12 +140,21 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 		}
 	}
 
+	var captured: Set[OMPVariable] = null
+	var capturedThis: Boolean = false
+	var directiveClass: OMPClass = null
+
 	// TODO: thread-safe rewriter
 	/** Translate this directive and delete the directive comment */
 	def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
 		validate(directives)
 
-		val (captured, capturedThis, directiveClass) = preTranslate
+		// TODO: make them public
+		val ccd = preTranslate
+		captured = ccd._1
+		capturedThis = ccd._2
+		directiveClass = ccd._3
+
 		postTranslate(captured, capturedThis, directiveClass)
 		translateChildren(captured, capturedThis, directiveClass)
 		deleteCmt

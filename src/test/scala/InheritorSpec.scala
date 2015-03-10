@@ -24,7 +24,6 @@ class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 	/** */
 	def directiveLocalsAsText(i: Int) = {
-//		println(directives(i).ctx.getText)
 		Inheritor.getDirectiveLocals(directives.toList(i)._2.ctx, directives.head._2).map(varAsText)
 	}
 }
@@ -157,7 +156,7 @@ class InheritorSpec extends AbstractSpec {
 			(new InheritorLoadedContext("/inheritedLocals/08.java")).directiveLocalsAsText(1) should equal (Set())
 		}
 		it("08.java | 2") {
-			(new InheritorLoadedContext("/inheritedLocals/08.java")).directiveLocalsAsText(2) should contain only ("int x")
+			(new InheritorLoadedContext("/inheritedLocals/08.java")).directiveLocalsAsText(2) should contain only ("int x", "int y")
 		}
 	}
 }

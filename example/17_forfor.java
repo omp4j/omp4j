@@ -5,6 +5,7 @@ class ForFor {
 		int arr[][] = new int[4][10];
 
 		AtomicInteger ra = new AtomicInteger(0);
+		int constant = 15;
 
 		// omp parallel
 		{
@@ -12,7 +13,7 @@ class ForFor {
 
 			// omp for
 			for (int c = 0; c < 10; c++) {
-				arr[r][c] = r+c;
+				arr[r][c] = r+c+constant;
 			}
 		}
 

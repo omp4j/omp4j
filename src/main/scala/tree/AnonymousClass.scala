@@ -7,7 +7,7 @@ import org.omp4j.grammar._
 import scala.collection.JavaConverters._
 
 /** The anonymous class representation */
-case class AnonymousClass(_clb: Java8Parser.ClassBodyContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, val ompFile: OMPFile) extends OMPClass(Right(_clb), parent, parser) with Nonreflectable {
+case class AnonymousClass(_clb: Java8Parser.ClassBodyContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, ompFile: OMPFile) extends OMPClass(Right(_clb), parent, parser) with Nonreflectable {
 
 	override lazy val classBody = _clb
 	override lazy val name = getAnonName

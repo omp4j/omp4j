@@ -15,6 +15,7 @@ import org.omp4j.tree.OMPVariableType._
 
 /** Static OMPVariable locator */
 object OMPVariable {
+	/** Find variable using information given */
 	def apply(arrayLessId: String, locals: Set[OMPVariable], params: Set[OMPVariable], ompClass: OMPClass) = {
 
 		try {
@@ -36,7 +37,7 @@ object OMPVariable {
 	}
 
 	// TODO: IllegalArgEx -> NoSuchElEx
-	private def find(id: String, set: Set[OMPVariable]): OMPVariable = {
+	def find(id: String, set: Set[OMPVariable]): OMPVariable = {
 		(set find (_.arrayLessName == id)) match {
 			case Some(v) => v
 //			case None => throw new NoSuchElementException(s"variable '$id' not found")

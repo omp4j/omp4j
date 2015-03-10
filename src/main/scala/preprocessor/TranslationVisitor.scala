@@ -13,7 +13,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.Stack
 
 /** Walks through the directive ctx and save translations into rewriter */
-class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, currentDirective: Directive)(implicit conf: Config) extends Java8BaseVisitor[Unit] {
+class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, currentDirective: Directive, parentContextName: String = "", parentCaptured: Set[OMPVariable] = Set())(implicit conf: Config) extends Java8BaseVisitor[Unit] {
 
 	/** Stack of nested classes (Class name, isLocal) */
 	private val clStack = Stack[OMPClass]() ++ Inheritor.getParentClasses(currentDirective.ctx, ompFile).reverse
@@ -40,13 +40,22 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 	}
 
 	/** captured getters (since mutability, it can't be accessed publicly) */
-	def getCaptured = captured
+	def getCaptured = captured -- parentCaptured
 
 	/** capturedThis getters (since mutability, it can't be accessed publicly) */
 	def getCapturedThis = capturedThis
 
 	/** directiveClass getters (since mutability, it can't be accessed publicly) */
 	def getDirectiveClass = directiveClass
+
+	/** Try to find parent variable and after fail search ordinary variable */
+	private def findVariable(id: String, locals: Set[OMPVariable], params: Set[OMPVariable], ompClass: OMPClass): (String, OMPVariable) = {
+		try {
+			(parentContextName, OMPVariable.find(id, parentCaptured))
+		} catch {
+			case e: IllegalArgumentException => (contextName, OMPVariable(id, locals, params, directiveClass))
+		}
+	}
 
 	/** Get tokens matching to context given */
 	private def getContextTokens(ctx: SyntaxTree): List[Token] = {
@@ -120,13 +129,13 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 			if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
 				try {
-					val v = OMPVariable(id, locals, params, directiveClass)
+					val (realCtxName, v) = findVariable(id, locals, params, directiveClass)
 
 					val tkns = getContextTokens(ctx)
 					if (tkns.head.getText == id) {
-						rewriter.replace(tkns.head, s"$contextName.${v.fullName}")
+						rewriter.replace(tkns.head, s"$realCtxName.${v.fullName}")
 					} else {
-						rewriter.replace(ctx.start, ctx.stop, s"$contextName.${v.fullName}")
+						rewriter.replace(ctx.start, ctx.stop, s"$realCtxName.${v.fullName}")
 					}
 
 					captured += v
@@ -163,9 +172,9 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 			if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
 				try {
-					val v = OMPVariable(id, locals, params, directiveClass)
+					val (realCtxName, v) = findVariable(id, locals, params, directiveClass)
 					val firstToken = getContextTokens(ctx).head
-					rewriter.replace(firstToken, s"$contextName.${v.fullName}")
+					rewriter.replace(firstToken, s"$realCtxName.${v.fullName}")
 
 					captured += v
 				} catch {
@@ -255,8 +264,8 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 					if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
 						try {
-							val v = OMPVariable(id, locals, params, directiveClass)
-							rewriter.replace(first.start, first.stop, s"$contextName.${v.fullName}")
+							val (realCtxName, v) = findVariable(id, locals, params, directiveClass)
+							rewriter.replace(first.start, first.stop, s"$realCtxName.${v.fullName}")
 						} catch {
 							case e: IllegalArgumentException => ; // local (ok)
 						}
@@ -277,9 +286,9 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 						if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
 							try {
-								val v = OMPVariable(id, locals, params, directiveClass)
+								val (realCtxName, v) = findVariable(id, locals, params, directiveClass)
 								val firstToken = getContextTokens(first).head
-								rewriter.replace(firstToken, s"$contextName.${v.fullName}")
+								rewriter.replace(firstToken, s"$realCtxName.${v.fullName}")
 								captured += v
 
 							} catch {

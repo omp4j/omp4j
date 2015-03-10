@@ -45,9 +45,15 @@ object Inheritor {
 		getLocals(pt, neck)
 	}
 
-	// TODO: map
+	/** Get set of locally declared variables. */
 	def getDirectiveLocals(pt: ParseTree, d: Directive) = {
 		val neck = getParentList(pt).reverse.takeWhile(_ != d.ctx).reverse	// list of parent restricted to directive
+		getLocals(pt, neck)
+	}
+
+	/** Get set of variables that may be inherited from directive given. */
+	def getDirectiveInheritedLocals(pt: ParseTree, d: Directive) = {
+		val neck = getParentList(pt).takeWhile(_ != d.ctx).reverse	// list of parent restricted to directive
 		getLocals(pt, neck)
 	}
 

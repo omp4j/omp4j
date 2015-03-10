@@ -4,8 +4,9 @@ import org.antlr.v4.runtime.{TokenStreamRewriter, Token}
 import org.omp4j.Config
 import org.omp4j.directive.DirectiveSchedule._
 import org.omp4j.exception.{ParseException, SyntaxErrorException}
+import org.omp4j.extractor.Inheritor
 import org.omp4j.grammar.Java8Parser
-import org.omp4j.preprocessor.{SingleTranslationVisitor, DirectiveVisitor}
+import org.omp4j.preprocessor.{SingleTranslationVisitor, DirectiveVisitor, TranslationVisitor}
 import org.omp4j.tree.{OMPClass, OMPVariable}
 
 case class For(override val parent: Directive, override val publicVars: List[String], override val privateVars: List[String])(implicit threadNum: String, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, publicVars, privateVars)(DirectiveSchedule.Static, threadNum, ctx, cmt, line, conf) with ForCycle {
@@ -19,9 +20,9 @@ case class For(override val parent: Directive, override val publicVars: List[Str
 
 	// inherit all
 	override lazy val threadCount = parentOmpParallel.threadCount
-	override lazy val contextVar = parentOmpParallel.contextVar
+//	override lazy val contextVar = parentOmpParallel.contextVar
 	override lazy val executor = parentOmpParallel.executor
-	override lazy val contextClass = parentOmpParallel.contextClass
+//	override lazy val contextClass = parentOmpParallel.contextClass
 	override lazy val threadArr = parentOmpParallel.threadArr
 	override lazy val iter = parentOmpParallel.iter
 	override lazy val iter2 = parentOmpParallel.iter2
@@ -49,13 +50,23 @@ case class For(override val parent: Directive, override val publicVars: List[Str
 
 		val after = "\t}});\n"
 
-		// TODO: rewrite iterName -> finalIterName
-
 		val stv = new SingleTranslationVisitor(rewriter, iterName, finalIterName)
 		stv.visit(basicForStatement.forInit)
 		stv.visit(basicForStatement.expression)
 		stv.visit(basicForStatement.forUpdate)
 
+		val tv = new TranslationVisitor(rewriter, directiveClass.ompFile, this, parent.contextVar, parent.captured)
+		tv.visit(statement)
+		val captured = tv.getCaptured
+		val capturedThis = tv.getCapturedThis
+
+
+		val initString =
+			classDeclar(captured, capturedThis, directiveClass) +
+			instance +
+			thatInit(capturedThis) +
+			init(captured, capturedThis)
+		rewriter.insertBefore(ctx.start, initString)
 
 		rewriter.insertAfter(statement.start, before)
 		rewriter.insertBefore(statement.stop, after)

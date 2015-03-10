@@ -5,7 +5,7 @@ import org.omp4j.Config
 import org.omp4j.grammar._
 
 /** The first-level class representation */
-case class TopClass(ec: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, val ompFile: OMPFile) extends OMPClass(Left(ec), parent, parser) with Reflectable {
+case class TopClass(ec: Java8Parser.ClassDeclarationContext, parent: OMPClass, parser: Java8Parser)(implicit conf: Config, ompFile: OMPFile) extends OMPClass(Left(ec), parent, parser) with Reflectable {
 	
 	/** Recursion bottom */
 	override lazy val cunit: Java8Parser.CompilationUnitContext = cunit()
