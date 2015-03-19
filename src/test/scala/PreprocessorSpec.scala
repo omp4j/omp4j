@@ -17,7 +17,7 @@ class PreprocessorSpec extends AbstractSpec {
 			if (!(java8samples contains f.getName) || System.getProperty("java.version").startsWith("1.8.")) {
 				it(f.getName) {
 					try {
-						val prep = new Preprocessor()(new Config(Array(f.getAbsolutePath))).run
+						val prep = new Preprocessor()(new Config(Array(f.getAbsolutePath))).run()
 					} catch {
 						case e: Exception => fail(e)
 					}
@@ -34,7 +34,7 @@ class PreprocessorSpec extends AbstractSpec {
 		it("01.java") {
 			try {
 				val f = new File(getClass.getResource("/preprocessor/01.java").toURI.getPath)
-				val prep = new Preprocessor()(new Config(Array(f.getAbsolutePath))).run
+				val prep = new Preprocessor()(new Config(Array(f.getAbsolutePath))).run()
 			} catch {
 				case e: Exception => fail(e)
 			}
