@@ -14,7 +14,7 @@ object Main extends App {
 	val prep = new Preprocessor()(conf)     // create preprocessor
 
 	try {
-		val translatedFiles = prep.run  // fetch the array of (already saved) preprocessed files
+		val (translatedFiles, _) = prep.run()        // fetch the array of (already saved) preprocessed files
 		val compiler = new Compiler(translatedFiles ++ FileTreeWalker.getRuntimeFiles)(conf)    // set up compiler with possible addition files such as omp4j runtime ones (if not installed already)
 		compiler.compile()      // and compile! (this is optional, one can terminate once the preprocessed files are saved)
 	} catch {
