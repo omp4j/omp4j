@@ -9,7 +9,7 @@ object DirectiveSchedule extends Enumeration {
 
 	def apply(osc: OMPParser.OmpScheduleContext) = {
 		try {
-			if (osc.getText == "dynamic") Dynamic
+			if (osc.getText.contains("dynamic")) Dynamic
 			else throw new NullPointerException
 		} catch {
 			case _: NullPointerException => Static
