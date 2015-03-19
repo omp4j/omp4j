@@ -1,4 +1,4 @@
-class Simple {
+class SimpleLocal {
 	class Inher {}
 
 	public int field = 15;

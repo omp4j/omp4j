@@ -1,6 +1,6 @@
 class For {
     public void test1() {
-        // omp parallel for
+        // omp parallel for schedule(dynamic)
         for (int i = 2; i < 20; i += 3) {
             System.out.println("hello @" + i);
         }

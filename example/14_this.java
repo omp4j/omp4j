@@ -1,13 +1,13 @@
 package org.omp4j.example;
 
-class Recurs {
-	public Recurs r;
-	public Recurs nonAmb;
+class RecursThis {
+	public RecursThis r;
+	public RecursThis nonAmb;
 
 	public void foo() {
 		// omp parallel
 		{
-			Recurs tmp;
+			RecursThis tmp;
 			
 			// non-this
 			tmp = r;
@@ -37,7 +37,7 @@ class Recurs {
 
 
 			// ambig
-			Recurs r = new Recurs();
+			RecursThis r = new RecursThis();
 			tmp = r;
 			tmp = this.r;
 
@@ -45,7 +45,7 @@ class Recurs {
 			tmp = nonAmb;
 
 			// local
-			Recurs s = new Recurs();
+			RecursThis s = new RecursThis();
 			tmp = s.r;
 			tmp = s.r.r;
 			tmp = s.r.r.r;
@@ -59,7 +59,7 @@ class Recurs {
 			System.out.println("hello");
 
 			// arg
-			Recurs t = new Recurs();
+			RecursThis t = new RecursThis();
 			set(t);
 			set(this);
 
@@ -90,9 +90,9 @@ class Recurs {
 
 	public void goo() {}
 	private void hoo() {}
-	public Recurs get() { return r; }
-	public void set(Recurs n_r) {}
-	public Recurs set2(Recurs n_r) { return n_r; }
+	public RecursThis get() { return r; }
+	public void set(RecursThis n_r) {}
+	public RecursThis set2(RecursThis n_r) { return n_r; }
 
 	public int x = 5;
 	void use() {
