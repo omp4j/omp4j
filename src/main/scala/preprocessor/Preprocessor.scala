@@ -25,8 +25,8 @@ import scala.collection.mutable.ArrayBuffer
   */
 class Preprocessor(implicit conf: Config) {
 
-	/** Start parsing file by file */
-	def run: Array[File] = {
+	/** Start parsing file by file, return (files, tmpDirs) */
+	def run(firstRun: Boolean = true): (Array[File], List[File]) = {
 		/* New lifecycle, TODO: rewrite
 		- get config
 		- get parseTree for each file (check exceptions)
@@ -59,18 +59,22 @@ class Preprocessor(implicit conf: Config) {
 			}
 		}
 
-		val finalSources : Array[File] = finalSourcesBuffer.toArray
-		val nextLevelSources : Array[File] = nextLevelSourcesBuffer.toArray
+		val finalSources: Array[File] = finalSourcesBuffer.toArray
+		val nextLevelSources: Array[File] = nextLevelSourcesBuffer.toArray
 
-		val result: Array[File] =
-			if (nextLevelSources.size == 0) finalSources.toArray
+		val (result, tmpDirs): (Array[File], List[File]) =
+			if (nextLevelSources.size == 0) (finalSources.toArray, List(conf.workDir))
 			else {
 				val nextConf = conf.nextLevel(finalSources ++ nextLevelSources)
 				val P = new Preprocessor()(nextConf)
-				P.run
+				val (nextRes, nextTmps) = P.run(false)
+				(nextRes, conf.workDir :: nextTmps)
 			}
-		result
-		// TODO: cleanup
+
+		if (firstRun) {
+			tmpDirs.tail.foreach(cleanup(_))
+			(result, List(tmpDirs.head))
+		} else (result, tmpDirs)
 	}
 
 	/** don't call externally */
@@ -93,8 +97,8 @@ class Preprocessor(implicit conf: Config) {
 	}
 
 
-	/** Delete workdir */
-	private def cleanup = FileTreeWalker.recursiveDelete(conf.workDir)
+	/** Delete file given */
+	private def cleanup(deleteMe: File) = FileTreeWalker.recursiveDelete(deleteMe)
 
 	/** Insert all tokens to tokenSet in order to prevent their usage */
 	private def registerTokens(toks: CommonTokenStream) = {
