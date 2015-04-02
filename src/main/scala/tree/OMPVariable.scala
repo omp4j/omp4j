@@ -16,6 +16,7 @@ import org.omp4j.tree.OMPVariableType._
 /** Static OMPVariable locator */
 object OMPVariable {
 	/** Find variable using information given */
+	// TODO: IllegalArgEx -> NoSuchElEx
 	def apply(arrayLessId: String, locals: Set[OMPVariable], params: Set[OMPVariable], ompClass: OMPClass) = {
 
 		try {
@@ -59,7 +60,10 @@ case class OMPVariable(name: String, varType: String, meaning: OMPVariableType =
 	lazy val fullNameWithBrackets = s"${meaning}_$name"
 
 	/** declaration of variable in context (with []) */
-	lazy val declaration = s"public $varType $fullNameWithBrackets;"
+	def declaration(asArr: Boolean = false) = {
+		val extension = if (asArr) "[]" else ""
+		s"public $varType ${fullNameWithBrackets}${extension};"
+	}
 
 	/** original name (without []) */
 	lazy val arrayLessName =

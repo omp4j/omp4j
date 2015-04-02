@@ -9,7 +9,7 @@ import org.omp4j.grammar.Java8Parser
 import org.omp4j.preprocessor.{SingleTranslationVisitor, DirectiveVisitor, TranslationVisitor}
 import org.omp4j.tree.{OMPClass, OMPVariable}
 
-case class For(override val parent: Directive, override val publicVars: List[String], override val privateVars: List[String])(implicit threadNum: String, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, publicVars, privateVars)(DirectiveSchedule.Static, threadNum, ctx, cmt, line, conf) with ForCycle {
+case class For(override val parent: Directive, override val privateVars: List[String], override val firstPrivateVars: List[String])(implicit threadNum: String, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, privateVars, firstPrivateVars)(DirectiveSchedule.Static, threadNum, ctx, cmt, line, conf) with ForCycle {
 
 
 	// validate existence of omp-parallel parent block
@@ -29,6 +29,14 @@ case class For(override val parent: Directive, override val publicVars: List[Str
 	override lazy val secondIter = true
 	override lazy val exceptionName = parentOmpParallel.exceptionName
 	override val executorClass = parentOmpParallel.executorClass
+
+	/** Translate directives of type Master, Single */
+	override protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
+		super.translateChildren(captured, capturedThis, directiveClass)
+		childrenOfType[Master].foreach{_.postTranslate}
+		childrenOfType[Single].foreach{_.postTranslate}
+		childrenOfType[For].foreach{_.postTranslate(captured, capturedThis, directiveClass)}
+	}
 
 	override def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 		//translateFor(iter2, threadCount)
@@ -71,9 +79,7 @@ case class For(override val parent: Directive, override val publicVars: List[Str
 		rewriter.insertAfter(statement.start, before)
 		rewriter.insertBefore(statement.stop, after)
 
-
 		deleteCmt
-
+		translateChildren(captured, capturedThis, directiveClass)
 	}
-
 }

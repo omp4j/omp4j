@@ -19,7 +19,7 @@ case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementCon
 	override lazy val iter2 = parent.iter2
 	override lazy val secondIter = parent.secondIter
 	override lazy val exceptionName = parent.exceptionName
-	override val executorClass = parent.executorClass
+//	override val executorClass = parent.executorClass
 	val barrierVar = uniqueName("barrier")
 
 	// validate existence of some omp parent block

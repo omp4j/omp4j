@@ -21,7 +21,7 @@ import scala.util.Random
 import scala.collection.JavaConverters._
 
 /** Abstract omp directive class; implemented by several case classes */
-abstract class Directive(val parent: Directive, val publicVars: List[String], val privateVars: List[String])(implicit val schedule: DirectiveSchedule, val threadNum: String, val ctx: ParserRuleContext, val cmt: Token, val line: Int, conf: Config) {
+abstract class Directive(val parent: Directive, val privateVars: List[String], val firstPrivateVars: List[String])(implicit val schedule: DirectiveSchedule, val threadNum: String, val ctx: ParserRuleContext, val cmt: Token, val line: Int, conf: Config) {
 
 	/** Closest omp-parallel directive or null if none exists */
 	val parentOmpParallel: Directive = parent match {
@@ -57,6 +57,9 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 
 	/** 2. iterator name */
 	lazy val iter2 = uniqueName("ompJ")
+
+	/** 3. iterator name */
+	lazy val iter3 = uniqueName("ompK")
 
 	/** Is second iterator used? */
 	lazy val secondIter = false
@@ -196,7 +199,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	protected var additionalItems = scala.collection.mutable.Set[String]()
 
 	/** Initialization of 2. iterator (if required) */
-	protected def secondIterInit = if (secondIter) s"\tfinal int $iter2 = $iter;\n" else ""
+	protected def secondIterInit = if (secondIter || (privateVars.size + firstPrivateVars.size > 0)) s"\tfinal int $iter2 = $iter;\n" else ""
 
 	/** Declaration of THAT (captured this) */
 	protected def thatDecl(implicit capturedThis: Boolean, directiveClass: OMPClass) = if (capturedThis) s"\tpublic ${directiveClass.name} THAT;\n" else ""
@@ -205,7 +208,7 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	protected def classDeclar(implicit captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass) =
 		"/* === OMP CONTEXT === */\n" +
 			s"class $contextClass {\n" +
-			(for {c <- captured} yield s"\t${c.declaration}\n").toList.mkString +
+			(for {c <- captured} yield s"\t${c.declaration((privateVars contains c.name) || (firstPrivateVars contains c.name))}\n").toList.mkString +
 			thatDecl +
 			(for {a <- additionalItems} yield s"\t$a\n").toList.mkString +
 			"}\n"
@@ -217,12 +220,41 @@ abstract class Directive(val parent: Directive, val publicVars: List[String], va
 	protected def thatInit(implicit capturedThis: Boolean) = if (capturedThis) s"$contextVar.THAT = this;\n" else ""
 
 	/** Initialization of captured variables + THAT */
-	protected def init(implicit captured: Set[OMPVariable], capturedThis: Boolean) = thatInit + (for {c <- captured} yield s"$contextVar.${c.fullName} = ${c.arrayLessName};\n").toList.mkString
+	protected def init(implicit captured: Set[OMPVariable], capturedThis: Boolean) = {
+		thatInit + (
+			for {c <- captured} yield
+				if (!(privateVars contains c.name) && !(firstPrivateVars contains c.name)) s"$contextVar.${c.fullName} = ${c.arrayLessName};\n"
+				else ""
+		).toList.mkString
+	}
+
+	protected def initPrivates(implicit captured: Set[OMPVariable]) = {
+		if (privateVars.size + firstPrivateVars.size <= 0) ""
+		else {
+			// TODO: primitive types
+			(for {c <- captured} yield
+				if ((privateVars contains c.name) || (firstPrivateVars contains c.name)) s"$contextVar.${c.fullName} = new ${c.varType}[$threadCount];\n"
+				else ""
+			).toList.mkString +
+			s"for (int $iter3 = 0; $iter3 < $threadCount; ${iter3}++) {/*!!!*/\n" +
+				(for {c <- captured} yield
+					s"\t$contextVar.${c.fullName}[$iter3]= new ${c.varType}" +
+					(
+						if (privateVars contains c.name) "()"
+						else if (firstPrivateVars contains c.name) s"(${c.arrayLessName})"
+						else ""
+					)
+					+ ";\n"
+			).toList.mkString +
+			s"}\n"
+		}
+	}
 
 	/**  First part of executor */
-	protected def executorBegin =
+	protected def executorBegin(implicit captured: Set[OMPVariable]) =
 		s"final org.omp4j.runtime.IOMPExecutor $executor = new $executorClass($threadCount);\n" +
 			"/* === /OMP CONTEXT === */\n" +
+			initPrivates +
 			s"for (int $iter = 0; $iter < $threadCount; ${iter}++) {\n" +
 			secondIterInit +
 			s"\t$executor.execute(new Runnable(){\n" +
@@ -269,7 +301,7 @@ object Directive {
 		val sections = ompCtx.ompSections
 		val section = ompCtx.ompSection
 		val single = ompCtx.ompSingle
-		val master= ompCtx.ompMaster
+		val master = ompCtx.ompMaster
 		val barrier = ompCtx.ompBarrier
 		val atomic = ompCtx.ompAtomic
 		val critical = ompCtx.ompCritical
@@ -277,27 +309,27 @@ object Directive {
 		val numThreads = ompCtx.ompNumThreads
 
 		if (parallel != null) {
-			val (sch, threads, privates, publics) = getModifiers[OMPParser.OmpParallelModifiersContext, OMPParser.OmpParallelModifierContext](parallel.ompParallelModifiers)(
+			val (sch, threads, privates, firstprivates) = getModifiers[OMPParser.OmpParallelModifiersContext, OMPParser.OmpParallelModifierContext](parallel.ompParallelModifiers)(
 				_.ompParallelModifier,
 				_.ompParallelModifiers,
 				_.ompSchedule,
 				_.threadNum,
 				_.ompAccessModifier
 			)
-			new Parallel(parent, publics, privates)(DirectiveSchedule(sch), threads, ctx, cmt, getLine(ctx), conf)
+			new Parallel(parent, privates, firstprivates)(DirectiveSchedule(sch), threads, ctx, cmt, getLine(ctx), conf)
 		} else if (parallelFor != null) {
-			val (sch, threads, privates, publics) = getModifiers[OMPParser.OmpParallelForModifiersContext, OMPParser.OmpParallelForModifierContext](parallelFor.ompParallelForModifiers)(
+			val (sch, threads, privates, firstprivates) = getModifiers[OMPParser.OmpParallelForModifiersContext, OMPParser.OmpParallelForModifierContext](parallelFor.ompParallelForModifiers)(
 				_.ompParallelForModifier,
 				_.ompParallelForModifiers,
 				_.ompSchedule,
 				_.threadNum,
 				_.ompAccessModifier
 			)
-			new ParallelFor(parent, publics, privates)(DirectiveSchedule(sch), threads, ctx, cmt, getLine(ctx), conf)
+			new ParallelFor(parent, privates, firstprivates)(DirectiveSchedule(sch), threads, ctx, cmt, getLine(ctx), conf)
 		} else if (nonParFor != null) {
-			val (publics, privates) = separate(nonParFor.ompAccessModifier.asScala.toList)
+			val (privates, firstprivates) = separate(nonParFor.ompAccessModifier.asScala.toList)
 			// For can't affect scheduling type or number of cores since it is nested directive
-			new For(parent, publics, privates)(null, ctx, cmt, getLine(ctx), conf)
+			new For(parent, privates, firstprivates)(null, ctx, cmt, getLine(ctx), conf)
 		} else if (sections != null) {
 			val (sch, threads, _, _) = getModifiers[OMPParser.SectionsModifiersContext, OMPParser.SectionsModifierContext](sections.sectionsModifiers)(
 				_.sectionsModifier,
@@ -334,32 +366,32 @@ object Directive {
 		else ctx.start.getLine
 	}
 
-	/** Get tuple of (schedule, threadNum, privates, publics)*/
+	/** Get tuple of (schedule, threadNum, privates, firstPrivates) */
 	private def getModifiers[ML, M](mList: ML)(modifier: ML => M, nextList: ML => ML, schedule: M => OMPParser.OmpScheduleContext, threadNum: M => OMPParser.ThreadNumContext, access: M => OMPParser.OmpAccessModifierContext): (OMPParser.OmpScheduleContext, String, List[String], List[String]) = {
 		if (mList == null || modifier(mList) == null) {
 			(null, null, List(), List())
 		} else {
-			val (sch, num, privates, publics) = getModifiers(nextList(mList))(modifier, nextList, schedule, threadNum, access)
+			val (sch, num, privates, firstPrivates) = getModifiers(nextList(mList))(modifier, nextList, schedule, threadNum, access)
 			val mod = modifier(mList)
 			val newSch = if (schedule(mod) != null) schedule(mod) else sch
 			val newTN  = if (threadNum(mod) != null) threadNum(mod).ompNumber.getText else num
 			val newPri = try {
 				val acc = access(mod)
 				val res = getVars(acc.ompVars)
-				if (acc.PRIVATE != null) privates ::: res
+				if (acc.ompPrivate() != null) privates ::: res
 				else privates
 			} catch {
 				case e: NullPointerException => privates
 			}
-			val newPub = try {
+			val newFpri = try {
 				val acc = access(mod)
 				val res = getVars(acc.ompVars)
-				if (acc.PUBLIC != null) publics ::: res
-				else publics
+				if (acc.ompFirstPrivate() != null) firstPrivates ::: res
+				else firstPrivates
 			} catch {
-				case e: NullPointerException => publics
+				case e: NullPointerException => firstPrivates
 			}
-			(newSch, newTN, newPri, newPub)
+			(newSch, newTN, newPri, newFpri)
 		}
 	}
 
@@ -375,27 +407,17 @@ object Directive {
 
 	/**
 	  * Separate public and private variables
-	  * @return tuple of (Public, Private)
+	  * @return tuple of (Private, FirstPrivate)
 	  */
 	private def separate(list: List[OMPParser.OmpAccessModifierContext]): (List[String], List[String]) = {
-
-		/** Extracts variables from public/private statement */
-		def getVars(vars: OMPParser.OmpVarsContext): List[String] = {
-			if (vars == null) List()
-			else {
-				val v = vars.ompVar
-				if (v == null) List()
-				else v.asScala.map(_.VAR.getText).toList
-			}
-		}
 
 		if (list == null || list.size == 0) (List(), List())
 		else {
 			val head = list.head
-			val (resPub, resPri) = separate(list.tail)
+			val (resPri, resFpri) = separate(list.tail)
 
-			if (head.PUBLIC != null) (getVars(head.ompVars) ++ resPub, resPri)
-			else if (head.PRIVATE != null) (resPub, getVars(head.ompVars) ++ resPri)
+			if (head.ompPrivate() != null) (getVars(head.ompVars) ++ resPri, resFpri)
+			else if (head.ompFirstPrivate() != null) (resPri, getVars(head.ompVars) ++ resFpri)
 			else throw new ParseException("Unexpected variable modifier")
 		}
 	}

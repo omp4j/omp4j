@@ -33,6 +33,12 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 	/** Does 'this' keyword appears in parallel statement? */
 	private var capturedThis = false
 
+	private val privateVars = currentDirective.privateVars ++ currentDirective.firstPrivateVars
+	def extension(c: OMPVariable) = {
+		if (privateVars contains c.name) s"[${currentDirective.iter2}]"
+		else ""
+	}
+
 	/** Name of OMPContext variable */
 	private def contextName = currentDirective match {
 		case null => throw new RuntimeException("Not existing directive context name required")
@@ -133,9 +139,9 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 					val tkns = getContextTokens(ctx)
 					if (tkns.head.getText == id) {
-						rewriter.replace(tkns.head, s"$realCtxName.${v.fullName}")
+						rewriter.replace(tkns.head, s"$realCtxName.${v.fullName}${extension(v)}")
 					} else {
-						rewriter.replace(ctx.start, ctx.stop, s"$realCtxName.${v.fullName}")
+						rewriter.replace(ctx.start, ctx.stop, s"$realCtxName.${v.fullName}${extension(v)}")
 					}
 
 					captured += v
@@ -174,7 +180,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 				try {
 					val (realCtxName, v) = findVariable(id, locals, params, directiveClass)
 					val firstToken = getContextTokens(ctx).head
-					rewriter.replace(firstToken, s"$realCtxName.${v.fullName}")
+					rewriter.replace(firstToken, s"$realCtxName.${v.fullName}${extension(v)}")
 
 					captured += v
 				} catch {
@@ -233,7 +239,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 								// try to rewrite var name (if captured)
 								val v = OMPVariable.findField(id, directiveClass)
 								rewriter.replace(first.start, first.stop, contextName)
-								rewriter.replace(next.start, next.stop, s".${v.fullName}")
+								rewriter.replace(next.start, next.stop, s".${v.fullName}${extension(v)}")
 
 								captured += v   // ??
 							} catch {
@@ -265,7 +271,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 					if (! (Inheritor.getDirectiveLocals(ctx, currentDirective).map(_.arrayLessName) contains id)) {
 						try {
 							val (realCtxName, v) = findVariable(id, locals, params, directiveClass)
-							rewriter.replace(first.start, first.stop, s"$realCtxName.${v.fullName}")
+							rewriter.replace(first.start, first.stop, s"$realCtxName.${v.fullName}${extension(v)}")
 						} catch {
 							case e: IllegalArgumentException => ; // local (ok)
 						}
@@ -288,7 +294,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 							try {
 								val (realCtxName, v) = findVariable(id, locals, params, directiveClass)
 								val firstToken = getContextTokens(first).head
-								rewriter.replace(firstToken, s"$realCtxName.${v.fullName}")
+								rewriter.replace(firstToken, s"$realCtxName.${v.fullName}${extension(v)}")
 								captured += v
 
 							} catch {
