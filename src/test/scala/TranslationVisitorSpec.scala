@@ -14,6 +14,7 @@ class TVLoadedContext(path: String) extends AbstractLoadedContext(path) {
 		val d: Directive = directives.toList(n)._2
 		val tv = new TranslationVisitor(new TokenStreamRewriter(tokens), ompFile, d)
 		tv.visit(d.ctx)
+		cleanup()
 		tv.getCaptured.map(varAsText)
 	}
 

@@ -6,7 +6,11 @@ import org.omp4j.preprocessor.Preprocessor
 
 /** SectionsContext */
 class SectionsLoadedContext(path: String) extends AbstractLoadedContext(path) {
-	def getFile = Array(file.getAbsolutePath)
+	def getFile = {
+		val res = Array(file.getAbsolutePath)
+		cleanup()
+		res
+	}
 }
 
 /** Unit test for sections directive */

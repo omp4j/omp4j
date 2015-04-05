@@ -3,8 +3,7 @@ package org.omp4j.preprocessor
 import java.io.{File, PrintWriter}
 import java.net.MalformedURLException
 import org.omp4j.tree.OMPFile
-import preprocessor.ThreadIdRemover
-import utils.FileSaver
+import org.omp4j.utils.{FileDuplicator, FileSaver, FileTreeWalker}
 
 import scala.collection.JavaConverters._
 
@@ -14,7 +13,6 @@ import org.omp4j.Config
 import org.omp4j.exception._
 import org.omp4j.grammar._
 import org.omp4j.system._
-import org.omp4j.utils.FileTreeWalker
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -26,7 +24,8 @@ import scala.collection.mutable.ArrayBuffer
 class Preprocessor(implicit conf: Config) {
 
 	/** Start parsing file by file, return (files, tmpDirs) */
-	def run(firstRun: Boolean = true): (Array[File], List[File]) = {
+	def run(firstRun: Boolean = true): (Array[File], List[(File, File)]) = {
+
 		/* New lifecycle, TODO: rewrite
 		- get config
 		- get parseTree for each file (check exceptions)
@@ -62,17 +61,19 @@ class Preprocessor(implicit conf: Config) {
 		val finalSources: Array[File] = finalSourcesBuffer.toArray
 		val nextLevelSources: Array[File] = nextLevelSourcesBuffer.toArray
 
-		val (result, tmpDirs): (Array[File], List[File]) =
-			if (nextLevelSources.size == 0) (finalSources.toArray, List(conf.workDir))
+		val (result, tmpDirs): (Array[File], List[(File, File)]) =
+			if (nextLevelSources.length == 0) (finalSources.toArray, List((conf.workDir, conf.preprocessedDir)))
 			else {
 				val nextConf = conf.nextLevel(finalSources ++ nextLevelSources)
 				val P = new Preprocessor()(nextConf)
-				val (nextRes, nextTmps) = P.run(false)
-				(nextRes, conf.workDir :: nextTmps)
+				val (nextRes, nextTmps) = P.run(firstRun = false)
+				(nextRes, (conf.workDir, conf.preprocessedDir) :: nextTmps)
 			}
 
 		if (firstRun) {
-			tmpDirs.tail.foreach(cleanup(_))
+			tmpDirs.tail.foreach{ case (big, small) =>
+				cleanup(big)
+			}
 			(result, List(tmpDirs.head))
 		} else (result, tmpDirs)
 	}
@@ -90,15 +91,18 @@ class Preprocessor(implicit conf: Config) {
 			toValidate += FileSaver.saveToFile(threadLessText, conf.validationDir, cun.packageDeclaration, f.getAbsolutePath.split(File.separator).last)
 		}
 
+		// copy runtime libs
+		conf copyRuntimeClassesTo conf.compilationDir
+
 		// compile them
-		val compiler = new Compiler(toValidate.toArray ++ FileTreeWalker.getRuntimeFiles)
-		compiler.compile(List(("-d", conf.compilationDir.getAbsolutePath)))
+		val compiler = new Compiler(toValidate.toArray)
+		compiler.compile(destDir = conf.compilationDir.getAbsolutePath, addCP = conf.compilationDir.getAbsolutePath)
 		compiler.jar()
 	}
 
 
 	/** Delete file given */
-	private def cleanup(deleteMe: File) = FileTreeWalker.recursiveDelete(deleteMe)
+	private def cleanup(deleteMe:File) = FileTreeWalker.recursiveDelete(deleteMe)
 
 	/** Insert all tokens to tokenSet in order to prevent their usage */
 	private def registerTokens(toks: CommonTokenStream) = {

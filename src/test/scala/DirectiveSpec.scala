@@ -47,4 +47,6 @@ class DirectiveSpec extends AbstractSpec {
 			}
 		}
 	}
+
+	dlc1.cleanup()
 }

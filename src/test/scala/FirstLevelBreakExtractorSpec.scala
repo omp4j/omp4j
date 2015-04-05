@@ -9,6 +9,7 @@ class FLBELoadedContext(path: String) extends AbstractLoadedContext(path) {
 	/** Return number of found directives or throw SyntaxErrorException */
 	def firstLevetBreakCount = {
 		val breaks = (new FirstLevelBreakExtractor ).visit(directives.head._2.ctx.asInstanceOf[Java8Parser.StatementContext].forStatement.basicForStatement)
+		cleanup()
 		breaks.size
 	}
 

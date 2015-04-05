@@ -2,33 +2,39 @@ package org.omp4j
 
 import java.io._
 
+import org.omp4j.exception.HelpRequiredException
 import org.omp4j.preprocessor.TokenSet
 import org.omp4j.system._
-import org.omp4j.utils.TmpDir
+import org.omp4j.utils.{FileDuplicator, Keywords, TmpDir}
 
 import scala.Array._
+import scala.collection.mutable.ArrayBuffer
+
+object Config {
+	val PREPROCESSED = "preprocessed"
+	val VALIDATION = "validation"
+	val COMPILATION = "compilation"
+}
 
 /** Configuration for compiler and other classes. Use implicitally. */
-class Config(args: Array[String], level: Int = 1) {
-	
+class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"org${File.separator}omp4j${File.separator}runtime", val runtimeClasses: List[String] = List("AbstractExecutor", "DynamicExecutor", "DynamicExecutor$DynamicExecutorThread", "IOMPExecutor", "StaticExecutor", "StaticExecutor$StaticExecutorThread")) {
+
 	/** working directory */
 	val workDir: File = createWorkingDir
 
 	/** directory of preprocessed sources */
-	val preprocessedDir: File = new TmpDir(workDir, "preprocessed").toFile
+	val preprocessedDir: File = new TmpDir(workDir, Config.PREPROCESSED).toFile
 
 	/** directory of sources without threadId methods */
-	val validationDir: File = new TmpDir(workDir, "validation").toFile
+	val validationDir: File = new TmpDir(workDir, Config.VALIDATION).toFile
 
 	/** directory of binary classes (without threadId methods) */
-	val compilationDir: File = new TmpDir(workDir, "compilation").toFile
+	val compilationDir: File = new TmpDir(workDir, Config.COMPILATION).toFile
 
 	/** tmp JAR file */
 	val jar: File = new File(compilationDir.getAbsolutePath + File.separator + "output.jar")
 
 	/** javac flags and file names */
-	lazy val (flags: Array[String], fileNames: Array[String]) = splitArgs(args)
-
 	/** files to be preprocessed (and compiled) */
 	lazy val files: Array[File] = openFiles(fileNames)
 
@@ -40,6 +46,90 @@ class Config(args: Array[String], level: Int = 1) {
 
 	/** set of all used strings */
 	val tokenSet = new TokenSet
+
+	private val fileNamesBuffer = new ArrayBuffer[String]()
+	private val flagsBuffer = new ArrayBuffer[String]()
+
+	var destdir: String = null
+	var srcdir: String = null
+	var verbose: Boolean = false
+	var sourceOnly: Boolean = false
+	var classpath: String = null
+
+	var fileNames = Array[String]()
+	var flags = Array[String]()
+	var allFlags = Array[String]()
+
+	// constructor
+	if (level == 1) {
+		processArgs(args)
+		fetchVars()
+	}
+	if (destdir != null) new File(destdir).mkdirs()
+	if (srcdir != null) new File(srcdir).mkdirs()
+
+
+	private def fetchVars() = {
+		fileNames = fileNamesBuffer.toArray
+		flags = flagsBuffer.toArray
+
+		val allFlagsBuffer = new ArrayBuffer[String]()
+		allFlagsBuffer ++= flags.toList
+
+		if (destdir != null) allFlagsBuffer ++= List("-d", destdir)
+		if (classpath != null) allFlagsBuffer ++= List("-classpath", classpath)
+
+		val allFlags = allFlagsBuffer.toArray
+	}
+
+	private def processArgs(args: Array[String]): Unit = {
+		if (args.length > 0) {
+			args.head match {
+				case "-d" | "--destdir" =>
+					//flagsBuffer += "-d"
+					//flagsBuffer += args.tail.head
+
+					destdir = args.tail.head
+					processArgs(args.tail.tail)
+				case "-s" | "--srcdir" =>
+					srcdir = args.tail.head
+					processArgs(args.tail.tail)
+				case "-cp" | "-classpath" | "--classpath" =>
+					//flagsBuffer += "-classpath"
+					//flagsBuffer += args.tail.head
+
+					classpath = args.tail.head
+					processArgs(args.tail.tail)
+				case "-v" | "-verbose" | "--verbose" =>
+					flagsBuffer += "-verbose"
+					verbose = true
+					processArgs(args.tail)
+				case "-n" | "-srconly" | "--source-only" | "--no-compile" =>
+					sourceOnly = true
+					processArgs(args.tail)
+				case "-h" | "-help" | "--help" =>
+					throw new HelpRequiredException()
+				case "--" =>
+					fileNamesBuffer ++= args.tail.toList
+				case _ =>
+					if (Keywords.JAVAC_SINGLE_OPTS_FULL contains args.head) {
+						flagsBuffer += args.head
+						processArgs(args.tail)
+					} else if (Keywords.JAVAC_SINGLE_OPTS_START.count(_ == args.head) > 0) {
+						flagsBuffer += args.head
+						processArgs(args.tail)
+					} else if (Keywords.JAVAC_DOUBLE_OPTS contains args.head) {
+						flagsBuffer += args.head
+						flagsBuffer += args.tail.head
+						processArgs(args.tail.tail)
+					} else {
+						fileNamesBuffer += args.head
+						processArgs(args.tail)
+					}
+			}
+		}
+	}
+
 
 	/** TODO: doc */
 	private def getOptDirAndFirstCompFlags = {
@@ -57,18 +147,6 @@ class Config(args: Array[String], level: Int = 1) {
 				val od = new File(flags(idx + 1))
 				val fcf = flags.updated(idx + 1, workDir.getAbsolutePath)
 				(od, fcf)
-		}
-	}
-
-	/** Split args to list of flags and list of file names
-	  * @param args Array of String arguments
-	  * @return Tuple of Arrays (flags, fileNames)
-	  */
-	private def splitArgs(args: Array[String]): (Array[String], Array[String]) = {
-		// TODO: case -1
-		args.indexOf("--") match {
-			case -1 => (Array[String](), args)
-			case id => (args.take(id), args.drop(id+1))
 		}
 	}
 
@@ -107,13 +185,33 @@ class Config(args: Array[String], level: Int = 1) {
 	}
 
 	def nextLevel(nextLvlFiles: Array[File]): Config = {
-		val c = this
-		new Config(args, level + 1) {
+		//val c = this
+		val c = new Config(args, level + 1, runtimePath, runtimeClasses) {
 			override lazy val files = nextLvlFiles
-			override lazy val flags: Array[String] = c.flags
-			override lazy val fileNames: Array[String] = nextLvlFiles.map(_.getAbsolutePath)
-			// lazy val (optDir: File, firstCompFlags: Array[String]) = getOptDirAndFirstCompFlags  // TODO:?
-
 		}
+		c.fileNames  = nextLvlFiles.map(_.getAbsolutePath)
+		c.flags      = c.flags
+		c.allFlags   = c.allFlags
+		c.destdir    = c.destdir
+		c.srcdir     = c.srcdir
+		c.verbose    = c.verbose
+		c.sourceOnly = c.sourceOnly
+		c.classpath  = c.classpath
+
+		c
 	}
+
+	def copyRuntimeClassesTo(rootDir: File) = {
+
+		val runtimeDir = new File(s"${rootDir.getAbsolutePath}${File.separator}$runtimePath")
+		runtimeDir.mkdirs()
+
+		runtimeClasses.foreach{ name =>
+			val inputStream = getClass.getResourceAsStream(s"/$runtimePath${File.separator}$name.class")
+			val outputFile = new File(runtimeDir, s"$name.class")
+			FileDuplicator.streamToFile(inputStream, outputFile)
+		}
+
+	}
+
 }

@@ -1,4 +1,4 @@
-package utils
+package org.omp4j.utils
 
 import java.io._
 

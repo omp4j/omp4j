@@ -41,6 +41,8 @@ class OMPTreeSpec extends AbstractSpec {
 	val ompT9  = new OMPTreeLoadedContext("/ompTree/09.java")
 	val ompT10 = new OMPTreeLoadedContext("/ompTree/10.java")
 	val ompT11 = new OMPTreeLoadedContext("/ompTree/11.java")
+	val ompT12 = new OMPTreeLoadedContext("/finalFieldIgnorance/01.java")
+	val ompT13 = new OMPTreeLoadedContext("/finalFieldIgnorance/02.java")
 
 	describe("Total class count in context") {
 		
@@ -280,12 +282,27 @@ class OMPTreeSpec extends AbstractSpec {
 
 	describe("Final fields should be ignored in") {
 		it("01.java") {
-			(new OMPTreeLoadedContext("/finalFieldIgnorance/01.java")).fields(0) should contain only ("publicSuperInheritedField", "protectedSuperInheritedField", "privateSuperInheritedField")
+			ompT12.fields(0) should contain only ("publicSuperInheritedField", "protectedSuperInheritedField", "privateSuperInheritedField")
 		}
 		it("02.java") {
-			(new OMPTreeLoadedContext("/finalFieldIgnorance/02.java")).localClassFields(0,0) should contain allOf ("publicLocal01Field", "protectedLocal01Field", "privateLocal01Field")
+			ompT13.localClassFields(0,0) should contain allOf ("publicLocal01Field", "protectedLocal01Field", "privateLocal01Field")
 		}
 
 	}
 
+/*
+	ompT1.cleanup()
+	ompT2.cleanup()
+	ompT3.cleanup()
+	ompT4.cleanup()
+	ompT5.cleanup()
+	ompT6.cleanup()
+	ompT7.cleanup()
+	ompT8.cleanup()
+	ompT9.cleanup()
+	ompT10.cleanup()
+	ompT11.cleanup()
+	ompT12.cleanup()
+	ompT13.cleanup()
+*/
 }

@@ -1,6 +1,7 @@
 package org.omp4j.utils
 
 import java.io.File
+import java.net.URISyntaxException
 
 object FileTreeWalker {
 
@@ -18,7 +19,13 @@ object FileTreeWalker {
 
 	/** Get array of files that could be used in result binary */
 	def getRuntimeFiles = {
-		val runtimeDir = new File(getClass.getResource("/runtime").toURI.getPath)
+		val resource = getClass.getResource("/runtime")
+		val foo = 15;
+		val runtimeDir = try {
+			new File(resource.toURI)
+		} catch {
+			case e: URISyntaxException => new File(resource.getPath);
+		}
 		recursiveListFiles(runtimeDir).filter(_.getAbsolutePath.endsWith(".java"))
 	}
 }

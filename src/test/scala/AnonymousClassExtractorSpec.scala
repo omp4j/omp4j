@@ -8,6 +8,7 @@ class ACELoadedContext(path: String) extends AbstractLoadedContext(path) {
 	/** Return number of found anonymous classes */
 	def firstAnonClassCount = {
 		val breaks = (new AnonymousClassExtractor ).visit(directives.head._2.ctx)
+		cleanup()
 		breaks.size
 	}
 

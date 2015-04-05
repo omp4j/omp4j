@@ -1,4 +1,4 @@
-package preprocessor
+package org.omp4j.preprocessor
 
 import org.antlr.v4.runtime.{CommonTokenStream, TokenStreamRewriter, ParserRuleContext}
 import org.omp4j.grammar.{Java8Parser, Java8BaseVisitor}

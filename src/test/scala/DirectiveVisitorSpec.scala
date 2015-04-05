@@ -10,13 +10,16 @@ class DCLoadedContext(path: String) extends AbstractLoadedContext(path) {
 	/** Return number of found directives or throw SyntaxErrorException */
 	def directiveCount = {
 		val directives = (new DirectiveVisitor(tokens, parser)).visit(t)
+		cleanup()
 		directives.size
 	}
 
 	/** Execute translation of the first directive */
 	def tryTranslation = {
 		val rewriter = new TokenStreamRewriter(tokens)
-		directives.head._2.translate(rewriter, ompFile, directives)
+		val res = directives.head._2.translate(rewriter, ompFile, directives)
+		cleanup()
+		res
 	}
 
 }

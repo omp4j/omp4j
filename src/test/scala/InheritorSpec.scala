@@ -8,23 +8,45 @@ import org.omp4j.tree._
 class InheritorLoadedContext(path: String) extends AbstractLoadedContext(path) {
 
 	/** Return set of possible inherited local variables as formated strings */
-	def localsAsText = Inheritor.getPossiblyInheritedLocals(directives.head._2.ctx).map(varAsText)
+	def localsAsText = {
+		val res = Inheritor.getPossiblyInheritedLocals(directives.head._2.ctx).map(varAsText)
+		cleanup()
+		res
+	}
 
 	/** Return set of possible inherited params as formated strings */
-	def paramsAsText = Inheritor.getPossiblyInheritedParams(directives.head._2.ctx).map(varAsText)
+	def paramsAsText = {
+		val res = Inheritor.getPossiblyInheritedParams(directives.head._2.ctx).map(varAsText)
+		cleanup()
+		res
+	}
 
 	/** Return size of parent-list */
-	def getParentListSize = Inheritor.getParentList(directives.head._2.ctx).size
+	def getParentListSize = {
+		val res = Inheritor.getParentList(directives.head._2.ctx).size
+		cleanup()
+		res
+	}
 
 	/** Return set of possible inherited local classes as formated strings */
-	def localClassesAsText = Inheritor.getVisibleLocalClasses(directives.head._2.ctx, ompFile).map(_.name)
+	def localClassesAsText = {
+		val res = Inheritor.getVisibleLocalClasses(directives.head._2.ctx, ompFile).map(_.name)
+		cleanup()
+		res
+	}
 
 	/** Return set of directly visible non-local classes */
-	def nonlocalClassesAsText = Inheritor.getVisibleNonLocalClasses(directives.head._2.ctx, ompFile).map(_.name)
+	def nonlocalClassesAsText = {
+		val res = Inheritor.getVisibleNonLocalClasses(directives.head._2.ctx, ompFile).map(_.name)
+		cleanup()
+		res
+	}
 
 	/** */
 	def directiveLocalsAsText(i: Int) = {
-		Inheritor.getDirectiveLocals(directives.toList(i)._2.ctx, directives.head._2).map(varAsText)
+		val res = Inheritor.getDirectiveLocals(directives.toList(i)._2.ctx, directives.head._2).map(varAsText)
+		cleanup()
+		res
 	}
 }
 

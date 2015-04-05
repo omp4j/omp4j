@@ -21,30 +21,25 @@ class Compiler(files: Array[File])(implicit conf: Config) {
 	/** File manager used for file compilation*/
 	private lazy val fileManager = jc.getStandardFileManager(null, null, null)
 
-	/** Compile sources
+	/** Compile sources, params: -d, -cp, others
 	  * @throws IllegalArgumentException When file is not source file.
 	  * @throws CompilationException When some error occurred during compilation.
 	  */
-	def compile(additionalFlags: List[(String, String)] = List()) = {
+	def compile(destDir: String, addCP: String = null, additionalFlags: List[(String, String)] = List()) = {
+
+		val flagBuffer = ArrayBuffer[String]()
+		flagBuffer ++= conf.flags.toList
+
+		flagBuffer ++= Array("-d", destDir)
+		if (addCP != null) {
+			if (conf.classpath != null) flagBuffer ++= List("-classpath", s"$addCP${File.pathSeparator}${conf.classpath}")
+			else flagBuffer ++= List("-classpath", addCP)
+		} else if (conf.classpath != null) flagBuffer ++= List("-classpath", {conf.classpath})
+
+		// the really used flags
+		val flags = flagBuffer.toArray.toIterable.asJava
+
 		try {
-
-			val flagBuffer = ArrayBuffer[String]()
-			flagBuffer ++= conf.flags
-
-			additionalFlags.foreach{case (left, right) =>
-				flagBuffer.indexOf(left) match {
-					case -1 => flagBuffer++=List(left, right)
-					case i  => {
-						flagBuffer.remove(i)
-						if (right != null) flagBuffer.remove(i)
-						flagBuffer+=left
-						if (right != null) flagBuffer+=right
-					}
-				}
-			}
-			// the really used flags
-			val flags = flagBuffer.toArray.toIterable.asJava
-
 			val units = fileManager.getJavaFileObjectsFromFiles(files.toIterable.asJava)
 			val result = jc.getTask(null, fileManager, null, flags, null, units).call
 

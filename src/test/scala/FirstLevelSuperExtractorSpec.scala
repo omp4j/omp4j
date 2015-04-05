@@ -8,6 +8,7 @@ class FLSELoadedContext(path: String) extends AbstractLoadedContext(path) {
 	/** Return number of found directives or throw SyntaxErrorException */
 	def firstLevelSuperCount = {
 		val supers = (new FirstLevelSuperExtractor ).visit(directives.head._2.ctx)
+		cleanup()
 		supers.size
 	}
 

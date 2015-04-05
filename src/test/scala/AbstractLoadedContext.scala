@@ -26,8 +26,11 @@ abstract class AbstractLoadedContext(path: String) {
 	/**/ prep.validate(parsed)
 	/* end */
 
-	// TODO: delete really all
-	override protected def finalize() = FileTreeWalker.recursiveDelete(conf.workDir)
+	/** Delete temp files */
+	def cleanup() = {
+		if (conf != null && conf.workDir != null) FileTreeWalker.recursiveDelete(conf.workDir)
+
+	}
 
 	/** Variable string in format: "<type> <identifier>" e.g. "int ok1" etc. */
 	protected def varAsText(v: OMPVariable) = s"${v.varType} ${v.name}"
