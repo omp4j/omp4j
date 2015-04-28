@@ -50,19 +50,63 @@ object OMPVariable {
 /** Variable representation
   * @param name original variable name (may include [])
   * */
-case class OMPVariable(name: String, varType: String, meaning: OMPVariableType = OMPVariableType.Class, isPrivate: Boolean = false) {
+case class OMPVariable(name: String, _varType: String, meaning: OMPVariableType = OMPVariableType.Class, isPrivate: Boolean = false) {
 	override def toString = s"Variable '$name' of type '$varType' with meaning of '$meaning'"
+
+	/** Number of array dimensions or 0 if not array */
+	val dims = if (_varType.startsWith("[")) 1 + _varType.lastIndexOf('[') else 0
 
 	/** rewritten name (without []) */
 	lazy val fullName = s"${meaning}_$arrayLessName"
 
+	val varType = if (dims == 0) _varType else {
+		val typeChar = _varType.charAt(dims)
+		typeChar match {
+			case 'Z' => "bool"
+			case 'B' => "byte"
+			case 'C' => "char"
+			case 'D' => "double"
+			case 'F' => "float"
+			case 'I' => "int"
+			case 'J' => "long"
+			case 'S' => "short"
+			case 'L' => _varType.substring(dims+1, _varType.length-1)
+		}
+	}
+
+	val bigVarType = varType match {
+		case "bool" => "Boolean"
+		case "byte" => "Byte"
+		case "char" => "Character"
+		case "double" => "Double"
+		case "float" => "Float"
+		case "int" => "Integer"
+		case "long" => "Long"
+		case "short" => "Short"
+		case x => x
+	}
+
+	def defaultValue = {
+		if (varType == bigVarType) ""
+		else if (varType == "bool") "false"
+		else "0"
+	}
+
+	private def bracks = {
+		val brackets = new StringBuilder
+		for (i <- 1 to dims) brackets append "[]"
+		brackets.toString()
+	}
+
 	/** rewritten name (with []) */
-	lazy val fullNameWithBrackets = s"${meaning}_$name"
+	def fullNameWithBrackets = {
+		s"${meaning}_$name$bracks"
+	}
 
 	/** declaration of variable in context (with []) */
 	def declaration(asArr: Boolean = false) = {
 		val extension = if (asArr) "[]" else ""
-		s"public $varType ${fullNameWithBrackets}${extension};"
+		s"public $varType $fullNameWithBrackets$extension;"
 	}
 
 	/** original name (without []) */

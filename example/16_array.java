@@ -2,6 +2,11 @@ import java.lang.String;
 
 class Arrays {
 
+	protected String[] arrF = new String[15];
+	protected String[][] arrF2 = new String[15][10];
+	protected byte[][] arrB2 = new byte[15][10];
+	protected short xxx = 15;
+
 	void passing() {
 		String[] yes = {"hey"};
 		// omp parallel
@@ -9,6 +14,10 @@ class Arrays {
 			String[] no = {"foo"};
 			passed(yes);
 			passed(no);
+			passed(arrF);
+			arrF2[0][0] = "foo";
+			arrB2[0][0] = 0;
+			xxx = 12;
 		}
 	}
 

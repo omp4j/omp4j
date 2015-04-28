@@ -28,7 +28,7 @@ trait ForCycle {
 		if ((new FirstLevelContinueExtractor ).visit(basicForStatement).size > 0) throw new ParseException("Continue statements are not allowed")
 	}
 
-	/** Get tuple (iterName, initExpr) or throw ParseException if error occures */
+	/** Get tuple (iterName, initExpr) or throw ParseException if error occurres */
 	def getInit(basicForStatement: Java8Parser.BasicForStatementContext)(implicit rewriter: TokenStreamRewriter) = {
 		// INIT
 		val forInit = basicForStatement.forInit

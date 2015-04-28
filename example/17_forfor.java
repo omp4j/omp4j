@@ -1,29 +1,24 @@
-import java.util.concurrent.atomic.AtomicInteger;
-
 class ForFor {
 	public static void main(String[] args) {
-		int arr[][] = new int[4][10];
+		// omp for
+		for (int c = 0; c < 10; c++) {
+			System.out.print(c + " ");
+		}
+		System.out.println("");
 
-		AtomicInteger ra = new AtomicInteger(0);
-		int constant = 15;
+		char globe1 = 'X';
 
 		// omp parallel
 		{
-			int r = ra.getAndIncrement();
+			System.out.print("pre" + OMP_THREAD_NUM + " ");
+			char globe2 = 'Y';
 
 			// omp for
 			for (int c = 0; c < 10; c++) {
-				arr[r][c] = r+c+constant;
+				System.out.print("" + globe1 + globe2 + c + " ");
 			}
+			System.out.print("post" + OMP_THREAD_NUM + " ");
 		}
-
-		for (int r = 0; r < 4; r++) {
-			for (int c = 0; c < 10; c++) {
-				System.out.print(arr[r][c]);
-				System.out.print(" ");
-			}
-			System.out.println();
-		}
+		System.out.println("");
 	}
-
 }

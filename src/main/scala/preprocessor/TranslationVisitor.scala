@@ -35,7 +35,8 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 	private val privateVars = currentDirective.privateVars ++ currentDirective.firstPrivateVars
 	def extension(c: OMPVariable) = {
-		if (privateVars contains c.name) s"[${currentDirective.iter2}]"
+		//if (privateVars contains c.name) s"[${currentDirective.iter2}]"
+		if (privateVars contains c.name) s"[${currentDirective.executor}.getThreadNum()]"
 		else ""
 	}
 

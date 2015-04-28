@@ -159,7 +159,6 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
 		validate(directives)
 
-		// TODO: make them public
 		val ccd = preTranslate
 		captured = ccd._1
 		capturedThis = ccd._2
@@ -231,16 +230,15 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	protected def initPrivates(implicit captured: Set[OMPVariable]) = {
 		if (privateVars.size + firstPrivateVars.size <= 0) ""
 		else {
-			// TODO: primitive types
 			(for {c <- captured} yield
 				if ((privateVars contains c.name) || (firstPrivateVars contains c.name)) s"$contextVar.${c.fullName} = new ${c.varType}[$threadCount];\n"
 				else ""
 			).toList.mkString +
 			s"for (int $iter3 = 0; $iter3 < $threadCount; ${iter3}++) {/*!!!*/\n" +
-				(for {c <- captured} yield
-					s"\t$contextVar.${c.fullName}[$iter3]= new ${c.varType}" +
+				(for {c <- captured; if ((privateVars contains c.name) || (firstPrivateVars contains c.name)) } yield
+					s"\t$contextVar.${c.fullName}[$iter3]= new ${c.bigVarType}" +
 					(
-						if (privateVars contains c.name) "()"
+						if (privateVars contains c.name) s"(${c.defaultValue})"
 						else if (firstPrivateVars contains c.name) s"(${c.arrayLessName})"
 						else ""
 					)

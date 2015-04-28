@@ -17,7 +17,7 @@ object Config {
 }
 
 /** Configuration for compiler and other classes. Use implicitally. */
-class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"org${File.separator}omp4j${File.separator}runtime", val runtimeClasses: List[String] = List("AbstractExecutor", "DynamicExecutor", "DynamicExecutor$DynamicExecutorThread", "IOMPExecutor", "StaticExecutor", "StaticExecutor$StaticExecutorThread")) {
+class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"org${File.separator}omp4j${File.separator}runtime", val runtimeClasses: List[String] = List("AbstractExecutor", "DynamicExecutor", "IOMPExecutor", "StaticExecutor", "StaticExecutor$1")) {
 
 	/** working directory */
 	val workDir: File = createWorkingDir
