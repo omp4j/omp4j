@@ -5,7 +5,7 @@ import org.omp4j.extractor._
 
 import scala.collection.JavaConverters._
 
-/** The nonreflextable class representation. This class can't be reflected. */
+/** The nonreflectable trait represents classes that can't be reflected. */
 trait Nonreflectable extends ClassTrait {
 
 	/** Placeholder for debug purposes */
@@ -14,6 +14,7 @@ trait Nonreflectable extends ClassTrait {
 	/** Inner classes of type InnerInLocalClass */
 	val innerClasses: List[OMPClass] = (new InnerClassExtractor ).visit(classBody).map(new InnerInLocalClass(_, THIS, parser)(conf, ompFile))
 
+	/** Apply syntax analysis */
 	def findFieldsSyntactically: Array[OMPVariable] = {
 		var res = Array[OMPVariable]()
 		var inheritedFields = Array[OMPVariable]()
@@ -32,12 +33,13 @@ trait Nonreflectable extends ClassTrait {
 			.toArray
 	}
 
+	/** Fetch all inherited fields.
+	  *
+	  * Firstly by using variable, secondly seeking implemented classes (local, other) and finally via reflection API.
+	 * @param superName superclass name
+	 * @return array of fields
+	 */
 	def findInheritedFields(superName: String) = {
-		/*
-		  - using variable
-		  - implemented classes (local, other)
-		  - reflection
-		*/
 
 		def getCandidates(objs: List[Findable], chunks: Array[String]): List[OMPClass] = {
 			objs.size match {
@@ -71,7 +73,7 @@ trait Nonreflectable extends ClassTrait {
 			case 0 =>
 				try {
 					val cls = conf.loader.load(superName, cunit)
-					findAllFieldsRecursively(cls, false)
+					findAllFieldsRecursively(cls, firstRun = false)
 				} catch {
 					case e: Exception => throw new ParseException(s"Class '$name' ($FQN) was not found in generated JAR even though it was found by ANTLR", e)
 				}
@@ -83,6 +85,7 @@ trait Nonreflectable extends ClassTrait {
 	}
 
 	/** Find all fields syntactically (use only for allFields initialization)
+	  *
 	  * @return Array of OMPVariable
 	  */
 	def findAllFields: Array[OMPVariable] = {

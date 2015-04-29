@@ -6,6 +6,7 @@ import org.omp4j.directive.DirectiveSchedule._
 import org.omp4j.grammar.Java8Parser
 import org.omp4j.tree.{OMPFile, OMPClass, OMPVariable}
 
+/** Parallel directive */
 case class Parallel(override val parent: Directive, override val privateVars: List[String], override val firstPrivateVars: List[String])(implicit schedule: DirectiveSchedule, threadNum: String, ctx: ParserRuleContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, privateVars, firstPrivateVars) with LockMemory {
 	override val parentOmpParallel = this
 	override def addAtomicBool(baseName: String) = super[LockMemory].addAtomicBool(baseName)

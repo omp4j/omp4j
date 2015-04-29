@@ -10,7 +10,11 @@ case class TopClass(ec: Java8Parser.ClassDeclarationContext, parent: OMPClass, p
 	/** Recursion bottom */
 	override lazy val cunit: Java8Parser.CompilationUnitContext = cunit()
 
-	/** Iterate recursivelly until CompilationUnitContext is found */
+	/** Iterate recursively until CompilationUnitContext is found
+	 *
+	 * @param pt from whence to start
+	 * @return Compilation unit context
+	 */
 	protected def cunit(pt: ParserRuleContext = ctx): Java8Parser.CompilationUnitContext = {
 		try {
 			val cunit = pt.asInstanceOf[Java8Parser.CompilationUnitContext]

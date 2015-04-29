@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 /** Extracts all local variable declarations from ANTLR4 ParseTree with no statement pass */
 class FirstLevelLocalVariableExtractor extends Java8BaseVisitor[Set[OMPVariable]] {
 
-	/** Add local variable declaration context */
+	// Add local variable declaration context
 	override def visitLocalVariableDeclaration(variableCtx: Java8Parser.LocalVariableDeclarationContext) = {
 		if (variableCtx.variableModifier.asScala.map(_.getText).contains("final")) {
 			Set[OMPVariable]()
@@ -27,10 +27,10 @@ class FirstLevelLocalVariableExtractor extends Java8BaseVisitor[Set[OMPVariable]
 		}
 	}
 
-	/** Don't get into nested statements */
+	// Don't get into nested statements
 	override def visitStatement(ctx: Java8Parser.StatementContext) = Set[OMPVariable]()
 
-	/** Don't get into other methods */
+	// Don't get into other methods
 	override def visitMethodDeclaration(ctx: Java8Parser.MethodDeclarationContext) = Set[OMPVariable]()
 	override def defaultResult = Set[OMPVariable]()
 	override def aggregateResult(a: Set[OMPVariable], b: Set[OMPVariable]) = a ++ b

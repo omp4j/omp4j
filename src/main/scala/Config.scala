@@ -10,65 +10,87 @@ import org.omp4j.utils.{FileDuplicator, Keywords, TmpDir}
 import scala.Array._
 import scala.collection.mutable.ArrayBuffer
 
+/** Config companion object that stores directory structure. */
 object Config {
 	val PREPROCESSED = "preprocessed"
 	val VALIDATION = "validation"
 	val COMPILATION = "compilation"
 }
 
-/** Configuration for compiler and other classes. Use implicitally. */
+/** Configuration context for compiler and other classes. Use implicitly.
+  *
+  * @constructor Setup new config context
+  * @param args CLI arguments
+  * @param level recursion level
+  * @param runtimePath path of the runtime classes
+  * @param runtimeClasses list of classes that are used in runtime
+  */
 class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"org${File.separator}omp4j${File.separator}runtime", val runtimeClasses: List[String] = List("AbstractExecutor", "DynamicExecutor", "IOMPExecutor", "StaticExecutor", "StaticExecutor$1")) {
 
-	/** working directory */
-	val workDir: File = createWorkingDir
+	/** Working directory */
+	val workDir: File = createWorkingDir()
 
-	/** directory of preprocessed sources */
+	/** Directory of preprocessed sources */
 	val preprocessedDir: File = new TmpDir(workDir, Config.PREPROCESSED).toFile
 
-	/** directory of sources without threadId methods */
+	/** Directory of sources without threadId methods */
 	val validationDir: File = new TmpDir(workDir, Config.VALIDATION).toFile
 
-	/** directory of binary classes (without threadId methods) */
+	/** Directory of binary classes (without threadId methods) */
 	val compilationDir: File = new TmpDir(workDir, Config.COMPILATION).toFile
 
-	/** tmp JAR file */
+	/** Temporary JAR file */
 	val jar: File = new File(compilationDir.getAbsolutePath + File.separator + "output.jar")
 
-	/** javac flags and file names */
-	/** files to be preprocessed (and compiled) */
+	/** Files to be preprocessed (and compiled) */
 	lazy val files: Array[File] = openFiles(fileNames)
 
-	/** Loader for the jar defined above */
+	/** Loader for the JAR defined in prior methods */
 	var loader: Loader = new Loader(jar)
 
-	/** flags for first compilation */
-	lazy val (optDir: File, firstCompFlags: Array[String]) = getOptDirAndFirstCompFlags
-
-	/** set of all used strings */
+	/** Set of all used strings */
 	val tokenSet = new TokenSet
 
+	/** Buffer used for file names extraction */
 	private val fileNamesBuffer = new ArrayBuffer[String]()
+
+	/** Buffer used for CLI options extraction */
 	private val flagsBuffer = new ArrayBuffer[String]()
 
+	/** Destination directory */
 	var destdir: String = null
+
+	/** Source directory*/
 	var srcdir: String = null
+
+	/** Progress messages? */
 	var verbose: Boolean = false
+
+	/** Omit the final compilation? */
 	var sourceOnly: Boolean = false
+
+	/** Passed classpath*/
 	var classpath: String = null
 
+	/** Extracted file names from CLI options*/
 	var fileNames = Array[String]()
+
+	/** Extracted flags names from CLI options*/
 	var flags = Array[String]()
+
+	/** All used flags */
 	var allFlags = Array[String]()
 
-	// constructor
+	/* constructor */
 	if (level == 1) {
 		processArgs(args)
 		fetchVars()
 	}
 	if (destdir != null) new File(destdir).mkdirs()
 	if (srcdir != null) new File(srcdir).mkdirs()
+	/* /constructor */
 
-
+	/** Init `allClass` buffer */
 	private def fetchVars() = {
 		fileNames = fileNamesBuffer.toArray
 		flags = flagsBuffer.toArray
@@ -82,6 +104,10 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 		val allFlags = allFlagsBuffer.toArray
 	}
 
+	/** Process all arguments
+	  *
+	  *  @param args CLI parameters
+	  */
 	private def processArgs(args: Array[String]): Unit = {
 		if (args.length > 0) {
 			args.head match {
@@ -130,48 +156,29 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 		}
 	}
 
-
-	/** TODO: doc */
-	private def getOptDirAndFirstCompFlags = {
-
-		// last index of flags
-		val lastIdx: Int = flags.size - 1
-
-		flags.indexOf("-d") match {
-			case -1 =>
-				val od = new File(".")
-				val fcf = concat(flags, Array("-d", workDir.getAbsolutePath))
-				(od, fcf)
-			case `lastIdx` => throw new IllegalArgumentException("Missing value for '-d'")  // TODO: default . ??
-			case idx: Int =>
-				val od = new File(flags(idx + 1))
-				val fcf = flags.updated(idx + 1, workDir.getAbsolutePath)
-				(od, fcf)
-		}
-	}
-
 	/** Get files based on their string paths
+	  *
 	  * @param fileNames String relative paths
 	  * @throws IllegalArgumentException When non-existing file is passed or file is not readable
 	  * @return Open files
 	  */
 	private def openFiles(fileNames: Array[String]) = {
-		if (fileNames.size == 0) throw new IllegalArgumentException("No files passed")
+		if (fileNames.length == 0) throw new IllegalArgumentException("No files passed")
 
 		val files = fileNames.map(new File(_))
 		files.foreach{ f =>
-			// TODO: string format
-			if (!f.exists)  throw new IllegalArgumentException("File '" + f.getPath + "' does not exist")
-			if (!f.canRead) throw new IllegalArgumentException("Missing read permission for file '" + f.getPath + "'")
+			if (!f.exists)  throw new IllegalArgumentException(s"File '${f.getPath}' does not exist")
+			if (!f.canRead) throw new IllegalArgumentException(s"Missing read permission for file '${f.getPath}'")
 		}
 		files
 	}
 
 	/** Create unique tmp directory
+	  *
 	  * @throws RuntimeException When either property 'java.io.tmpdir' does not exist or is invalid
 	  * @return Tmp directory
 	  */
-	private def createWorkingDir: File = {
+	private def createWorkingDir(): File = {
 		if (System.getProperty("java.io.tmpdir") == null) throw new RuntimeException("Property 'java.io.tmpdir' not set.")
 
 		val tmpRootStr = System.getProperty("java.io.tmpdir")
@@ -181,11 +188,15 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 		// TODO: test writability
 
 		// TODO: use hidden (.*)
-		(new TmpDir(tmpRootFile, "omp4j")).toFile
+		new TmpDir(tmpRootFile, "omp4j").toFile
 	}
 
+	/** Create new context that will be used in next recursion level.
+	  *
+	  * @param nextLvlFiles files to be proceeded in the next recursion level
+	  * @return configuration context for next recursion level
+	  */
 	def nextLevel(nextLvlFiles: Array[File]): Config = {
-		//val c = this
 		val c = new Config(args, level + 1, runtimePath, runtimeClasses) {
 			override lazy val files = nextLvlFiles
 		}
@@ -201,8 +212,11 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 		c
 	}
 
+	/** Copy all runtime classes into directory given.
+	  *
+	  * @param rootDir target directory
+	  */
 	def copyRuntimeClassesTo(rootDir: File) = {
-
 		val runtimeDir = new File(s"${rootDir.getAbsolutePath}${File.separator}$runtimePath")
 		runtimeDir.mkdirs()
 
@@ -211,7 +225,5 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 			val outputFile = new File(runtimeDir, s"$name.class")
 			FileDuplicator.streamToFile(inputStream, outputFile)
 		}
-
 	}
-
 }

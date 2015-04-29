@@ -1,7 +1,7 @@
 package org.omp4j.system
 
 import java.io.File
-import java.net.{URL, URLClassLoader}
+import java.net.{MalformedURLException, URL, URLClassLoader}
 
 import org.omp4j.grammar._
 
@@ -13,8 +13,9 @@ class Loader(jar: File) {
 	/** Cached ClassLoader */
 	val classLoader = loadClassLoader(jar)
 
-	/** Load jar given
-	  * @param jar File of jar to be loaded
+	/** Load jar given.
+	  *
+	  * @param jar JAR to be loaded
 	  * @throws IllegalArgumentException If this jar URL is not absolute
 	  * @throws MalformedURLException If a protocol handler for the URL could not be found, or if some other error occurred while constructing the URL
 	  * @throws SecurityException If a required system property value cannot be accessed or if a security manager exists and its checkCreateClassLoader method doesn't allow creation of a class loader.
@@ -27,14 +28,24 @@ class Loader(jar: File) {
 		cl		
 	}
 
-	/** Load class specified by FQN (Binary name) */
+	/** Load class specified by FQN (Binary name).
+	 *
+	 * @param FQN Fully Qualified Name of the class to be loaded
+	 * @return the requested Class object
+	 * @throws ClassNotFoundException if class is not found
+	 */
 	def loadByFQN(FQN: String): Class[_] = classLoader.loadClass(FQN)
 
-	/** Construct FQN based on class name and package name */
-	def buildFQN(name: String, cunit: Java8Parser.CompilationUnitContext) = packageNamePrefix(cunit) + name
+	/** Construct FQN based on class name and package name
+	 *
+	 * @param name name of the class
+	 * @param cunit compilation unit context (provided by ANTLR)
+	 * @return Fully Qualified Name of the class
+	 */
+	private def buildFQN(name: String, cunit: Java8Parser.CompilationUnitContext) = packageNamePrefix(cunit) + name
 
 	/** Construct package prefix for FQN based on package-statement existence */
-	def packageNamePrefix(cunit: Java8Parser.CompilationUnitContext): String = {
+	private def packageNamePrefix(cunit: Java8Parser.CompilationUnitContext): String = {
 		try {
 			cunit.packageDeclaration.Identifier.asScala.map(_.getText).mkString(".") + "."
 		} catch {
@@ -42,8 +53,14 @@ class Loader(jar: File) {
 		}
 	}
 
-	/** Try imports until some match */
-	def loadByImport(className: String, cunit: Java8Parser.CompilationUnitContext): Class[_] = {
+	/** Try to load a class until some `import` match
+	  *
+	  * @param className the class to be loaded
+	  * @param cunit compilation unit context (provided by ANTLR)
+	  * @return the requested Class object
+	  * @throws ClassNotFoundException if class is not found
+	  */
+	private def loadByImport(className: String, cunit: Java8Parser.CompilationUnitContext): Class[_] = {
 
 		/** Recursively try the first import */
 		def loadFirst(imports: List[Java8Parser.ImportDeclarationContext]): Class[_]  = {
@@ -78,7 +95,13 @@ class Loader(jar: File) {
 		loadFirst(cunit.importDeclaration.asScala.toList)
 	}
 
-	/** Try various loading possibilities */
+	/** Load class specified by its name.
+	  *
+	  * @param name class name
+	  * @param cunit compilation unit context (provided by ANTLR)
+	  * @return the requested Class object
+	  * @throws ClassNotFoundException if class is not found
+	  */
 	def load(name: String, cunit: Java8Parser.CompilationUnitContext): Class[_] = {
 		try {
 			loadByFQN(name)
@@ -92,6 +115,7 @@ class Loader(jar: File) {
 					case e: ClassNotFoundException => loadByImport(name, cunit)
 				}
 			}
+
 		}
 	}
 }

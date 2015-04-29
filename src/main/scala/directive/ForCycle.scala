@@ -7,12 +7,26 @@ import org.omp4j.extractor.{FirstLevelContinueExtractor, FirstLevelBreakExtracto
 import org.omp4j.grammar.Java8Parser
 import scala.collection.JavaConverters._
 
+/** Trait implementing for-loop operations */
 trait ForCycle {
 
+	/** Abstract uniqueName method */
 	def uniqueName(baseName: String): String
+
+	/** Apply the rewriter
+	  *
+	  * @param ctx AST context
+	  * @param rewriter ANTLR rewriter
+	  * @return text after rewriter is applied
+	  */
 	protected def getRewrittenText(ctx: SyntaxTree)(implicit rewriter: TokenStreamRewriter): String
 
-	/** Extract basicForStatement or throw ParseException giving the reason of failure */
+	/** Extract basicForStatement or throw ParseException giving the reason of failure
+	  *
+	  * @param ctx statement
+	  * @return basicForStatement
+	  * @throws ParseException if basicForStatement couldn't be extracted
+	 */
 	def getBasicForStatement(ctx: Java8Parser.StatementContext) = {
 		val forStatement = ctx.forStatement
 		if (forStatement == null) throw new ParseException("For directive before non-for statement")
@@ -22,13 +36,23 @@ trait ForCycle {
 		basicForStatement
 	}
 
-	/** Check whether the statement is break/continue-free or throw ParseException */
+	/** Check whether the statement is break/continue-free
+	 *
+	 * @param basicForStatement basicForStatement
+	 * @throws ParseException if break or continue is presented
+	 */
 	def validateBasicForStatement(basicForStatement: Java8Parser.BasicForStatementContext) = {
 		if ((new FirstLevelBreakExtractor ).visit(basicForStatement).size > 0) throw new ParseException("Break statements are not allowed")
 		if ((new FirstLevelContinueExtractor ).visit(basicForStatement).size > 0) throw new ParseException("Continue statements are not allowed")
 	}
 
-	/** Get tuple (iterName, initExpr) or throw ParseException if error occurres */
+	/** Extract init. part of the for-loop
+	  *
+	  * @param basicForStatement basicForStatement
+	  * @param rewriter ANTLR rewriter
+	  * @return tuple of iterator name and for-loop init. context
+	  * @throws ParseException if init. couldn't be extracted
+	  */
 	def getInit(basicForStatement: Java8Parser.BasicForStatementContext)(implicit rewriter: TokenStreamRewriter) = {
 		// INIT
 		val forInit = basicForStatement.forInit
@@ -41,7 +65,12 @@ trait ForCycle {
 		(iterName, initExpr)
 	}
 
-	/** Extract update part of the for cycle or throw ParseException giving the reason of failure */
+	/** Extract update part of the for-loop
+	  *
+	  * @param basicForStatement basicForStatement
+	  * @return for-loop update context
+	  * @throws ParseException if update context doesn't meet the requirements
+	  */
 	def getUpdate(basicForStatement: Java8Parser.BasicForStatementContext) = {
 		val forUpdate = basicForStatement.forUpdate
 		val updateList = forUpdate.statementExpressionList.statementExpression.asScala
@@ -51,6 +80,16 @@ trait ForCycle {
 		update
 	}
 
+	/** Translate the for-loop.
+	  *
+	  * Make for-loop run in parallel given the number of threads.
+	  *
+	  * @param iter2 thread-iterator variable name
+	  * @param threadCount number of threads
+	  * @param ctx ANTLR context
+	  * @param rewriter ANTLR rewriter
+	  * @throws ParseException if an error occurs
+	  */
 	def translateFor(iter2: String, threadCount: String)(implicit ctx: Java8Parser.StatementContext, rewriter: TokenStreamRewriter) = {
 
 		val basicForStatement = getBasicForStatement(ctx)

@@ -8,6 +8,7 @@ import org.omp4j.grammar.Java8Parser
 import org.omp4j.preprocessor.{TranslationVisitor, SingleTranslationVisitor}
 import org.omp4j.tree.{OMPClass, OMPVariable}
 
+/** Parallel-for directive */
 case class ParallelFor(override val parent: Directive, override val privateVars: List[String], override val firstPrivateVars: List[String])(implicit schedule: DirectiveSchedule, threadNum: String, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, privateVars, firstPrivateVars) with ForCycle with LockMemory {
 	override val parentOmpParallel = this
 	override lazy val secondIter = true

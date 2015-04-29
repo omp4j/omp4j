@@ -12,7 +12,7 @@ import scala.collection.JavaConverters._
 
 /** The basic class trait. Reflectable and Nonreflectable traits inherits from this trait. */
 trait ClassTrait {
-	/** Abstract fields and vars that are mapped to real fields and (implicit) params */
+	// Abstract fields and vars that are mapped to real fields and (implicit) params
 	val THIS: OMPClass
 	val name: String
 	val FQN: String
@@ -39,6 +39,7 @@ trait ClassTrait {
 		.toList
 
 	/** Recursively build array of class fields
+	  *
 	  * @param clazz fields of this class are returned
 	  * @param firstRun If set to True, private Fields will be included (but not parents ones)
 	  * @return Array of Fields

@@ -3,14 +3,24 @@ package org.omp4j.preprocessor
 import org.antlr.v4.runtime.{CommonTokenStream, TokenStreamRewriter, ParserRuleContext}
 import org.omp4j.grammar.{Java8Parser, Java8BaseVisitor}
 
-/**
- * Created by petr on 29.1.15.
- * TODO: doc
- * TODO: unit tests
- */
+/** Tool for ThreadID removal.
+  *
+  * The original source is not modified.
+  * TODO: unit tests
+  *
+  * @constructor setup new rewriter
+  * @param origCtx
+  * @param tokens
+  */
 class ThreadIdRemover(origCtx: ParserRuleContext, tokens: CommonTokenStream) extends Java8BaseVisitor[Unit] {
 
-	val rewriter = new TokenStreamRewriter(tokens)
+	/** Mutable rewriter */
+	private val rewriter = new TokenStreamRewriter(tokens)
+
+	/** Iterate through the AST via Visitor pattern, translating ThreadID macros to `1`
+	  *
+	  * @return ThreadID-less source code
+	  */
 	def removedIds() = {
 		visit(origCtx)
 		rewriter.getText

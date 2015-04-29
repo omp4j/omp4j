@@ -10,7 +10,7 @@ class FieldClassExtractor extends Java8BaseVisitor[List[Java8Parser.ClassDeclara
 	/** Java8Parser.ClassDeclarationContext typedef */
 	type CDC = Java8Parser.ClassDeclarationContext
 
-	/** Do not continue, so no nested classes included */
+	// Do not continue, so no nested classes included
 	override def visitClassDeclaration(classCtx: CDC) = {
 		var res = List[CDC]()
 		try {
@@ -29,7 +29,7 @@ class FieldClassExtractor extends Java8BaseVisitor[List[Java8Parser.ClassDeclara
 		res :+ classCtx
 	}
 
-	/** Don't get into nested statements */
+	// Don't get into nested statements
 	override def visitStatement(ctx: Java8Parser.StatementContext) = List[CDC]()
 
 	override def defaultResult = List[CDC]()

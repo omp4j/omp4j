@@ -17,6 +17,9 @@ package org.omp4j {
 	/** Classes used for preprocessor such as various listeners etc. */
 	package object preprocessor {}
 
+	/** Runtime library */
+	package object runtime {}
+
 	/** Runtime source compilation, packaging, loading and reflextion */
 	package object system {}
 

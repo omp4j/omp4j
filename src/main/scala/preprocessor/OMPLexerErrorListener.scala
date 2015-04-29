@@ -4,9 +4,13 @@ import org.antlr.v4.runtime._
 import org.omp4j.exception._
 import org.omp4j.grammar._
 
-/** Error listener implementation for simple throwing syntax exceptions */
+/** Lexer error listener. */
 class OMPLexerErrorListener extends BaseErrorListener {
-	/** @throws SyntaxErrorException */		
+
+	/** Only throws exceptions
+	 * @inheritdoc
+	 * @throws SyntaxErrorException on error
+	 */
 	override def syntaxError(recognizer: Recognizer[_,_], offendingSymbol: Object, line: Int, charPositionInLine: Int, msg: String, e: RecognitionException) = {
 		throw new SyntaxErrorException(msg, e)
 	}

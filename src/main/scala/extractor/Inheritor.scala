@@ -9,11 +9,12 @@ import org.omp4j.tree._
 import scala.collection.JavaConverters._
 import scala.util.control.Breaks._
 
-/** Extracts various inherited stuff */
+/** Tool for complicated inheritance problems. */
 object Inheritor {
 
 	/** Get sequence of all (in)direct parents of tree given
-	  * @param pt Tree whose parents are about to be fetched
+	  *
+	  * @param t Tree whose parents are about to be fetched
 	  * @return Set of trees
 	  */
 	def getParentList(t: ParseTree): Seq[ParseTree] = {
@@ -21,7 +22,12 @@ object Inheritor {
 		else getParentList(t.getParent) :+ t
 	}
 
-	/** Filters all possible OMPClass keys and return Seq of OMPClass (without duplicates) */
+	/** Filters all possible OMPClass keys and return Seq of OMPClass (without duplicates)
+	  *
+	  * @param t tree of the interest
+	  * @param ompFile hierarchy model
+	  * @return sequence of OMPClasses
+	  */
 	def getParentClasses(t: ParseTree, ompFile: OMPFile): Seq[OMPClass] = {
 		val neck: Seq[ParseTree] = getParentList(t)
 		val classMap = ompFile.classMap
@@ -35,8 +41,8 @@ object Inheritor {
 		duplicates.distinct
 	}
 
-	/** Get set of variables (their declarations) whose can be reffered
-	  * but are not declared in the tree given
+	/** Get set of variables (their declarations) whose can be referred but are not declared in the tree given
+	  *
 	  * @param pt Tree whose variable are about to be fetched
 	  * @return Set of variables
 	  */
@@ -45,29 +51,33 @@ object Inheritor {
 		getLocals(pt, neck)
 	}
 
-	/** Get set of locally declared variables. */
+	/** Get set of locally declared variables.
+	  *
+	  * @param pt Tree whose variable are about to be fetched
+	  * @param d current directive
+	  * @return set of locally declared variables
+	  */
 	def getDirectiveLocals(pt: ParseTree, d: Directive) = {
 		val neck = getParentList(pt).reverse.takeWhile(_ != d.ctx).reverse	// list of parent restricted to directive
 		getLocals(pt, neck)
 	}
 
-	/** Get set of variables that may be inherited from directive given. */
-	def getDirectiveInheritedLocals(pt: ParseTree, d: Directive) = {
-		val neck = getParentList(pt).takeWhile(_ != d.ctx).reverse	// list of parent restricted to directive
-		getLocals(pt, neck)
-	}
-
+	/** Get set of locally declared variables.
+	  *
+	  * @param pt Tree whose variable are about to be fetched
+	  * @param neck sequence of parents
+	  * @return set of locally declared variables
+	  */
 	private def getLocals(pt: ParseTree, neck: Seq[ParseTree]) = {
-		// result set - TODO: rewrite more functionally
 		var result = Set[OMPVariable]()
 
 		// iterate through the list of tuples (tree-node, follower-in-neck)
-		for {(t, follower) <- (neck zip neck.tail)} {
+		for {(t, follower) <- neck zip neck.tail} {
 			breakable {
 				// iterate through all children left to the follower
 				for {i <- 0 until t.getChildCount} {
 					val child = t.getChild(i)
-					if (child == follower) break
+					if (child == follower) break()
 					result = result ++ (new FirstLevelLocalVariableExtractor ).visit(child)
 				}
 			}
@@ -76,7 +86,8 @@ object Inheritor {
 
 	}
 
-	/** Get set of method parameters that can be reffered
+	/** Get set of method parameters that can be referred
+	  *
 	  * @param pt Tree whose params are about to be fetched
 	  * @return Set of variables
 	  */
@@ -85,7 +96,7 @@ object Inheritor {
 		type MDC = Java8Parser.MethodDeclarationContext
 		type LEC = Java8Parser.LambdaExpressionContext
 
-		// result set - TODO: rewrite more functionally
+		// result set
 		var result = Set[OMPVariable]()
 		val neck = getParentList(pt)	// list of parent
 
@@ -147,7 +158,12 @@ object Inheritor {
 		result
 	}
 
-	/** get Local and InnerInLocal classes*/
+	/** Get local classes that are visible from current tree
+	  *
+	  * @param pt Tree whose classes are about to be fetched
+	  * @param ompFile hierarchy model
+	  * @return list of visible local classes
+	  */
 	def getVisibleLocalClasses(pt: ParseTree, ompFile: OMPFile): List[OMPClass] = {
 
 		type CDC = Java8Parser.ClassDeclarationContext
@@ -186,7 +202,12 @@ object Inheritor {
 		(neck zip neck.tail).map{ case (t, follower) => iiner(t, follower)}.flatten.toList
 	}
 
-	/** Get Top and Inner classes */
+	/** Get non-local classes that are visible from current tree
+	  *
+	  * @param pt Tree whose classes are about to be fetched
+	  * @param ompFile hierarchy model
+	  * @return list of visible local classes
+	  */
 	def getVisibleNonLocalClasses(pt: ParseTree, ompFile: OMPFile): List[OMPClass] = {
 
 		type CDC = Java8Parser.ClassDeclarationContext

@@ -8,7 +8,7 @@ class InnerClassExtractor extends Java8BaseVisitor[List[Java8Parser.ClassDeclara
 	/** Java8Parser.ClassDeclarationContext typedef */
 	type CDC = Java8Parser.ClassDeclarationContext
 
-	/** Do not continue, so no nested classes included */
+	// Do not continue, so no nested classes included
 	override def visitClassDeclaration(classCtx: CDC) = List[CDC](classCtx)
 	override def visitMethodDeclaration(methodCtx: Java8Parser.MethodDeclarationContext) = List[CDC]()
 	override def defaultResult = List[CDC]()

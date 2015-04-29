@@ -3,9 +3,14 @@ package org.omp4j.utils
 import java.io.File
 import java.net.URISyntaxException
 
+/** Tool for recursive file system iteration */
 object FileTreeWalker {
 
-	/** DFS file list */
+	/** List all files in current subtree (recursively).
+ 	  *
+	  * @param f from whence to start
+	  * @return Array of lsited files
+	  */
 	def recursiveListFiles(f: File): Array[File] = {
 		if (f != null) {
 			val these = f.listFiles
@@ -13,8 +18,11 @@ object FileTreeWalker {
 		} else Array()
 	}
 
-	/** Delete recursively */
-	def recursiveDelete(f: File) = {
+	/** Delete the whole subtree (recursively).
+	  *
+	  * @param f from whence to start
+	  */
+	def recursiveDelete(f: File): Unit = {
 		if (f != null) {
 			recursiveListFiles(f).map(_.delete)
 			f.delete

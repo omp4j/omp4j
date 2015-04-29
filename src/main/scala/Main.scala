@@ -8,8 +8,8 @@ import java.io.File
 
 /** The omp4j preprocessor entry point.
   *
-  * Handle flags and start preprocessing the files passed as program parametr.
-  * @param args Same as javac = [ options ] [ sourcefiles ] [ classes ] [ @argfiles ]
+  * Handles the CLI options and starts preprocessing the files passed as program parameter.
+  * Usage is similar to `javac`: [ options ] [ sourcefiles ] [ classes ] [ @argfiles ]
   */
 object Main extends App {
 

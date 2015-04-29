@@ -17,22 +17,26 @@ import org.omp4j.system._
 import scala.collection.mutable.ArrayBuffer
 
 /** Class representing the preprocessor itself.
+  *
   * @constructor Create preprocessor for given files.
   * @param conf the preprocessor configuration
-  * @throws ParseException TODO
+  * TODO: throws
   */
 class Preprocessor(implicit conf: Config) {
 
-	/** Start parsing file by file, return (files, tmpDirs) */
+	/** Recursively translate all files until some directive exists.
+	  *
+	  *	New lifecycle, TODO: lifecycle
+	  *	- get config
+	  *	- get parseTree for each file (check exceptions)
+	  *	- remove threadId tokens and validate source using compiler
+	  *	- using previously parsed trees, make one level translation
+	  *	- run until a directive exists
+	  * @param firstRun true if this is the first recursion level, false otherwise
+	  * @return a tuple containing an array of translated files and the list of tuples of working and preprocessed directories
+          * TODO: throws
+	  */
 	def run(firstRun: Boolean = true): (Array[File], List[(File, File)]) = {
-
-		/* New lifecycle, TODO: rewrite
-		- get config
-		- get parseTree for each file (check exceptions)
-		- remove threadId tokens and validate source using compiler
-		- using previously parsed trees, make one level translation
-		- run until a directive exists
-		 */
 
 		// parse sources        TODO: parallelly
 		val parsed = conf.files.map(f => (f, parseFile(f)))
@@ -72,13 +76,20 @@ class Preprocessor(implicit conf: Config) {
 
 		if (firstRun) {
 			tmpDirs.tail.foreach{ case (big, small) =>
-				cleanup(big)
+				FileTreeWalker.recursiveDelete(big)
 			}
 			(result, List(tmpDirs.head))
 		} else (result, tmpDirs)
 	}
 
-	/** don't call externally */
+	/** Validate sources passed.
+	  *
+	  * The method is not meant for external usage, however it may come in handy
+	  *
+	  * @param parsed An array of file and parsed AST properties
+	  * @throws CompilationException if validation fails
+	  * TODO: throws
+	 */
 	def validate(parsed: Array[(File, (CommonTokenStream, Java8Parser, Java8Parser.CompilationUnitContext))]) = {
 		// TODO: parallelly
 		val toValidate = ArrayBuffer[File]()
@@ -86,7 +97,7 @@ class Preprocessor(implicit conf: Config) {
 		// create tmp files without threadIds
 		parsed.foreach{case (f, (tok, par, cun)) =>
 			val tir = new ThreadIdRemover(cun, tok)
-			val threadLessText = tir.removedIds
+			val threadLessText = tir.removedIds()
 
 			toValidate += FileSaver.saveToFile(threadLessText, conf.validationDir, cun.packageDeclaration, f.getAbsolutePath.split(File.separator).last)
 		}
@@ -100,19 +111,19 @@ class Preprocessor(implicit conf: Config) {
 		compiler.jar()
 	}
 
-
-	/** Delete file given */
-	private def cleanup(deleteMe:File) = FileTreeWalker.recursiveDelete(deleteMe)
-
-	/** Insert all tokens to tokenSet in order to prevent their usage */
+	/** Insert all tokens into TokenSet in order to prevent their later usage.
+	 *
+	 * @param toks token stream from whence the tokens come
+	 */
 	private def registerTokens(toks: CommonTokenStream) = {
 		toks.getTokens.asScala.toList.foreach(t => conf.tokenSet.testAndSet(t.getText))
 	}
 
 	/** Parse one particular file.
+	  *
 	  * @param file Valid source file to be parsed
-	  * @throws ParseException Unexpected exception
-	  * @throws SyntaxErrorException If OMP directive has invalid syntax
+	  * @throws ParseException if unexpected error occurs
+	  * @throws SyntaxErrorException if OMP directive has invalid syntax
 	  */
 	def parseFile(file: File) = {
 		val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath))
@@ -142,7 +153,19 @@ class Preprocessor(implicit conf: Config) {
 
 		(tokens, parser, cunit)
 	}
+
 	/** Use TranslationVisitor to get translated code (as a String) */
+	/** Translate top directives of the compilation unit context provided.
+	  *
+	  * Initially, create the Directive Hierarchy Model. Secondly run source and bytecode analysis.
+	  * Finally, translate first level directives, i.e. the top ones in the hierarchy.
+	  *
+	  * @param tokens token stream
+	  * @param parser the Java8 ANTLR parser
+	  * @param cunit compilation unit of a file
+	  * @return source code without first-level directives that may run in parallel
+	  * TODO: throws
+	  */
 	private def translate(tokens: CommonTokenStream, parser: Java8Parser, cunit: Java8Parser.CompilationUnitContext): String = {
 
 		// List of directives

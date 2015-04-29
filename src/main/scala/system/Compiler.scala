@@ -12,7 +12,13 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
-/** Handler for JavaCompiler. All settings are passed (implicitelly) by Config */
+/** JavaComiper API.
+  *
+  * All settings are passed (implicitelly) by Config
+  *
+  * @param files array of files to be compiled
+  * @param conf configuration context
+  */
 class Compiler(files: Array[File])(implicit conf: Config) {
 
 	/** Java compiler provided by JVM */
@@ -21,9 +27,14 @@ class Compiler(files: Array[File])(implicit conf: Config) {
 	/** File manager used for file compilation*/
 	private lazy val fileManager = jc.getStandardFileManager(null, null, null)
 
-	/** Compile sources, params: -d, -cp, others
-	  * @throws IllegalArgumentException When file is not source file.
-	  * @throws CompilationException When some error occurred during compilation.
+	/** Compile files given to constructor.
+	  *
+	  * Additional options may be passed.
+	  *
+	  * @param destDir directory where compiled classes should be placed to
+	  * @param addCP additional classpath
+	  * @param additionalFlags additional options
+	  * @throws CompilationException if some error occurs
 	  */
 	def compile(destDir: String, addCP: String = null, additionalFlags: List[(String, String)] = List()) = {
 
@@ -50,11 +61,13 @@ class Compiler(files: Array[File])(implicit conf: Config) {
 		}
 	}
 
-	/** Pack sources to JAR
+	/** Pack compiled classes into JAR specified by config
+	  *
+	  * @param bufferSize buffer size [kB]
 	  * @throws IllegalArgumentException When class-file to be packed is corrupted or missing
 	  */
-	def jar() = {
-		val buffer = new Array[Byte](10*1024)	// TODO: size? maybe configurable
+	def jar(bufferSize: Integer = 10) = {
+		val buffer = new Array[Byte](bufferSize * 1024)
 
 		val stream = new FileOutputStream(conf.jar)
 		val out = new JarOutputStream(stream, new Manifest)
@@ -76,14 +89,14 @@ class Compiler(files: Array[File])(implicit conf: Config) {
 			val in = new FileInputStream(f)
 			breakable { while (true) {
 				val nRead: Int = in.read(buffer, 0, buffer.length)
-				if (nRead <= 0) break
+				if (nRead <= 0) break()
 				out.write(buffer, 0, nRead)
 			}}
-			in.close
+			in.close()
 		}
 
 		// close all streams
-		out.close
-		stream.close
+		out.close()
+		stream.close()
 	}
 }

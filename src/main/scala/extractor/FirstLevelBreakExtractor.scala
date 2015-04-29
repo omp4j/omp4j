@@ -8,11 +8,11 @@ class FirstLevelBreakExtractor extends Java8BaseVisitor[List[Java8Parser.BreakSt
 	/** Java8Parser.ClassDeclarationContext typedef */
 	type BSC = Java8Parser.BreakStatementContext
 
-	/** Ignore nested cycles */
+	// Ignore nested cycles
 	override def visitWhileStatement(wsc: Java8Parser.WhileStatementContext) = List[BSC]()
 	override def visitForStatement(fsc: Java8Parser.ForStatementContext) = List[BSC]()
 
-	/** Do not continue, so no nested classes included */
+	// Do not continue, so no nested classes included
 	override def visitBreakStatement(breakCtx: BSC) = List[BSC](breakCtx)
 	override def defaultResult = List[BSC]()
 	override def aggregateResult(a: List[BSC], b: List[BSC]) = a ::: b

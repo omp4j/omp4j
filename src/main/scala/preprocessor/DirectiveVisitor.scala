@@ -8,27 +8,33 @@ import org.omp4j.exception._
 import org.omp4j.grammar._
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable.Stack
 import scala.util.control.Breaks._
 
-/** Static DirectiveVisitor properties */
+/** DirectiveVisitor companion object defining its static properties */
 object DirectiveVisitor {
-	/** Ordered map of key: ParserRuleContext; value: Directive */
+
+	/** Ordered map alias - key: ParserRuleContext; value: Directive */
 	type DirectiveMap = ListMap[ParseTree, Directive]
 }
 
-/** Fetch list of Directives (aka OMPParseTree, corresponding statement and parsers) */
+/** Tool for directive hierarchy construstion.
+  *
+  * Uses Visitor pattern and doesn't modify source.
+  *
+  * @constructor start with empty stack at the top of the AST
+  * @param tokens token stream
+  * @param parser Java8 ANTLR parser
+  * @param conf configuration context
+ */
 class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser)(implicit conf: Config) extends Java8BaseVisitor[DirectiveVisitor.DirectiveMap] {
 
 	/** List of all directive ancestors */
-	private val stack = Stack[Directive]()
+	private val stack = scala.collection.mutable.Stack[Directive]()
 
-	/** Save proper statement */
 	override def visitStatement(stmtCtx: Java8Parser.StatementContext): DirectiveVisitor.DirectiveMap = {
 
 		var result: Directive = null
 
-		// TODO: functionally
 		breakable {
 
 			val semi = stmtCtx.getStart
@@ -45,18 +51,18 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser)(implicit 
 				val ompPattern = "^\\s*omp\\s.*$".r
 				ompPattern.findFirstIn(raw) match {
 					case Some(_) => ;
-					case None    => break	// TODO: log
+					case None    => break()	// TODO: log
 				}
 
 				// TODO: maybe one instance is sufficient
 				try {
 					val ompLexer  = new OMPLexer(new ANTLRInputStream(raw))
-					ompLexer.removeErrorListeners
+					ompLexer.removeErrorListeners()
 					ompLexer.addErrorListener(new OMPLexerErrorListener )
 					val ompTokens = new CommonTokenStream(ompLexer)
 					
 					val ompParser = new OMPParser(ompTokens)
-					ompParser.removeErrorListeners
+					ompParser.removeErrorListeners()
 					ompParser.addErrorListener(new OMPLexerErrorListener )
 					val ompCtx = ompParser.ompUnit
 
@@ -66,7 +72,7 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser)(implicit 
 					}
 
 				} catch {
-					case e: SyntaxErrorException => throw new SyntaxErrorException("Syntax error before line " + stmtCtx.start.getLine + "': " + e.getMessage + "'", e)
+					case e: SyntaxErrorException => throw new SyntaxErrorException(s"Syntax error before line ${stmtCtx.start.getLine}: '${e.getMessage}'", e)
 					case e: Exception => throw new ParseException("Unexpected exception", e)
 				}
 

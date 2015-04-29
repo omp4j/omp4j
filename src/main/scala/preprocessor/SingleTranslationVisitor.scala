@@ -9,9 +9,21 @@ import org.omp4j.grammar.Java8BaseVisitor
 import org.omp4j.grammar.Java8Parser
 
 
-/** Walks through the directive ctx and save translations into rewriter */
+/** Simple visitor that walks through the directive and translate `oldName` into `newName`.
+  *
+  * Usually used when single variable is required to be translated (for-loop iterator etc.)
+  *
+  * @param rewriter rewriter object to whom modifications are presented
+  * @param oldName variable name that may be modified
+  * @param newName new variable name
+  * @param conf configuration context
+  */
 class SingleTranslationVisitor(rewriter: TokenStreamRewriter, oldName: String, newName: String)(implicit conf: Config) extends Java8BaseVisitor[Unit] {
 
+	/**
+	 * Tries the variable modification if the variable is named as `oldName`.
+	 * @param ctx what to try
+	 */
 	private def tryReplacement(ctx: ParserRuleContext) = {
 		try {
 

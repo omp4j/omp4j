@@ -14,6 +14,10 @@ case class AnonymousClass(_clb: Java8Parser.ClassBodyContext, parent: OMPClass, 
 	override lazy val FQN = name	// for now we can't possibly know nothing more
 	override lazy val key = classBody
 
+	/** Extract the anonymous class name (the interface respectively)
+	 *
+	 * @return name
+	 */
 	private def getAnonName: String = {
 		try {
 			val par = classBody.parent.asInstanceOf[Java8Parser.ClassInstanceCreationExpression_lf_primaryContext]

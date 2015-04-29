@@ -20,21 +20,37 @@ import scala.reflect.ClassTag
 import scala.util.Random
 import scala.collection.JavaConverters._
 
-/** Abstract omp directive class; implemented by several case classes */
+/** Abstract directive class representing the directive information and context
+  *
+  * There are multiple case classes implementing Directive itself.
+  *
+  * @param parent the parent directive in hierarchy model
+  * @param privateVars list of variable stated in private attribute
+  * @param firstPrivateVars list of variable stated in firstprivate attribute
+  * @param schedule schedule policy
+  * @param threadNum thread number limitation
+  * @param ctx directive body context of the statement
+  * @param cmt AST of the comment
+  * @param line approximate number of the line of the directive
+  * @param conf configuration context
+  */
 abstract class Directive(val parent: Directive, val privateVars: List[String], val firstPrivateVars: List[String])(implicit val schedule: DirectiveSchedule, val threadNum: String, val ctx: ParserRuleContext, val cmt: Token, val line: Int, conf: Config) {
 
-	/** Closest omp-parallel directive or null if none exists */
+	/** Closest omp-parallel directive above (in the hierarchy) or null if none exists */
 	val parentOmpParallel: Directive = parent match {
 		case null => null
 		case _ => parent.parentOmpParallel
 	}
 
+
+	/* constructor */
 	parent match {
 		case null => ;
 		case _    => parent.registerChild(this)
 	}
+	/* /constructor */
 
-	/** [Shortcut] Number of threads */
+	/** Number of threads [Shortcut] */
 	lazy val threadCount = threadNum match {
 		case null => "Runtime.getRuntime().availableProcessors()"
 		case _    => threadNum
@@ -64,9 +80,10 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	/** Is second iterator used? */
 	lazy val secondIter = false
 
-	/** exception name */
+	/** Exception name */
 	lazy val exceptionName = uniqueName("ompE")
 
+	/** Runtime executor class.*/
 	val executorClass = schedule match {
 		case Dynamic => "org.omp4j.runtime.DynamicExecutor"
 		case Static  => "org.omp4j.runtime.StaticExecutor"
@@ -94,15 +111,24 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	protected def deleteCmt(implicit rewriter: TokenStreamRewriter) = rewriter.replace(cmt, "\n")
 
 	// TODO: use some trait together with omptree
-	/** Fetch CompilationUnitContext associated with this file */
+	/** Recursivly iterate through the AST until compilation unit context is found.
+	 *
+	 * @param t tree from whence to start
+	 * @return compilation unit context
+	 */
 	private def cunit(t: ParserRuleContext = ctx): Java8Parser.CompilationUnitContext = {
 		t.isInstanceOf[Java8Parser.CompilationUnitContext] match {
-			case true => t.asInstanceOf[Java8Parser.CompilationUnitContext]
+			case true  => t.asInstanceOf[Java8Parser.CompilationUnitContext]
 			case false => cunit(t.getParent)
 		}
 	}
 
-	/** Directive validation */
+	/** Directive validation.
+	  *
+	  * For valid directives returns nothing, for invalid ones throws an exception.
+	  * @param directives all directives mapped by context
+	  * @throws SyntaxErrorException if validation fails
+	  */
 	def validate(directives: DirectiveVisitor.DirectiveMap) = {
 		// parent validation
 		parent match {
@@ -118,7 +144,11 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	/** Source code line and directive text */
 	override def toString = s"Before line $line: ${cmt.getText}"
 
-	/** Generate unique name (different from every token used and every loadable class) */
+	/** Generate an unique name (different from every token used and every loadable class)
+	  *
+	  * @param baseName this string is tried at firsl
+	  * @return new unique token, that is now registred
+	  */
 	def uniqueName(baseName: String): String = {
 
 		val rand = new Random
@@ -127,35 +157,48 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 		def getName(prefix: String): String = {
 			if (Keywords.JAVA_KEYWORDS contains prefix) {
 				val suff = rand.alphanumeric.take(3).mkString("")
-				getName(s"${prefix}_${suff}")
+				getName(s"${prefix}_$suff")
 			} else {
 				conf.tokenSet.testAndSet(prefix) match {
 					case true => prefix
 					case false =>
 						val suff = rand.alphanumeric.take(3).mkString("")
-						getName(s"${prefix}_${suff}")
+						getName(s"${prefix}_$suff")
 				}
 			}
 		}
 
-		/** Dynamic name generator */
+		// Dynamic name generator
 		val name = getName(baseName)
 		// name
 		try {
 			conf.loader.load(name, cunit())
 			val suff = rand.alphanumeric.take(3).mkString("")
-			uniqueName(s"${baseName}_${suff}")
+			uniqueName(s"${baseName}_$suff")
 		} catch {
 			case _: ClassNotFoundException => name
 		}
 	}
 
+	/** The captured variables, initialed later */
 	var captured: Set[OMPVariable] = null
+
+	/** Is 'this' captured? */
 	var capturedThis: Boolean = false
+
+	/** Current directive class, initialed later */
 	var directiveClass: OMPClass = null
 
 	// TODO: thread-safe rewriter
-	/** Translate this directive and delete the directive comment */
+	/** Translate this directive and delete the directive comment
+	  *
+	  * Invoke validation, preTranslate and postTranslate, in this particular order. Additionally, delete the
+	  * comment and translate all nested directives that don't create their own context.
+	  *
+	 * @param rewriter ANTLR rewriter
+	 * @param ompFile class hierarchy model
+	 * @param directives all known directives mapped by their context
+	 */
 	def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
 		validate(directives)
 
@@ -169,7 +212,14 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 		deleteCmt
 	}
 
-	/** First level of translation - rewrite used variables */
+	/** The first phase of the translation.
+	  *
+	  * Capture all used variables and prepend them with context variable name via TranslationVisitor
+	  *
+	  * @param rewriter ANTLR rewriter
+	  * @param ompFile class hierarchy model
+	  * @return tuple of captured variables, captured this and directive class
+	  */
 	protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
 		val tv = new TranslationVisitor(rewriter, ompFile, this)
 		tv.visit(ctx)
@@ -177,6 +227,13 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	}
 
 	/** Method where children translation is invoked (if any) */
+	/** Translate all children that don't have own context.
+	  *
+	  * @param captured captured variables
+	  * @param capturedThis is 'this' captured?
+	  * @param directiveClass class in the hierarchy model
+	  * @param rewriter ANTLR rewriter
+	 */
 	protected def translateChildren(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 		childrenOfType[Atomic].foreach{_.postTranslate}
 		childrenOfType[Barrier].foreach{_.postTranslate}
@@ -185,10 +242,26 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 		childrenOfType[ThreadNum].foreach{_.postTranslate}
 	}
 
-	/** Second level of translation - make parallelism */
+	/** Second phase of the translation.
+	  *
+	  * This method must be overridden by all extending classes. The real parallel invocation is created in
+	  * this method.
+	  *
+	  * @param captured captured variables
+	  * @param capturedThis is 'this' captured?
+	  * @param directiveClass class in the hierarchy model
+	  * @param rewriter ANTLR rewriter
+	  */
 	protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter)
 
 	/** Default implementation, should be mixed with LockMemory trait */
+	/** Transitive registration of an atomic boolean variable.
+	  *
+	  * This method should be overridden with LockMemory trait in directives that support singles.
+	  *
+	  * @param baseName the first string that is tried
+	  * @return the actual variable name
+	 */
 	def addAtomicBool(baseName: String): String = parent match {
 		case null => throw new SyntaxErrorException("Unable to register AtomicBoolean. Please make sure the directive is in 'omp parallel [for]' block.")
 		case _    => parent.addAtomicBool(baseName)
@@ -227,6 +300,7 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 		).toList.mkString
 	}
 
+	/** Private and firstprivate initialization */
 	protected def initPrivates(implicit captured: Set[OMPVariable]) = {
 		if (privateVars.size + firstPrivateVars.size <= 0) ""
 		else {
@@ -267,7 +341,7 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 			s"$executor.waitForExecution();\n"
 
 
-	/** Assing primitive values */
+	/** Assign primitive values */
 	protected def primitiveAssignments(implicit captured: Set[OMPVariable]) = (for {c <- captured if (Keywords.JAVA_VALUE_TYPES contains c.varType)} yield s"\t${c.arrayLessName} = $contextVar.${c.fullName};\n").toList.mkString
 
 	/** Code to be prepended */
@@ -286,12 +360,22 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	protected def getRewrittenText(ctx: SyntaxTree)(implicit rewriter: TokenStreamRewriter) = rewriter.getText(ctx.getSourceInterval)
 }
 
-/** Static directive procedures */
+/** Directive companion object */
 object Directive {
 
-	/** Directive constructor */
+	/** Directive factory
+	  *
+	  * @param parent parent directive
+	  * @param ompCtx OMP grammar context
+	  * @param cmt comment token
+	  * @param ctx statement which this directive belongs to
+	  * @param conf configuration context
+	  * @return constructed directive
+	  * @throws SyntaxErrorException if directive couldn't be constructed
+	  * @throws IllegalArgumentException if `ompCtx` is null
+	  */
 	def apply(parent: Directive, ompCtx: OMPParser.OmpUnitContext, cmt: Token, ctx: Java8Parser.StatementContext)(implicit conf: Config): Directive = {
-		if (ompCtx == null) throw new SyntaxErrorException("null OMP context")
+		if (ompCtx == null) throw new IllegalArgumentException("null OMP context")
 
 		val parallel = ompCtx.ompParallel
 		val parallelFor = ompCtx.ompParallelFor
@@ -358,13 +442,29 @@ object Directive {
 		}
 	}
 
-	/** Get approximate line number */
+	/** Get approximate line number of directive occurence
+	  *
+	  * @param ctx directive context
+	  * @return approximate number
+	  */
 	def getLine(ctx: ParserRuleContext) = {
 		if (ctx == null || ctx.start == null) -1
 		else ctx.start.getLine
 	}
 
 	/** Get tuple of (schedule, threadNum, privates, firstPrivates) */
+	/** Fetch tuple of (schedule, threadNum, privates, firstPrivates)
+	 *
+	 * @param mList attribute list
+	 * @param modifier modifier getter
+	 * @param nextList tail function
+	 * @param schedule schedule getter
+	 * @param threadNum threadNum getter
+	 * @param access access modifiers getter
+	 * @tparam ML modifiers context
+	 * @tparam M modifier context
+	 * @return tuple of (schedule, threadNum, privates, firstPrivates)
+	 */
 	private def getModifiers[ML, M](mList: ML)(modifier: ML => M, nextList: ML => ML, schedule: M => OMPParser.OmpScheduleContext, threadNum: M => OMPParser.ThreadNumContext, access: M => OMPParser.OmpAccessModifierContext): (OMPParser.OmpScheduleContext, String, List[String], List[String]) = {
 		if (mList == null || modifier(mList) == null) {
 			(null, null, List(), List())
@@ -393,7 +493,11 @@ object Directive {
 		}
 	}
 
-	/** Extracts variables from public/private statement */
+	/** Extracts variables from public/private statement
+	 *
+	 * @param vars variables context
+	 * @return list of variable names
+	 */
 	private def getVars(vars: OMPParser.OmpVarsContext): List[String] = {
 		if (vars == null) List()
 		else {
@@ -403,8 +507,9 @@ object Directive {
 		}
 	}
 
-	/**
-	  * Separate public and private variables
+	/** Separate private and firstprivate variables
+	  *
+	  * @param list the list of access modifier contexts
 	  * @return tuple of (Private, FirstPrivate)
 	  */
 	private def separate(list: List[OMPParser.OmpAccessModifierContext]): (List[String], List[String]) = {

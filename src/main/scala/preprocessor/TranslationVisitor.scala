@@ -12,11 +12,19 @@ import org.omp4j.tree._
 import scala.collection.JavaConverters._
 import scala.collection.mutable.Stack
 
-/** Walks through the directive ctx and save translations into rewriter */
+/** Visitor that captures used variables in the directive body and prefixes them with context variable name.
+ *
+ * @param rewriter ANTLR rewriter
+ * @param ompFile class hierarchy model
+ * @param currentDirective the directive that is translated
+ * @param parentContextName context variable name of the parent directive
+ * @param parentCaptured captured variables by the parent directive
+ * @param conf configuration context
+ */
 class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, currentDirective: Directive, parentContextName: String = "", parentCaptured: Set[OMPVariable] = Set())(implicit conf: Config) extends Java8BaseVisitor[Unit] {
 
 	/** Stack of nested classes (Class name, isLocal) */
-	private val clStack = Stack[OMPClass]() ++ Inheritor.getParentClasses(currentDirective.ctx, ompFile).reverse
+	private val clStack = scala.collection.mutable.Stack[OMPClass]() ++ Inheritor.getParentClasses(currentDirective.ctx, ompFile).reverse
 
 	/** Last visited class when directive was discovered */
 	private val directiveClass: OMPClass = clStack.head
@@ -33,9 +41,15 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 	/** Does 'this' keyword appears in parallel statement? */
 	private var capturedThis = false
 
+	/** Union of private and firstfrivate attribute variables */
 	private val privateVars = currentDirective.privateVars ++ currentDirective.firstPrivateVars
+
+	/** Get proper extension to variable given.
+	 *
+ 	 * @param c the variable
+	 * @return empty string if variable is neither private nor firstprivate; the proper array suffix otherwise
+	 */
 	def extension(c: OMPVariable) = {
-		//if (privateVars contains c.name) s"[${currentDirective.iter2}]"
 		if (privateVars contains c.name) s"[${currentDirective.executor}.getThreadNum()]"
 		else ""
 	}
@@ -55,16 +69,29 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 	/** directiveClass getters (since mutability, it can't be accessed publicly) */
 	def getDirectiveClass = directiveClass
 
-	/** Try to find parent variable and after fail search ordinary variable */
+	/** Try to find parent variable and after fail search ordinary variable
+	  *
+	  * @param id variable name
+	  * @param locals currently known local variables
+	  * @param params currently known parameter variables
+	  * @param ompClass class model
+	  * @return tuple of current context variable name and variable model
+	  * @throws RuntimeException if context variable name is not specified
+	  * @throws NoSuchElementException if variable not found
+	  */
 	private def findVariable(id: String, locals: Set[OMPVariable], params: Set[OMPVariable], ompClass: OMPClass): (String, OMPVariable) = {
 		try {
 			(parentContextName, OMPVariable.find(id, parentCaptured))
 		} catch {
-			case e: IllegalArgumentException => (contextName, OMPVariable(id, locals, params, directiveClass))
+			case e: NoSuchElementException => (contextName, OMPVariable(id, locals, params, directiveClass))
 		}
 	}
 
-	/** Get tokens matching to context given */
+	/** Get a list of tokens matching to the context given
+ 	  *
+ 	  * @param ctx the context
+	  * @return the list of tokens
+	  */
 	private def getContextTokens(ctx: SyntaxTree): List[Token] = {
 		val interval = ctx.getSourceInterval
 		val tokenStream = rewriter.getTokenStream
@@ -75,6 +102,13 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 
 	/** Handle class stack */
+	/** Move in class model and invokes the passed function.
+	  *
+	  * @param ctx class context
+	  * @param f function to be invoked
+	  * @tparam T type extending ParserRuleContext
+	  * @throws ParseException if `ctx` doesn't match any directive
+	  */
 	private def handleStack[T <: ParserRuleContext](ctx: T, f: (T) => Unit) = {
 		ompFile.classMap.get(ctx) match {
 			case Some(c) => 
@@ -85,13 +119,13 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 		}
 	}
 
-	/** Class declaration requires stack handling */
 	override def visitClassDeclaration(ctx: Java8Parser.ClassDeclarationContext): Unit = {
+		// Class declaration requires stack handling
 		handleStack(ctx, super.visitClassDeclaration)
 	}
 
-	/** Class body may require stack handling */
 	override def visitClassBody(ctx: Java8Parser.ClassBodyContext) = {
+		// Class body may require stack handling
 		if (
 			ctx.parent.isInstanceOf[Java8Parser.ClassInstanceCreationExpressionContext] ||
 			ctx.parent.isInstanceOf[Java8Parser.ClassInstanceCreationExpression_lf_primaryContext] ||
@@ -116,14 +150,13 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 			else getRec(bottomF(under))
 		}
 
-		if (top == null) throw new IllegalArgumentException
+		if (top == null) throw new NoSuchElementException
 		else if (topF(top) == null) topId(top)
 		else getRec(topF(top))
 	}
 
-	/** Capture variables/fields */
 	override def visitExpressionName(ctx: Java8Parser.ExpressionNameContext) = {
-		// globals (not actually functional, TODO)
+		// Capture variables/fields
 		try {
 
 			val id = getLeftName[Java8Parser.ExpressionNameContext, Java8Parser.AmbiguousNameContext](
@@ -147,19 +180,19 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 					captured += v
 				} catch {
-					case e: IllegalArgumentException => ; // local (ok)
+					case e: NoSuchElementException => ; // local (ok)
 				}
 			}
 		} catch {
 			// TODO: exceptions?
-			case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
+			case e: NoSuchElementException => println(s"IAE: ${e.getMessage}")
 		}
 
 		super.visitExpressionName(ctx)
 	}
 
-	/** Translate method invocation (caller and params) */
 	override def visitMethodInvocation(ctx: Java8Parser.MethodInvocationContext) = {
+		// Translate method invocation (caller and params)
 
 		if (ctx.primary != null && ctx.primary.getText == "this") {
 			if (clStack.head == directiveClass) {
@@ -185,7 +218,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 					captured += v
 				} catch {
-					case e: IllegalArgumentException => ; // local (ok)
+					case e: NoSuchElementException => ; // local (ok)
 				}
 			}
 		}
@@ -193,8 +226,8 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 		super.visitMethodInvocation(ctx)
 	}
 
-	/** Handle primary if no-array expression occures */
 	override def visitPrimary(ctx: Java8Parser.PrimaryContext) = {
+		// Handle primary if no-array expression occures
 
 		if (ctx.primaryNoNewArray_lfno_primary == null) {
 			// TODO: primaryNoNewArray_lfno_primary
@@ -210,8 +243,8 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 		super.visitPrimary(ctx)
 	}
 
-	/** Translate this primary */
 	private def handlePrimary(ctx: Java8Parser.PrimaryContext, first: Java8Parser.PrimaryNoNewArray_lfno_primaryContext, seconds: List[Java8Parser.PrimaryNoNewArray_lf_primaryContext]) = {
+		// Translate this primary
 
 		// is primary expression of method invocation
 		val isMI = first.parent.parent.isInstanceOf[Java8Parser.MethodInvocationContext]
@@ -244,7 +277,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 
 								captured += v   // ??
 							} catch {
-								case e: IllegalArgumentException => ; // local (ok)
+								case e: NoSuchElementException => ; // local (ok)
 							}
 						} else if (next.methodInvocation_lf_primary != null) {
 							// getting rid of 'this.'
@@ -274,7 +307,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 							val (realCtxName, v) = findVariable(id, locals, params, directiveClass)
 							rewriter.replace(first.start, first.stop, s"$realCtxName.${v.fullName}${extension(v)}")
 						} catch {
-							case e: IllegalArgumentException => ; // local (ok)
+							case e: NoSuchElementException => ; // local (ok)
 						}
 					}
 
@@ -299,7 +332,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 								captured += v
 
 							} catch {
-								case e: IllegalArgumentException => ; // local (ok)
+								case e: NoSuchElementException => ; // local (ok)
 							}
 						}
 					} else {
