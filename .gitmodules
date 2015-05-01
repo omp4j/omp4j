@@ -4,3 +4,6 @@
 [submodule "src/main/java/runtime"]
 	path = src/main/java/runtime
 	url = https://github.com/omp4j/runtime.git
+[submodule "doc"]
+	path = doc
+	url = https://github.com/omp4j/doc.git
