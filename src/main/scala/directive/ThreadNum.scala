@@ -9,7 +9,7 @@ import org.omp4j.preprocessor.DirectiveVisitor
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 
 /** Thread number attribute */
-class ThreadNum(override val parent: Directive)(implicit ctx: ParserRuleContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, null, ctx, cmt, line, conf) {
+class ThreadNum(override val parent: Directive)(implicit ctx: ParserRuleContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Dynamic, null, ctx, cmt, line, conf) {
 
 	// inherit all
 	override lazy val threadCount = parent.threadCount

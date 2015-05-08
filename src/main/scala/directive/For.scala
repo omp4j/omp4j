@@ -10,7 +10,7 @@ import org.omp4j.preprocessor.{SingleTranslationVisitor, DirectiveVisitor, Trans
 import org.omp4j.tree.{OMPClass, OMPVariable}
 
 /** For */
-case class For(override val parent: Directive, override val privateVars: List[String], override val firstPrivateVars: List[String])(implicit threadNum: String, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, privateVars, firstPrivateVars)(DirectiveSchedule.Static, threadNum, ctx, cmt, line, conf) with ForCycle {
+case class For(override val parent: Directive, override val privateVars: List[String], override val firstPrivateVars: List[String])(implicit threadNum: String, ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, privateVars, firstPrivateVars)(DirectiveSchedule.Dynamic, threadNum, ctx, cmt, line, conf) with ForCycle {
 
 	// inherit all
 	override lazy val threadCount = if (parentOmpParallel == null) "" else parentOmpParallel.threadCount

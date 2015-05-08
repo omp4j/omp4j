@@ -15,11 +15,14 @@ object DirectiveSchedule {
 	 */
 	def apply(osc: OMPParser.OmpScheduleContext) = {
 
+
+
+		val Pattern = """schedule\((.*)\)""".r
 		try {
 			osc.getText.toLowerCase match {
-				case "dynamic" => Dynamic
-				case "static"  => Static
-				case _         => new DirectiveSchedule(osc.getText.toLowerCase)
+				case Pattern("dynamic") => Dynamic
+				case Pattern("static")  => Static
+				case Pattern(fqn)       => new DirectiveSchedule(osc.getText.toLowerCase)
 			}
 		} catch {
 			case _: NullPointerException => new DirectiveSchedule("org.omp4j.runtime.DynamicExecutor")

@@ -8,7 +8,7 @@ import org.omp4j.preprocessor.DirectiveVisitor
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
 
 /** Barrier directive */
-case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, null, ctx, cmt, line, conf) {
+case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Dynamic, null, ctx, cmt, line, conf) {
 
 	// inherit all
 	override lazy val threadCount = parent.threadCount
