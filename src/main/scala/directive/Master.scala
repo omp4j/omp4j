@@ -24,19 +24,19 @@ class Master(override val parent: Directive)(implicit ctx: Java8Parser.Statement
 
 	override def validate(directives: DirectiveVisitor.DirectiveMap) = parent match {
 		case _: Parallel | _: ParallelFor => ;
-		case _ => throw new SyntaxErrorException("'omp single' must by located directly in 'omp parallel [for]' block.")
+		case _ => throw new SyntaxErrorException(s"Error in directive before line $line: 'omp single' must by located directly in 'omp parallel [for]' block.")
 	}
 
 	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
-		throw new RuntimeException("translate can't be run on Master!")
+		throw new RuntimeException(s"Internal error in directive before line $line: translate can't be run on Master!")
 	}
 
 	override protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
-		throw new RuntimeException("preTranslate can't be run on Master!")
+		throw new RuntimeException(s"Internal error in directive before line $line: preTranslate can't be run on Master!")
 	}
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		throw new RuntimeException("preTranslate can't be run on Master!")
+		throw new RuntimeException(s"Internal error in directive before line $line: preTranslate can't be run on Master!")
 	}
 
 	def postTranslate(implicit rewriter: TokenStreamRewriter) = {

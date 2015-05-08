@@ -115,6 +115,9 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser)(implicit 
 		rr
 	}
 
+	/** Ignore enums */
+	override def visitEnumDeclaration(enCtx: Java8Parser.EnumDeclarationContext) = ListMap()
+
 	override def defaultResult() = ListMap()
 	override def aggregateResult(a: DirectiveVisitor.DirectiveMap, b: DirectiveVisitor.DirectiveMap) = a ++ b
 }

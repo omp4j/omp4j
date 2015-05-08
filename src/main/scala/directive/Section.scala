@@ -11,7 +11,7 @@ import org.omp4j.tree.{OMPFile, OMPClass, OMPVariable}
 case class Section(override val parent: Directive)(implicit ctx: Java8Parser.StatementContext, cmt: Token, line: Int, conf: Config) extends Directive(parent, List(), List())(DirectiveSchedule.Static, null, ctx, cmt, line, conf) {
 	override def validate(directives: DirectiveVisitor.DirectiveMap) = parent match {
 		case secPar: Sections => ;
-		case _ => throw new SyntaxErrorException("'omp section' must by located directly in 'omp sections' block.")
+		case _ => throw new SyntaxErrorException(s"Error in directive before line $line: 'omp section' must by located directly in 'omp sections' block.")
 	}
 
 	// inherit all
@@ -27,15 +27,15 @@ case class Section(override val parent: Directive)(implicit ctx: Java8Parser.Sta
 	override val executorClass = parent.executorClass
 
 	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
-		throw new RuntimeException("translate can't be run on Section!")
+		throw new RuntimeException(s"Internal error in directive before line $line: translate can't be run on Section!")
 	}
 
 	override protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
-		throw new RuntimeException("preTranslate can't be run on Section!")
+		throw new RuntimeException(s"Internal error in directive before line $line: preTranslate can't be run on Section!")
 	}
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		throw new RuntimeException("postTranslate can't be run on Section!")
+		throw new RuntimeException(s"Internal error in directive before line $line: postTranslate can't be run on Section!")
 	}
 
 	def postTranslate(id: Int)(implicit rewriter: TokenStreamRewriter) = {

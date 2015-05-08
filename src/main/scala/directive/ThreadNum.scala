@@ -24,20 +24,20 @@ class ThreadNum(override val parent: Directive)(implicit ctx: ParserRuleContext,
 	override val executorClass = parent.executorClass
 
 	override def validate(directives: DirectiveVisitor.DirectiveMap) = parent match {
-		case null => throw new SyntaxErrorException("'threadNum' must by located directly in some other OMP block.")
+		case null => throw new SyntaxErrorException(s"Error in directive before line $line: 'threadNum' must by located directly in some other OMP block.")
 		case _    => ;
 	}
 
 	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
-		throw new RuntimeException("translate can't be run on ThreadNum!")
+		throw new RuntimeException(s"Internal error in directive before line $line: translate can't be run on ThreadNum!")
 	}
 
 	override protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
-		throw new RuntimeException("preTranslate can't be run on ThreadNum!")
+		throw new RuntimeException(s"Internal eError in directive before line $line: preTranslate can't be run on ThreadNum!")
 	}
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		throw new RuntimeException("postTranslate can't be run on ThreadNum!")
+		throw new RuntimeException(s"Internal error in directive before line $line: postTranslate can't be run on ThreadNum!")
 	}
 
 	def postTranslate(implicit rewriter: TokenStreamRewriter) = {

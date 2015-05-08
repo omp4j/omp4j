@@ -3,6 +3,7 @@ package org.omp4j
 import java.io._
 
 import org.omp4j.exception.HelpRequiredException
+import org.omp4j.log.{SilentLogger, StderrLogger, Logger}
 import org.omp4j.preprocessor.TokenSet
 import org.omp4j.system._
 import org.omp4j.utils.{FileDuplicator, Keywords, TmpDir}
@@ -69,8 +70,11 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 	/** Omit the final compilation? */
 	var sourceOnly: Boolean = false
 
-	/** Passed classpath*/
+	/** Passed classpath */
 	var classpath: String = null
+
+	/** Logger */
+	var logger: Logger = null
 
 	/** Extracted file names from CLI options*/
 	var fileNames = Array[String]()
@@ -84,6 +88,7 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 	/* constructor */
 	if (level == 1) {
 		processArgs(args)
+		logger = if (verbose) new StderrLogger else new SilentLogger
 		fetchVars()
 	}
 	if (destdir != null) new File(destdir).mkdirs()
@@ -134,7 +139,7 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 					sourceOnly = true
 					processArgs(args.tail)
 				case "-h" | "-help" | "--help" =>
-					throw new HelpRequiredException()
+					throw new HelpRequiredException
 				case "--" =>
 					fileNamesBuffer ++= args.tail.toList
 				case _ =>
@@ -185,10 +190,7 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 		val tmpRootFile = new File(tmpRootStr)
 
 		if (!tmpRootFile.exists) throw new RuntimeException("Directory described in property 'java.io.tmpdir' does not exist.")
-		// TODO: test writability
-
-		// TODO: use hidden (.*)
-		new TmpDir(tmpRootFile, "omp4j").toFile
+		new TmpDir(tmpRootFile, ".omp4j").toFile
 	}
 
 	/** Create new context that will be used in next recursion level.
@@ -201,13 +203,14 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 			override lazy val files = nextLvlFiles
 		}
 		c.fileNames  = nextLvlFiles.map(_.getAbsolutePath)
-		c.flags      = c.flags
-		c.allFlags   = c.allFlags
-		c.destdir    = c.destdir
-		c.srcdir     = c.srcdir
-		c.verbose    = c.verbose
-		c.sourceOnly = c.sourceOnly
-		c.classpath  = c.classpath
+		c.flags      = flags
+		c.allFlags   = allFlags
+		c.destdir    = destdir
+		c.srcdir     = srcdir
+		c.verbose    = verbose
+		c.sourceOnly = sourceOnly
+		c.classpath  = classpath
+		c.logger     = logger
 
 		c
 	}
@@ -227,3 +230,4 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 		}
 	}
 }
+

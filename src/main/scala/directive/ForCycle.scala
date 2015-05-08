@@ -12,6 +12,7 @@ trait ForCycle {
 
 	/** Abstract uniqueName method */
 	def uniqueName(baseName: String): String
+	val line: Int
 
 	/** Apply the rewriter
 	  *
@@ -29,9 +30,9 @@ trait ForCycle {
 	 */
 	def getBasicForStatement(ctx: Java8Parser.StatementContext) = {
 		val forStatement = ctx.forStatement
-		if (forStatement == null) throw new ParseException("For directive before non-for statement")
+		if (forStatement == null) throw new ParseException(s"Error in directive before line $line: For directive before non-for statement")
 		val basicForStatement = forStatement.basicForStatement
-		if (basicForStatement == null) throw new ParseException("For directive before enhanced for statement")
+		if (basicForStatement == null) throw new ParseException(s"Error in directive before line $line: For directive before enhanced for statement")
 
 		basicForStatement
 	}
@@ -42,8 +43,8 @@ trait ForCycle {
 	 * @throws ParseException if break or continue is presented
 	 */
 	def validateBasicForStatement(basicForStatement: Java8Parser.BasicForStatementContext) = {
-		if ((new FirstLevelBreakExtractor ).visit(basicForStatement).size > 0) throw new ParseException("Break statements are not allowed")
-		if ((new FirstLevelContinueExtractor ).visit(basicForStatement).size > 0) throw new ParseException("Continue statements are not allowed")
+		if ((new FirstLevelBreakExtractor ).visit(basicForStatement).size > 0) throw new ParseException(s"Error in directive before line $line: Break statements are not allowed")
+		if ((new FirstLevelContinueExtractor ).visit(basicForStatement).size > 0) throw new ParseException(s"Error in directive before line $line: Continue statements are not allowed")
 	}
 
 	/** Extract init. part of the for-loop
@@ -56,9 +57,9 @@ trait ForCycle {
 	def getInit(basicForStatement: Java8Parser.BasicForStatementContext)(implicit rewriter: TokenStreamRewriter) = {
 		// INIT
 		val forInit = basicForStatement.forInit
-		if (forInit == null) throw new ParseException("For directive before enhanced for statement")
+		if (forInit == null) throw new ParseException(s"Error in directive before line $line: For directive before enhanced for statement")
 		val forList = forInit.localVariableDeclaration.variableDeclaratorList.variableDeclarator.asScala
-		if (forList.size != 1) throw new ParseException("For initialization must containt exactly one variable")
+		if (forList.size != 1) throw new ParseException(s"Error in directive before line $line: For initialization must containt exactly one variable")
 		val iterName = getRewrittenText(forList.head.variableDeclaratorId.Identifier) //.getText	// var name
 		val initExpr = forList.head.variableInitializer.expression	// right side of init assignment
 
@@ -74,7 +75,7 @@ trait ForCycle {
 	def getUpdate(basicForStatement: Java8Parser.BasicForStatementContext) = {
 		val forUpdate = basicForStatement.forUpdate
 		val updateList = forUpdate.statementExpressionList.statementExpression.asScala
-		if (updateList.size != 1) throw new ParseException("For incrementation must containt exactly one statement")
+		if (updateList.size != 1) throw new ParseException(s"Error in directive before line $line: For incrementation must containt exactly one statement")
 		val update = updateList.head
 
 		update
@@ -136,7 +137,7 @@ trait ForCycle {
 
 			if (leftSide.getText != iterName) throw new NullPointerException
 		} catch {
-			case e: NullPointerException => throw new ParseException("Condition left side must contain only iter. variable", e)
+			case e: NullPointerException => throw new ParseException(s"Error in directive before line $line: Left side of the condition must contain only iter. variable", e)
 		}
 
 		// INC
@@ -146,32 +147,32 @@ trait ForCycle {
 		var step: String = null
 		var oper: String = null
 		if (update.preIncrementExpression != null) {
-			if (getRewrittenText(update.preIncrementExpression.unaryExpression) != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.preIncrementExpression.unaryExpression) != iterName) throw new ParseException(s"Error in directive before line $line: Iter. variable must be modified")
 			oper = "+="
 			step = "1"
 		} else if (update.postIncrementExpression != null) {
-			if (getRewrittenText(update.postIncrementExpression.postfixExpression) != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.postIncrementExpression.postfixExpression) != iterName) throw new ParseException(s"Error in directive before line $line: Iter. variable must be modified")
 			oper = "+="
 			step = "1"
 		} else if (update.preDecrementExpression != null) {
-			if (getRewrittenText(update.preDecrementExpression.unaryExpression) != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.preDecrementExpression.unaryExpression) != iterName) throw new ParseException(s"Error in directive before line $line: Iter. variable must be modified")
 			oper = "-="
 			step = "1"
 		} else if (update.postDecrementExpression != null) {
-			if (getRewrittenText(update.postDecrementExpression.postfixExpression) != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.postDecrementExpression.postfixExpression) != iterName) throw new ParseException(s"Error in directive before line $line: Iter. variable must be modified")
 			oper = "-="
 			step = "1"
 		} else if (update.assignment != null) {	// assignment
-			if (getRewrittenText(update.assignment.leftHandSide) != iterName) throw new ParseException("Iter. variable must be modified")
+			if (getRewrittenText(update.assignment.leftHandSide) != iterName) throw new ParseException(s"Error in directive before line $line: Iter. variable must be modified")
 
 			// TODO: assignment?
 			if (List("+=", "-=") contains getRewrittenText(update.assignment.assignmentOperator)) {
 				oper = getRewrittenText(update.assignment.assignmentOperator)
 			} else throw new ParseException("Unsupported for-update operation (+=, -=)")
 
-			if (getRewrittenText(update.assignment.expression) contains iterName) throw new ParseException("For-update statement must not reference iterator")
+			if (getRewrittenText(update.assignment.expression) contains iterName) throw new ParseException(s"Error in directive before line $line: For-update statement must not reference iterator")
 			step = getRewrittenText(update.assignment.expression)
-		} else throw new ParseException("Iter. variable must be modified")
+		} else throw new ParseException(s"Error in directive before line $line: Iter. variable must be modified")
 
 		// get names of for-bounds vars
 		val initVal     = uniqueName("ompForInit")

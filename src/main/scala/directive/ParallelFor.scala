@@ -24,14 +24,12 @@ case class ParallelFor(override val parent: Directive, override val privateVars:
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 
-		// TODO: privates
-
 		val basicForStatement = getBasicForStatement(ctx)
 		validateBasicForStatement(basicForStatement)
 		val (iterName, _) = getInit(basicForStatement)
 		val finalIterName = uniqueName(iterName)
 		val statement = basicForStatement.statement
-		if (statement == null) throw new ParseException("Empty for-cycle body.")
+		if (statement == null) throw new ParseException(s"Error in directive before line $line: Empty for-cycle body.")
 
 		val stv = new SingleTranslationVisitor(rewriter, iterName, finalIterName)
 		stv.visit(basicForStatement.forInit)

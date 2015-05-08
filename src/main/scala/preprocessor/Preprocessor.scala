@@ -3,7 +3,7 @@ package org.omp4j.preprocessor
 import java.io.{File, PrintWriter}
 import java.net.MalformedURLException
 import org.omp4j.tree.OMPFile
-import org.omp4j.utils.{FileDuplicator, FileSaver, FileTreeWalker}
+import org.omp4j.utils.{TmpDir, FileDuplicator, FileSaver, FileTreeWalker}
 
 import scala.collection.JavaConverters._
 
@@ -38,6 +38,9 @@ class Preprocessor(implicit conf: Config) {
 	  */
 	def run(firstRun: Boolean = true): (Array[File], List[(File, File)]) = {
 
+		if (firstRun) conf.logger.log("Running first preprocessor level")
+		else conf.logger.log("Running next preprocessor level")
+
 		// parse sources        TODO: parallelly
 		val parsed = conf.files.map(f => (f, parseFile(f)))
 
@@ -56,7 +59,7 @@ class Preprocessor(implicit conf: Config) {
 		for {(f, (tok, par, cun)) <- parsed} {
 			try {
 				val translatedSource = translate(tok, par, cun)
-				nextLevelSourcesBuffer += FileSaver.saveToFile(translatedSource, conf.preprocessedDir, cun.packageDeclaration, f.getAbsolutePath.split(File.separator).last)
+				nextLevelSourcesBuffer += FileSaver.saveToFile(translatedSource, conf.preprocessedDir, cun.packageDeclaration, f.getAbsolutePath.split(TmpDir.separator).last)
 			} catch {
 				case e: NothingToTranslateException => finalSourcesBuffer += f
 			}
@@ -91,23 +94,28 @@ class Preprocessor(implicit conf: Config) {
 	  * TODO: throws
 	 */
 	def validate(parsed: Array[(File, (CommonTokenStream, Java8Parser, Java8Parser.CompilationUnitContext))]) = {
+
 		// TODO: parallelly
 		val toValidate = ArrayBuffer[File]()
 
 		// create tmp files without threadIds
 		parsed.foreach{case (f, (tok, par, cun)) =>
+			conf.logger.log("Validating file %s" format f.getAbsolutePath)
+
 			val tir = new ThreadIdRemover(cun, tok)
 			val threadLessText = tir.removedIds()
 
-			toValidate += FileSaver.saveToFile(threadLessText, conf.validationDir, cun.packageDeclaration, f.getAbsolutePath.split(File.separator).last)
+			toValidate += FileSaver.saveToFile(threadLessText, conf.validationDir, cun.packageDeclaration, f.getAbsolutePath.split(TmpDir.separator).last)
 		}
 
 		// copy runtime libs
 		conf copyRuntimeClassesTo conf.compilationDir
 
 		// compile them
+		conf.logger.log("Compiling for validation")
 		val compiler = new Compiler(toValidate.toArray)
 		compiler.compile(destDir = conf.compilationDir.getAbsolutePath, addCP = conf.compilationDir.getAbsolutePath)
+		conf.logger.log("Packing for validation")
 		compiler.jar()
 	}
 
@@ -126,35 +134,46 @@ class Preprocessor(implicit conf: Config) {
 	  * @throws SyntaxErrorException if OMP directive has invalid syntax
 	  */
 	def parseFile(file: File) = {
+		conf.logger.log(s"Parsing file '${file.getAbsolutePath}'")
+
 		val lexer = new Java8Lexer(new ANTLRFileStream(file.getPath))
 		val tokens = new CommonTokenStream(lexer)
 		val parser = new Java8Parser(tokens)
 
 		val cunit = try {
 				// try faster SLL(*)
+				conf.logger.log("Trying fast SLL method...")
+
 				parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
-				parser.removeErrorListeners
+				parser.removeErrorListeners()
 				parser.setErrorHandler(new BailErrorStrategy)
-				parser.compilationUnit
+				val res = parser.compilationUnit
+
+				conf.logger.log("Successfully")
+				res
 			} catch {
 				case ex: RuntimeException =>
 				if (ex.isInstanceOf[RuntimeException] && ex.getCause.isInstanceOf[RecognitionException]) {
-					tokens.reset
+					conf.logger.log("Failed, trying standard LL method instead...")
+					tokens.reset()
 					// back to standard listeners/handlers
 					parser.addErrorListener(ConsoleErrorListener.INSTANCE)
 					parser.setErrorHandler(new DefaultErrorStrategy)
 					// try standard LL(*)
 					parser.getInterpreter.setPredictionMode(PredictionMode.LL)
-					parser.compilationUnit
+					val res = parser.compilationUnit
+
+					conf.logger.log("Successfully")
+					res
 				} else {
-					throw new ParseException("Both parsing strategies SLL(*) and LL(*) failed", ex)
+					conf.logger.log("Failed")
+					throw new ParseException(s"Both parsing strategies SLL(*) and LL(*) failed while parsing file '${file.getAbsolutePath}'", ex)
 				}
 			}
 
 		(tokens, parser, cunit)
 	}
 
-	/** Use TranslationVisitor to get translated code (as a String) */
 	/** Translate top directives of the compilation unit context provided.
 	  *
 	  * Initially, create the Directive Hierarchy Model. Secondly run source and bytecode analysis.
@@ -168,18 +187,26 @@ class Preprocessor(implicit conf: Config) {
 	  */
 	private def translate(tokens: CommonTokenStream, parser: Java8Parser, cunit: Java8Parser.CompilationUnitContext): String = {
 
+		conf.logger.log("Translating a file...")
+		conf.logger.log("Building directive hierarchy model")
 		// List of directives
 		val directives = new DirectiveVisitor(tokens, parser).visit(cunit)
 		if (directives.size == 0) throw new NothingToTranslateException
 
+		conf.logger.log("Building class hierarchy model")
 		val rewriter = new TokenStreamRewriter(tokens)
 		val ompFile = new OMPFile(cunit, parser)
 
 		// top level directives
 		directives.filter(_._2.parent == null).foreach { case (ctx, d) =>
+			conf.logger.log("Translating a directive...")
 			d.translate(rewriter, ompFile, directives)
+			conf.logger.log("Done")
 		}
 
-		rewriter.getText
+		val res = rewriter.getText
+
+		conf.logger.log("File translation done")
+		res
 	}
 }

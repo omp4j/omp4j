@@ -346,6 +346,4 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 		}
 
 	}
-	// TODO: super
-
 }

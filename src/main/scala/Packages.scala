@@ -28,4 +28,7 @@ package org.omp4j {
 
 	/** Cached source tree */
 	package object tree {}
+
+	/** Logging objects */
+	package object log {}
 }

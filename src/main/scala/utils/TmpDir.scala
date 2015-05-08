@@ -4,6 +4,12 @@ import java.io._
 
 import scala.util.Random
 
+/** TmpDir companion object providing static values */
+object TmpDir {
+	/** Properly escaped file separator */
+	val separator = if (File.separatorChar=='\\') "\\\\" else File.separator
+}
+
 /** Temporary directory.
   *
   * @constructor Creates the unique directory in specified parent directory with specified prefix.

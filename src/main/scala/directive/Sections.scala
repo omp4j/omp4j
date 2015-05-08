@@ -27,17 +27,17 @@ case class Sections(override val parent: Directive)(implicit schedule: Directive
 			val children = blockStmts.blockStatement.asScala.map(_.statement)
 
 			children.foreach{ child =>
-				if (child == null) throw new SyntaxErrorException("In 'omp sections' only 'omp section' directives are allowed (null).")
+				if (child == null) throw new SyntaxErrorException(s"Error in directive before line $line: In 'omp sections' only 'omp section' directives are allowed (null).")
 				directives.find(_._1 == child) match {
 					case Some((_, dir)) =>
-						if (! dir.isInstanceOf[Section]) throw new SyntaxErrorException("The only directive allowed in 'omp sections' is 'omp section'.")
-					case None => throw new SyntaxErrorException("In 'omp sections' only 'omp section' directives are allowed.")
+						if (! dir.isInstanceOf[Section]) throw new SyntaxErrorException(s"Error in directive before line $line: The only directive allowed in 'omp sections' is 'omp section'.")
+					case None => throw new SyntaxErrorException(s"Error in directive before line $line: In 'omp sections' only 'omp section' directives are allowed.")
 				}
 
 			}
 		} catch {
-			case e: ClassCastException   => throw new SyntaxErrorException("'omp sections' may be only before {...} statement.")
-			case e: NullPointerException => throw new SyntaxErrorException("Corrupted 'omp sections' structure.")
+			case e: ClassCastException   => throw new SyntaxErrorException(s"Error in directive before line $line: 'omp sections' may be only before {...} statement.")
+			case e: NullPointerException => throw new SyntaxErrorException(s"Error in directive before line $line: Corrupted 'omp sections' structure.")
 		}
 	}
 

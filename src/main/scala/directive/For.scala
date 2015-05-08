@@ -32,8 +32,6 @@ case class For(override val parent: Directive, override val privateVars: List[St
 
 	override def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
 
-		// TODO: privates
-
 		if(parentOmpParallel != null) {
 
 			val basicForStatement = getBasicForStatement(ctx)
@@ -41,7 +39,7 @@ case class For(override val parent: Directive, override val privateVars: List[St
 			val (iterName, _) = getInit(basicForStatement)
 			val finalIterName = uniqueName(iterName)
 			val statement = basicForStatement.statement
-			if (statement == null) throw new ParseException("Empty for-cycle body.")
+			if (statement == null) throw new ParseException(s"Error in directive before line $line: Empty for-cycle body.")
 
 			val stv = new SingleTranslationVisitor(rewriter, iterName, finalIterName)
 			stv.visit(basicForStatement.forInit)

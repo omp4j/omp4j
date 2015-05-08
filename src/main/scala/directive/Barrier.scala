@@ -25,22 +25,22 @@ case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementCon
 
 	// validate existence of some omp parent block
 	override def validate(directives: DirectiveVisitor.DirectiveMap) = {
-		if (parent == null) throw new SyntaxErrorException("'omp barrier' must be nested in some other omp block.")
+		if (parent == null) throw new SyntaxErrorException(s"Error in directive before line $line: 'omp barrier' must be nested in some other omp block.")
 		// TODO: test condition
-		if (!parent.isInstanceOf[Parallel] && !parent.isInstanceOf[ParallelFor] && !parent.isInstanceOf[For]) throw new SyntaxErrorException("'omp barrier' may be located only in 'omp [parallel] [for]'.")
+		if (!parent.isInstanceOf[Parallel] && !parent.isInstanceOf[ParallelFor] && !parent.isInstanceOf[For]) throw new SyntaxErrorException(s"Error in directive before line $line: 'omp barrier' may be located only in 'omp [parallel] [for]'.")
 		super.validate(directives)
 	}
 
 	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
-		throw new RuntimeException("translate can't be run on Barrier!")
+		throw new RuntimeException(s"Internal error in directive before line $line: translate can't be run on Barrier!")
 	}
 
 	override protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
-		throw new RuntimeException("preTranslate can't be run on Barrier!")
+		throw new RuntimeException(s"Internal error in directive before line $line: preTranslate can't be run on Barrier!")
 	}
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		throw new RuntimeException("postTranslate can't be run on Barrier!")
+		throw new RuntimeException(s"Internal error in directive before line $line: postTranslate can't be run on Barrier!")
 	}
 
 	def postTranslate(implicit rewriter: TokenStreamRewriter) = {

@@ -2,7 +2,7 @@ package org.omp4j.directive
 
 import org.antlr.v4.runtime.tree.SyntaxTree
 import org.omp4j.Config
-import org.omp4j.extractor.FirstLevelSuperExtractor
+import org.omp4j.extractor.{FirstLevelReturnStatement, FirstLevelSuperExtractor}
 import org.omp4j.grammar.OMPParser.OmpCriticalContext
 import org.omp4j.preprocessor.{TranslationVisitor, DirectiveVisitor}
 import org.omp4j.tree.{OMPClass, OMPVariable, OMPFile}
@@ -84,10 +84,7 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	lazy val exceptionName = uniqueName("ompE")
 
 	/** Runtime executor class.*/
-	val executorClass = schedule match {
-		case Dynamic => "org.omp4j.runtime.DynamicExecutor"
-		case Static  => "org.omp4j.runtime.StaticExecutor"
-	}
+	val executorClass: String = schedule.toString
 
 	/** Directly nested directives builder */
 	private var childrenBuff = ListBuffer[Directive]()
@@ -102,10 +99,10 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	def allChildren: List[Directive] = children ++ children.flatMap(_.allChildren)
 
 	/** Extract children of type T and return them as list of T */
-	def childrenOfType[T <: Directive : ClassTag]: List[T] = children.filter(_ match {
+	def childrenOfType[T <: Directive : ClassTag]: List[T] = children.filter {
 		case _: T => true
-		case _    => false
-	}).map{case x: T => x}
+		case _ => false
+	}.map{case x: T => x}
 
 	/** Delete directive comment from source code */
 	protected def deleteCmt(implicit rewriter: TokenStreamRewriter) = rewriter.replace(cmt, "\n")
@@ -132,13 +129,14 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	def validate(directives: DirectiveVisitor.DirectiveMap) = {
 		// parent validation
 		parent match {
-			case _: Sections => throw new SyntaxErrorException("In block 'omp sections' only 'omp section' blocks are allowed.")
-			case _: Master | _: Critical | _: Single | _: Barrier | _: Atomic => throw new SyntaxErrorException("There can't be any directives in this block type")
+			case _: Sections => throw new SyntaxErrorException(s"Error in directive before line $line: In block 'omp sections' only 'omp section' blocks are allowed.")
+			case _: Master | _: Critical | _: Single | _: Barrier | _: Atomic => throw new SyntaxErrorException(s"Error in directive before line $line: There can't be any directives in this block type")
 			case _ => ;
 		}
 
 		// super validation
-		if (new FirstLevelSuperExtractor().visit(ctx).size > 0) throw new SyntaxErrorException("'super' keyword may not occur in directive context.")
+		if (new FirstLevelSuperExtractor().visit(ctx).size > 0) throw new SyntaxErrorException(s"Error in directive before line $line: 'super' keyword may not occur in directive context.")
+		if (new FirstLevelReturnStatement().visit(ctx).size > 0) throw new SyntaxErrorException(s"Error in directive before line $line: 'return' keyword may not occur in directive context.")
 	}
 
 	/** Source code line and directive text */
@@ -189,7 +187,6 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	/** Current directive class, initialed later */
 	var directiveClass: OMPClass = null
 
-	// TODO: thread-safe rewriter
 	/** Translate this directive and delete the directive comment
 	  *
 	  * Invoke validation, preTranslate and postTranslate, in this particular order. Additionally, delete the
@@ -263,7 +260,7 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	  * @return the actual variable name
 	 */
 	def addAtomicBool(baseName: String): String = parent match {
-		case null => throw new SyntaxErrorException("Unable to register AtomicBoolean. Please make sure the directive is in 'omp parallel [for]' block.")
+		case null => throw new SyntaxErrorException(s"Error in directive before line $line: Unable to register AtomicBoolean. Please make sure the directive is in 'omp parallel [for]' block.")
 		case _    => parent.addAtomicBool(baseName)
 	}
 
@@ -375,7 +372,7 @@ object Directive {
 	  * @throws IllegalArgumentException if `ompCtx` is null
 	  */
 	def apply(parent: Directive, ompCtx: OMPParser.OmpUnitContext, cmt: Token, ctx: Java8Parser.StatementContext)(implicit conf: Config): Directive = {
-		if (ompCtx == null) throw new IllegalArgumentException("null OMP context")
+		if (ompCtx == null) throw new IllegalArgumentException("Directive cannot be created: null OMP context")
 
 		val parallel = ompCtx.ompParallel
 		val parallelFor = ompCtx.ompParallelFor
@@ -409,7 +406,7 @@ object Directive {
 			)
 			new ParallelFor(parent, privates, firstprivates)(DirectiveSchedule(sch), threads, ctx, cmt, getLine(ctx), conf)
 		} else if (nonParFor != null) {
-			val (privates, firstprivates) = separate(nonParFor.ompAccessModifier.asScala.toList)
+			val (privates, firstprivates) = separate(nonParFor.ompAccessModifier.asScala.toList, getLine(ctx))
 			// For can't affect scheduling type or number of cores since it is nested directive
 			new For(parent, privates, firstprivates)(null, ctx, cmt, getLine(ctx), conf)
 		} else if (sections != null) {
@@ -438,7 +435,7 @@ object Directive {
 		} else if (numThreads != null) {
 			new NumThreads(parent)(ctx, cmt, getLine(ctx), conf)
 		} else {
-			throw new SyntaxErrorException("Invalid directive")
+			throw new SyntaxErrorException(s"Error in directive before line ${getLine(ctx)}: Invalid directive syntax")
 		}
 	}
 
@@ -512,16 +509,16 @@ object Directive {
 	  * @param list the list of access modifier contexts
 	  * @return tuple of (Private, FirstPrivate)
 	  */
-	private def separate(list: List[OMPParser.OmpAccessModifierContext]): (List[String], List[String]) = {
+	private def separate(list: List[OMPParser.OmpAccessModifierContext], line: Int): (List[String], List[String]) = {
 
 		if (list == null || list.size == 0) (List(), List())
 		else {
 			val head = list.head
-			val (resPri, resFpri) = separate(list.tail)
+			val (resPri, resFpri) = separate(list.tail, line)
 
 			if (head.ompPrivate() != null) (getVars(head.ompVars) ++ resPri, resFpri)
 			else if (head.ompFirstPrivate() != null) (resPri, getVars(head.ompVars) ++ resFpri)
-			else throw new ParseException("Unexpected variable modifier")
+			else throw new ParseException(s"Error in directive before line $line: Unexpected variable modifier - only public/private/firstprivate are allowed")
 		}
 	}
 }

@@ -22,27 +22,27 @@ class Critical(override val parent: Directive, syncVarCtx: OMPParser.OmpVarConte
 	override lazy val exceptionName = parent.exceptionName
 	override val executorClass = parent.executorClass
 
-	// TODO: check variable existence
+	/** If synchonization variable is provided, its existence is presumed. Additionally, it must be marked final */
 	val syncVar = syncVarCtx match {
 		case null => contextVar
 		case _    => syncVarCtx.getText
 	}
 
 	override def validate(directives: DirectiveVisitor.DirectiveMap) = {
-		if (parentOmpParallel == null) throw new SyntaxErrorException("'omp for' in no 'omp parallel [for]' block.")
+		if (parentOmpParallel == null) throw new SyntaxErrorException(s"Error in directive before line $line: 'omp for' in no 'omp parallel [for]' block.")
 		super.validate(directives)
 	}
 
 	override def translate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile, directives: DirectiveVisitor.DirectiveMap) = {
-		throw new RuntimeException("translate can't be run on Critical!")
+		throw new RuntimeException(s"Internal error in directive before line $line: translate can't be run on Critical!")
 	}
 
 	override protected def preTranslate(implicit rewriter: TokenStreamRewriter, ompFile: OMPFile) = {
-		throw new RuntimeException("preTranslate can't be run on Critical!")
+		throw new RuntimeException(s"Internal error in directive before line $line: preTranslate can't be run on Critical!")
 	}
 
 	override protected def postTranslate(captured: Set[OMPVariable], capturedThis: Boolean, directiveClass: OMPClass)(implicit rewriter: TokenStreamRewriter) = {
-		throw new RuntimeException("postTranslate can't be run on Critical!")
+		throw new RuntimeException(s"Internal error in directive before line $line: postTranslate can't be run on Critical!")
 	}
 
 	def postTranslate(implicit rewriter: TokenStreamRewriter) = {
