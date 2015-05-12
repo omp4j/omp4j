@@ -41,3 +41,5 @@ src/main/java/grammar/*.tokens
 
 # Sublime Text projects
 *.sublime-workspace
+
+*.iml
