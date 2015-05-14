@@ -1,6 +1,6 @@
 omp4j [![Build Status](https://travis-ci.org/omp4j/omp4j.svg?branch=master)](https://travis-ci.org/omp4j/omp4j)
 =====
-Lightweight Java OMP preprocessor written in Scala and Java. The input of preprocessor are valid Java source files with proper directives (`// omp ...` comments). One can use omp4j either as "blackbox" compiler (preprocessor using javac) or as pure preprocessor. In latter case the output is valid paralellized Java source files.
+Lightweight Java OMP-like preprocessor written in Scala and Java. The input of the preprocessor are valid Java source files with proper directives (i.e. `// omp ...` comments). One can use omp4j either as "blackbox" compiler (preprocessor using javac) or as pure preprocessor. In latter case the output is valid paralellized Java source files.
 
 Warning
 -------
@@ -8,48 +8,50 @@ This project is under development and for now **is not** meant to be used for an
 
 Usage
 -----
-The described method is for UNIX-like systems. Microsoft Windows are supported though.
+The described method is for UNIX-like systems. Microsoft Windows are supported though, nevertheless the users are expected to figure the installation steps by theirselves.
 
 ### Prerequisites
-For Ubuntu users: `$ ./install-system-dependencies.sh`; then [download](http://dl.bintray.com/sbt/debian/sbt-0.13.5.deb) and install sbt.
-
-For other users, this is the list of required software:
-- JRE (tested version `OpenJDK 1.7.0_55`)
-- JDK (tested version `javac 1.7.0_55`)
+- supported JDK (see tested JDKs on [Travis-CI](https://github.com/omp4j/omp4j/blob/master/.travis.yml))
 - Scala (tested version `2.9.2`)
 - sbt (tested version `0.13.5`)
 - git
 
-**Note:** Even though only `scala 2.9.2` is required to run `sbt` properly, using current ScalaTest determines `sbt` to use `scala 2.10.3`. If you don't have this version installed `sbt` will download it by itself. This scala version will be installed only in project directory and **will not affect** any other project or system itself.
+**Note:** Even though only `scala 2.9.2` is required to run `sbt` properly, using current ScalaTest determines `sbt` to use `scala 2.10.3`. If you don't have this version installed `sbt` will download it by itself. This scala version will be installed only in the project directory and **will not affect** any other project or system itself.
 
-**Note:** After the assemblation, **only proper JRE is required** to run `.jar` as all dependencies are packed into the package. One can distribute `.jar` to machines not having scala/ANTLR/ScalaTest installed at all.
+**Note:** After the assemblation, **only proper JDK is required** to run `.jar` as all dependencies are packed into the package. One can distribute `.jar` to machines not having scala/ANTLR/ScalaTest installed at all.
 
 ### Fetching code
-1. `$ git clone git@github.com:omp4j/omp4j.git --recursive`
-2. `$ cd omp4j & ./install-dependencies.sh`
- 
-Step 2 alternative:
-
-1. download [ANTLR runtime](http://www.antlr.org/download/antlr-runtime-4.2.2.jar) into `lib/` directory
-2. donwload ANTLRv4 and set shell alias `antlr4`
-3. compile grammar in `src/main/java/grammar` using both commands `$ antlr4 -visitor Java8.g4` and `$ antlr4 -visitor OMP.g4`. Please read [getting started](https://theantlrguy.atlassian.net/wiki/display/ANTLR4/Getting+Started+with+ANTLR+v4) in order to get familiar with setting up and using `antlr4` command.
+```
+$ git clone git@github.com:omp4j/omp4j.git --recursive
+$ cd omp4j
+```
 
 ### Compilation
 ```
 $ sbt compile
 ```
 
-### Run
+### Unit testing
+Run ScalaTest unit testing. If ScalaTest isn't installed, it is downloaded by `sbt` automatically.
 ```
-$ sbt run <args>
+$ sbt test
 ```
-Where `<args>` are passed arguments.
 
 ### Deployment
 ```
 $ sbt assembly
 ```
-This command creates `.jar` package in `target/scala-<version>/`. One can simply run it on any regular JVM (even without installed scala!) using `java -jar <generated-package.jar>`. This package is ready for deployment as has no further dependencies.
+This command creates `.jar` package in `target/scala-<version>/`. One can simply run it on any regular JVM (even without installed scala!) using `java -jar <generated-package.jar> <params>`. This package is ready for deployment as has no further dependencies.
+
+For the future references we assume that the user has created shell alias `omp4j` invoking `java -jar <generated-package.jar>` with all passed parameters. The alias creation depends on the employed shell.
+
+### Run
+```
+$ omp4j <args>
+```
+Where `<args>` are passed arguments. See [tutorial](http://www.omp4j.org/tutorial) for supported options and arguments.
+
+omp4j may be invoked also by using `$ sbt run <args>`, however this option is not suggested. It should be employed only for development purposes since it perform significantly more poorly and the runtime library must be present in the classpath.
 
 ### API reference
 ```
@@ -57,20 +59,19 @@ $ sbt doc
 ```
 This command creates directory `target/scala-<version>/api/` including file `index.html`. One can simply open it in web browser in order to browse API reference.
 
-### Unit testing
-```
-$ sbt test
-```
-Run ScalaTest unit testing. If ScalaTest isn't installed, it will be downloaded by `sbt` automatically.
+### Directive Programming
+The preprocessor accepts a serial Java source code which is decorated by directives. Refer to [project tutorial] in order to obtain directive-related information and usefull examples.
 
 Authors
 -------
 - Lead programmer - [Petr Bělohlávek](https://github.com/petrbel)
 - Thesis supervisor - [Mgr. Antonín Steinhauser](http://d3s.mff.cuni.cz/~steinhauser/)
 
+See [project website](http://www.omp4j.org/authors) for contacts and details.
+
 Licence
 -------
-Developed under GNU GPL v2, please see [LICENCE file](https://github.com/omp4j/omp4j/blob/master/LICENSE).
+Developed under BSD license, please refer to [LICENCE file](https://github.com/omp4j/omp4j/blob/master/LICENSE).
 
 
 
