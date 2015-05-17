@@ -1,6 +1,6 @@
 name := "omp4j"
 
-version := "1.0.1"
+version := "1.1"
 
 scalaVersion := "2.10.3"
 
