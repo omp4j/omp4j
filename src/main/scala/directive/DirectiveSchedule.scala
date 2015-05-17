@@ -15,8 +15,6 @@ object DirectiveSchedule {
 	 */
 	def apply(osc: OMPParser.OmpScheduleContext) = {
 
-
-
 		val Pattern = """schedule\((.*)\)""".r
 		try {
 			osc.getText.toLowerCase match {

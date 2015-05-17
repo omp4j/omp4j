@@ -24,6 +24,7 @@ class LambaExample {
 		};
 
 		IntIntInterface t =  (int a, int b) -> {
+			// omp parallel
 			{
 				System.out.println("Hello World");
 			}

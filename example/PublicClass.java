@@ -7,7 +7,7 @@ public class PublicClass {
 	public static void main(String arg[]) {
 		// omp parallel
 		{
-			System.out.println(OMP_THREAD_NUM + "/" + OMP_NUM_THREADS);
+			System.out.println(OMP4J_THREAD_NUM + "/" + OMP4J_NUM_THREADS);
 		}
 	}
 }

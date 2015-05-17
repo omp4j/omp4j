@@ -12,7 +12,7 @@ object FileTreeWalker {
 	  * @return Array of lsited files
 	  */
 	def recursiveListFiles(f: File): Array[File] = {
-		if (f != null) {
+		if (f != null && f.exists) {
 			val these = f.listFiles
 			these.filter(_.isDirectory).flatMap(recursiveListFiles) ++ these
 		} else Array()

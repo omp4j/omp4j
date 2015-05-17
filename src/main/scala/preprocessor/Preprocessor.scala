@@ -77,12 +77,17 @@ class Preprocessor(implicit conf: Config) {
 				(nextRes, (conf.workDir, conf.preprocessedDir) :: nextTmps)
 			}
 
+		(result, tmpDirs)
+/*
 		if (firstRun) {
 			tmpDirs.tail.foreach{ case (big, small) =>
 				FileTreeWalker.recursiveDelete(big)
 			}
 			(result, List(tmpDirs.head))
-		} else (result, tmpDirs)
+		} else {
+			(result, tmpDirs)
+		}
+*/
 	}
 
 	/** Validate sources passed.

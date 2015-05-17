@@ -7,6 +7,8 @@ import org.omp4j.utils.{FileDuplicator, FileTreeWalker}
 
 import java.io.File
 
+import scala.collection.:+
+
 /** The omp4j preprocessor entry point.
   *
   * Handles the CLI options and starts preprocessing the files passed as program parameter.
@@ -14,7 +16,8 @@ import java.io.File
   */
 object Main extends App {
 
-	var toDelete: File = null
+	var toDelete: List[File] = null
+	val tmpDirs: List[(File, File)] = null
 	var verbose = false
 	var conf: Config = null
 
@@ -24,8 +27,9 @@ object Main extends App {
 
 		val prep = new Preprocessor()(conf)     // create preprocessor
 
-		val (translatedFiles, (tmpDir, prepDir)::_) = prep.run()        // fetch the array of (already saved) preprocessed files
-		toDelete = tmpDir
+		val (translatedFiles, dirs) = prep.run()
+		val tmpDirs :+ ((tmpDir, prepDir)) :+ ((lastDir, lastPrepDir)): List[(File, File)] = dirs
+		toDelete = tmpDir :: prepDir :: lastDir :: lastPrepDir :: tmpDirs.foldLeft[List[File]](List()){ case (z, (a,b)) => a :: b :: z}
 
 		val destDir = if (conf.destdir != null) conf.destdir else "."
 		conf.logger.log(s"Destination directory set to '$destDir'")
@@ -55,7 +59,7 @@ object Main extends App {
 
 	} finally {
 		conf.logger.log("Deleting work directories...")
-		FileTreeWalker.recursiveDelete(toDelete)
+		toDelete.foreach(FileTreeWalker.recursiveDelete)
 		conf.logger.log("Done")
 	}
 

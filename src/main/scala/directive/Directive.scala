@@ -384,8 +384,6 @@ object Directive {
 		val barrier = ompCtx.ompBarrier
 		val atomic = ompCtx.ompAtomic
 		val critical = ompCtx.ompCritical
-		val threadNum = ompCtx.ompThreadNum
-		val numThreads = ompCtx.ompNumThreads
 
 		if (parallel != null) {
 			val (sch, threads, privates, firstprivates) = getModifiers[OMPParser.OmpParallelModifiersContext, OMPParser.OmpParallelModifierContext](parallel.ompParallelModifiers)(
@@ -430,10 +428,6 @@ object Directive {
 			new Atomic(parent)(ctx, cmt, getLine(ctx), conf)
 		} else if (critical != null) {
 			new Critical(parent, critical.ompVar)(ctx, cmt, getLine(ctx), conf)
-		} else if (threadNum != null) {
-			new ThreadNum(parent)(ctx, cmt, getLine(ctx), conf)
-		} else if (numThreads != null) {
-			new NumThreads(parent)(ctx, cmt, getLine(ctx), conf)
 		} else {
 			throw new SyntaxErrorException(s"Error in directive before line ${getLine(ctx)}: Invalid directive syntax")
 		}
