@@ -46,7 +46,6 @@ object Main extends App {
 			conf.logger.log("Done")
 		}
 
-		// TODO: wtf
 		if (conf.srcdir != null) {
 			FileDuplicator.dirToDir(prepDir, new File(conf.srcdir))
 		}
@@ -59,7 +58,7 @@ object Main extends App {
 
 	} finally {
 		conf.logger.log("Deleting work directories...")
-		toDelete.foreach(FileTreeWalker.recursiveDelete)
+		toDelete.foreach(FileTreeWalker.recursiveDelete)	// TODO: uncomment
 		conf.logger.log("Done")
 	}
 

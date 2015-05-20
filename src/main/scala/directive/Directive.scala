@@ -107,7 +107,6 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 	/** Delete directive comment from source code */
 	protected def deleteCmt(implicit rewriter: TokenStreamRewriter) = rewriter.replace(cmt, "\n")
 
-	// TODO: use some trait together with omptree
 	/** Recursivly iterate through the AST until compilation unit context is found.
 	 *
 	 * @param t tree from whence to start
@@ -175,6 +174,7 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 			uniqueName(s"${baseName}_$suff")
 		} catch {
 			case _: ClassNotFoundException => name
+			case _: NoClassDefFoundError   => name
 		}
 	}
 

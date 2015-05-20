@@ -22,10 +22,10 @@ import scala.util.control.Breaks._
 class Compiler(files: Array[File])(implicit conf: Config) {
 
 	/** Java compiler provided by JVM */
-	private lazy val jc = ToolProvider.getSystemJavaCompiler
+	private val jc = ToolProvider.getSystemJavaCompiler
 
 	/** File manager used for file compilation*/
-	private lazy val fileManager = jc.getStandardFileManager(null, null, null)
+	private val fileManager = jc.getStandardFileManager(null, null, null)
 
 	/** Compile files given to constructor.
 	  *
@@ -81,7 +81,16 @@ class Compiler(files: Array[File])(implicit conf: Config) {
 			if (f == null) throw new IllegalArgumentException("File corruption during JAR creation - null file passed")
 			else if (!f.exists || !f.isFile) throw new IllegalArgumentException("File corruption during JAR creation - '" + f.getAbsolutePath + "'")
 
-			val relativePath = s"${conf.compilationDir.getAbsolutePath}${File.separator}".r.replaceFirstIn(f.getAbsolutePath, "")	// always works
+			//val relativePath = s"${conf.compilationDir.getAbsolutePath}${File.separator}".r.replaceFirstIn(f.getAbsolutePath, "")	// always works
+
+			var relativePath: String = ""
+			val pattern = (conf.compilationDir.getAbsolutePath + File.separator + """(.*)""").replaceAll("\\\\", "\\\\\\\\").r
+			f.getAbsolutePath match {
+				case pattern(r) => relativePath = r
+				case _ => ;
+			}
+
+
 			val jarAdd = new JarEntry(relativePath)
 			jarAdd.setTime(f.lastModified)
 			out.putNextEntry(jarAdd)
@@ -98,5 +107,6 @@ class Compiler(files: Array[File])(implicit conf: Config) {
 		// close all streams
 		out.close()
 		stream.close()
+		conf.logger.log("JAR saved")
 	}
 }

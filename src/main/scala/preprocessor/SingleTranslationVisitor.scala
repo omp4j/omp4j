@@ -30,8 +30,8 @@ class SingleTranslationVisitor(rewriter: TokenStreamRewriter, oldName: String, n
 			val id = ctx.getText
 			if (oldName == id) rewriter.replace(ctx.start, ctx.stop, newName)
 		} catch {
-			// TODO: exceptions? shouldn't ever happen
-			case e: IllegalArgumentException => println(s"IAE: ${e.getMessage}")
+			// This should never happen
+			case e: IllegalArgumentException => conf.logger.log(s"IAE: ${e.getMessage}")
 		}
 	}
 

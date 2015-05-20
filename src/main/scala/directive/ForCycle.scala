@@ -165,7 +165,9 @@ trait ForCycle {
 		} else if (update.assignment != null) {	// assignment
 			if (getRewrittenText(update.assignment.leftHandSide) != iterName) throw new ParseException(s"Error in directive before line $line: Iter. variable must be modified")
 
-			// TODO: assignment?
+			/* We support only for-loops with +- operations. This restriction may be removed by deleting the following condition.
+			 *  However, we strongly discourage such action
+			 **/
 			if (List("+=", "-=") contains getRewrittenText(update.assignment.assignmentOperator)) {
 				oper = getRewrittenText(update.assignment.assignmentOperator)
 			} else throw new ParseException("Unsupported for-update operation (+=, -=)")
@@ -183,10 +185,9 @@ trait ForCycle {
 		val forVars = "/* OMP for boundaries */\n" +
 			s"final int $initVal = ${getRewrittenText(initExpr)};\n" +
 			s"final int $condVal = ${getRewrittenText(cond)};\n" +
-			s"final int $incVal = $step;\n" + // TODO
+			s"final int $incVal = $step;\n" +
 			s"final int $cycleLength = Math.abs($condVal - $initVal);\n"
 
-		// TODO: inclusive condition?
 		rewriter.insertBefore(ctx.start, forVars)
 		rewriter.replace(initExpr.start, initExpr.stop, s"$initVal ${oper.head} (($iter2 == 0) ? 0 : (($incVal - 1 - (($iter2 * $cycleLength/$threadCount - 1) % $incVal)) + ($iter2 * $cycleLength/$threadCount)))")
 		rewriter.replace(cond.start, cond.stop, s"$initVal ${oper.head} ($iter2 + 1) * $cycleLength/$threadCount")

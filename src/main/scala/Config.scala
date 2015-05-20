@@ -26,7 +26,7 @@ object Config {
   * @param runtimePath path of the runtime classes
   * @param runtimeClasses list of classes that are used in runtime
   */
-class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"org${File.separator}omp4j${File.separator}runtime", val runtimeClasses: List[String] = List("AbstractExecutor", "DynamicExecutor", "IOMPExecutor", "StaticExecutor", "StaticExecutor$1")) {
+class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"org${File.separator}omp4j${File.separator}runtime", val resourcePath: String = s"org/omp4j/runtime", val runtimeClasses: List[String] = List("AbstractExecutor", "DynamicExecutor", "IOMPExecutor", "StaticExecutor", "StaticExecutor$1")) {
 
 	/** Working directory */
 	val workDir: File = createWorkingDir()
@@ -47,7 +47,7 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 	lazy val files: Array[File] = openFiles(fileNames)
 
 	/** Loader for the JAR defined in prior methods */
-	var loader: Loader = new Loader(jar)
+	var loader: Loader = null
 
 	/** Set of all used strings */
 	val tokenSet = new TokenSet
@@ -73,13 +73,13 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 	/** Passed classpath */
 	var classpath: String = null
 
-	/** Logger */
+	/** Logger. Instanced from the preprocessor when the JAR is ready. */
 	var logger: Logger = null
 
-	/** Extracted file names from CLI options*/
+	/** Extracted file names from CLI options */
 	var fileNames = Array[String]()
 
-	/** Extracted flags names from CLI options*/
+	/** Extracted flags names from CLI options */
 	var flags = Array[String]()
 
 	/** All used flags */
@@ -199,7 +199,7 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 	  * @return configuration context for next recursion level
 	  */
 	def nextLevel(nextLvlFiles: Array[File]): Config = {
-		val c = new Config(args, level + 1, runtimePath, runtimeClasses) {
+		val c = new Config(args, level + 1, runtimePath, resourcePath, runtimeClasses) {
 			override lazy val files = nextLvlFiles
 		}
 		c.fileNames  = nextLvlFiles.map(_.getAbsolutePath)
@@ -224,7 +224,7 @@ class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"or
 		runtimeDir.mkdirs()
 
 		runtimeClasses.foreach{ name =>
-			val inputStream = getClass.getResourceAsStream(s"/$runtimePath${File.separator}$name.class")
+			val inputStream = getClass.getResourceAsStream(s"/$resourcePath/$name.class")
 			val outputFile = new File(runtimeDir, s"$name.class")
 			FileDuplicator.streamToFile(inputStream, outputFile)
 		}

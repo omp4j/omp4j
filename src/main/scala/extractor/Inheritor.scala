@@ -108,7 +108,7 @@ object Inheritor {
 
 				// add non-last
 				if (list != null) {
-					val firsts = list.formalParameters	// TODO: receiver??
+					val firsts = list.formalParameters	// we ignore receivers that are specified in the Java8 grammar. They don't make any sence for regular Java files
 					if (firsts != null) {
 						firsts.formalParameter.asScala.foreach{ p =>
 							if (! p.variableModifier.asScala.map(_.getText).contains("final")) {
@@ -137,7 +137,7 @@ object Inheritor {
 						val list = params.formalParameterList
 						if (list == null) throw new ParseException("Lambda params must be typed (using Formal Parametr List)")
 
-						val firsts = list.formalParameters	// TODO: receiver??
+						val firsts = list.formalParameters
 						if (firsts != null) {
 							firsts.formalParameter.asScala.foreach{ p =>
 								result += new OMPVariable(p.variableDeclaratorId.Identifier.getText, p.unannType.getText, OMPVariableType.Param)
@@ -231,7 +231,6 @@ object Inheritor {
 		}
 
 		val neck = getParentList(pt)	// list of parent
-		// TODO: delete duplicites
 		val onPath = (neck zip neck.tail).map{ case (t, follower) => iiner(t, follower)}.flatten.toList
 		// add top classes as they are always visible
 		onPath ::: ompFile.classes

@@ -8,7 +8,7 @@ import org.omp4j.grammar._
 import scala.collection.JavaConverters._
 
 /** JAR loader */
-class Loader(jar: File) {
+class Loader(val jar: File) {
 
 	/** Cached ClassLoader */
 	val classLoader = loadClassLoader(jar)
@@ -23,7 +23,8 @@ class Loader(jar: File) {
 	  */
 	private def loadClassLoader(jar: File): ClassLoader = {
 		val url = jar.toURI.toURL
-		val urls = Array[URL](url)
+		val parent = jar.getParentFile.toURI.toURL
+		val urls = Array[URL](url, parent)      // MS Windows for some reason can't read from JAR, thus the directory is extra provided. UNIX and linux read from JAR as expected.
 		val cl = new URLClassLoader(urls)
 		cl		
 	}
@@ -34,7 +35,8 @@ class Loader(jar: File) {
 	 * @return the requested Class object
 	 * @throws ClassNotFoundException if class is not found
 	 */
-	def loadByFQN(FQN: String): Class[_] = classLoader.loadClass(FQN)
+	def loadByFQN(FQN: String): Class[_] =
+		classLoader.loadClass(FQN)
 
 	/** Construct FQN based on class name and package name
 	 *

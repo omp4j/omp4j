@@ -71,7 +71,7 @@ abstract class OMPClass(ec: OMPClass.EitherCtx, parent: OMPClass, parser: Java8P
 	}
 
 	/** List of nested classes */
-	val innerClasses: List[OMPClass]	// TODO: what if enum?
+	val innerClasses: List[OMPClass]
 	
 	/** List of local classes (first level only) */
 	val localClasses: List[OMPClass]

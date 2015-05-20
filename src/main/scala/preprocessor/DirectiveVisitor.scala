@@ -51,10 +51,10 @@ class DirectiveVisitor(tokens: CommonTokenStream, parser: Java8Parser)(implicit 
 				val ompPattern = "^\\s*omp\\s.*$".r
 				ompPattern.findFirstIn(raw) match {
 					case Some(_) => ;
-					case None    => break()	// TODO: log
+					case None    => break()
 				}
 
-				// TODO: maybe one instance is sufficient
+				// In theory, only single instance is sufficient. Nevertheless, in order to provide independent solution (without possible side-effects of ANTLR) we don't use it.
 				try {
 					val ompLexer  = new OMPLexer(new ANTLRInputStream(raw))
 					ompLexer.removeErrorListeners()

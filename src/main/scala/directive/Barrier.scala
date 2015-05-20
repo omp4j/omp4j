@@ -26,7 +26,6 @@ case class Barrier(override val parent: Directive)(ctx: Java8Parser.StatementCon
 	// validate existence of some omp parent block
 	override def validate(directives: DirectiveVisitor.DirectiveMap) = {
 		if (parent == null) throw new SyntaxErrorException(s"Error in directive before line $line: 'omp barrier' must be nested in some other omp block.")
-		// TODO: test condition
 		if (!parent.isInstanceOf[Parallel] && !parent.isInstanceOf[ParallelFor] && !parent.isInstanceOf[For]) throw new SyntaxErrorException(s"Error in directive before line $line: 'omp barrier' may be located only in 'omp [parallel] [for]'.")
 		super.validate(directives)
 	}

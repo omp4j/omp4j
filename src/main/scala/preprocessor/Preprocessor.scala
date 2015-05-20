@@ -20,34 +20,40 @@ import scala.collection.mutable.ArrayBuffer
   *
   * @constructor Create preprocessor for given files.
   * @param conf the preprocessor configuration
-  * TODO: throws
   */
 class Preprocessor(implicit conf: Config) {
 
 	/** Recursively translate all files until some directive exists.
 	  *
-	  *	New lifecycle, TODO: lifecycle
-	  *	- get config
-	  *	- get parseTree for each file (check exceptions)
-	  *	- remove threadId tokens and validate source using compiler
-	  *	- using previously parsed trees, make one level translation
-	  *	- run until a directive exists
+	  * The work-flow of the preprocessor is as follows:
+	  * <ul>
+	  *     <li>Configuration creation (accept `conf`)</li>
+	  *     <li>Code analysis</li>
+	  *     <li>Directive recognition</li>
+	  *     <li>Top-level directives translation (according to hierarchy model)</li>
+	  *     <li>Saving the output</li>
+	  *     <li>Recursive call</li>
+	  *
+	  * The penultimate tuple of second list represents the directories where translated source files are really stored
+	  *
 	  * @param firstRun true if this is the first recursion level, false otherwise
 	  * @return a tuple containing an array of translated files and the list of tuples of working and preprocessed directories
-          * TODO: throws
+	  * @throws ParseException if an parsing-related error occurred
+	  * @throws SyntaxErrorException if syntax error in the directive occurred
+	  * @throws CompilationException if file cannot be compiled by Java compiler
 	  */
 	def run(firstRun: Boolean = true): (Array[File], List[(File, File)]) = {
 
 		if (firstRun) conf.logger.log("Running first preprocessor level")
 		else conf.logger.log("Running next preprocessor level")
 
-		// parse sources        TODO: parallelly
+		// Parse sources.
 		val parsed = conf.files.map(f => (f, parseFile(f)))
 
 		// validate
 		validate(parsed)
 
-		// register tokens
+		// Register tokens.
 		for {(f, (tok, par, cun)) <- parsed} {
 			registerTokens(tok)
 		}
@@ -55,7 +61,7 @@ class Preprocessor(implicit conf: Config) {
 		val finalSourcesBuffer = ArrayBuffer[File]()
 		val nextLevelSourcesBuffer = ArrayBuffer[File]()
 
-		// translate and save   TODO: parallelly
+		// Translate and save.
 		for {(f, (tok, par, cun)) <- parsed} {
 			try {
 				val translatedSource = translate(tok, par, cun)
@@ -78,16 +84,6 @@ class Preprocessor(implicit conf: Config) {
 			}
 
 		(result, tmpDirs)
-/*
-		if (firstRun) {
-			tmpDirs.tail.foreach{ case (big, small) =>
-				FileTreeWalker.recursiveDelete(big)
-			}
-			(result, List(tmpDirs.head))
-		} else {
-			(result, tmpDirs)
-		}
-*/
 	}
 
 	/** Validate sources passed.
@@ -96,14 +92,12 @@ class Preprocessor(implicit conf: Config) {
 	  *
 	  * @param parsed An array of file and parsed AST properties
 	  * @throws CompilationException if validation fails
-	  * TODO: throws
 	 */
 	def validate(parsed: Array[(File, (CommonTokenStream, Java8Parser, Java8Parser.CompilationUnitContext))]) = {
 
-		// TODO: parallelly
 		val toValidate = ArrayBuffer[File]()
 
-		// create tmp files without threadIds
+		// Create tmp files without threadIds.
 		parsed.foreach{case (f, (tok, par, cun)) =>
 			conf.logger.log("Validating file %s" format f.getAbsolutePath)
 
@@ -122,6 +116,7 @@ class Preprocessor(implicit conf: Config) {
 		compiler.compile(destDir = conf.compilationDir.getAbsolutePath, addCP = conf.compilationDir.getAbsolutePath)
 		conf.logger.log("Packing for validation")
 		compiler.jar()
+		conf.loader = new Loader(conf.jar)
 	}
 
 	/** Insert all tokens into TokenSet in order to prevent their later usage.
@@ -188,7 +183,6 @@ class Preprocessor(implicit conf: Config) {
 	  * @param parser the Java8 ANTLR parser
 	  * @param cunit compilation unit of a file
 	  * @return source code without first-level directives that may run in parallel
-	  * TODO: throws
 	  */
 	private def translate(tokens: CommonTokenStream, parser: Java8Parser, cunit: Java8Parser.CompilationUnitContext): String = {
 

@@ -184,8 +184,8 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 				}
 			}
 		} catch {
-			// TODO: exceptions?
-			case e: NoSuchElementException => println(s"IAE: ${e.getMessage}")
+			// This should never happen, but just in case we log it
+			case e: NoSuchElementException => conf.logger.log(s"IAE: ${e.getMessage}")
 		}
 
 		super.visitExpressionName(ctx)
@@ -230,7 +230,7 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 		// Handle primary if no-array expression occures
 
 		if (ctx.primaryNoNewArray_lfno_primary == null) {
-			// TODO: primaryNoNewArray_lfno_primary
+			/* Users should never provide input containing this obscure input. If they do so, the bahavior is unspecified */
 		}
 		else {
 			val first = ctx.primaryNoNewArray_lfno_primary
@@ -336,12 +336,12 @@ class TranslationVisitor(rewriter: TokenStreamRewriter, ompFile: OMPFile, curren
 							}
 						}
 					} else {
-						// TODO: mip is not method or typename
+						// This should never happen. The behavior is unspecified
 					}
 				}
 			}
-		// TODO: exception (should never happen?)
 		} catch {
+			// this should never happen, but just in case we rethrow
 			case e: Exception => throw new ParseException("Unepected exception in handlePrimary", e)
 		}
 
