@@ -2,10 +2,6 @@ omp4j [![Build Status](https://travis-ci.org/omp4j/omp4j.svg?branch=master)](htt
 =====
 Lightweight Java OMP-like preprocessor written in Scala and Java. The input of the preprocessor are valid Java source files with proper directives (i.e. `// omp ...` comments). One can use omp4j either as "blackbox" compiler (preprocessor using javac) or as pure preprocessor. In latter case the output is valid paralellized Java source files.
 
-Warning
--------
-This project is under development and for now **is not** meant to be used for any purposes. Please note that the project itself is going to be a part of bachelor thesis so any cooperation is prohibited. That is the only reason for ignoring forks, issues and pull request. Once the project is finished, it will be opened for public and this paragraph disappears.
-
 Usage
 -----
 The described method is for UNIX-like systems. Microsoft Windows are supported though, nevertheless the users are expected to figure the installation steps by theirselves.
@@ -72,6 +68,3 @@ See [project website](http://www.omp4j.org/authors) for contacts and details.
 Licence
 -------
 Developed under BSD license, please refer to [LICENCE file](https://github.com/omp4j/omp4j/blob/master/LICENSE).
-
-
-
