@@ -26,7 +26,7 @@ object Config {
   * @param runtimePath path of the runtime classes
   * @param runtimeClasses list of classes that are used in runtime
   */
-class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"org${File.separator}omp4j${File.separator}runtime", val resourcePath: String = s"org/omp4j/runtime", val runtimeClasses: List[String] = List("AbstractExecutor", "DynamicExecutor", "IOMPExecutor", "StaticExecutor", "StaticExecutor$1")) {
+class Config(args: Array[String], level: Int = 1, val runtimePath: String = s"org${File.separator}omp4j${File.separator}runtime", val resourcePath: String = s"org/omp4j/runtime", val runtimeClasses: List[String] = List("AbstractExecutor", "DynamicExecutor", "IOMPExecutor", "StaticExecutor", "StaticExecutor$1", "Sys")) {
 
 	/** Working directory */
 	val workDir: File = createWorkingDir()

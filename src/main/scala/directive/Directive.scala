@@ -52,8 +52,10 @@ abstract class Directive(val parent: Directive, val privateVars: List[String], v
 
 	/** Number of threads [Shortcut] */
 	lazy val threadCount = threadNum match {
-		case null => "Runtime.getRuntime().availableProcessors()"
-		case _    => threadNum
+//		case null => "Runtime.getRuntime().availableProcessors()"
+		case null => "org.omp4j.runtime.Sys.availableProcessors()"
+//		case _    => threadNum
+		case _    => s"org.omp4j.runtime.Sys.availableProcessors($threadNum)"
 	}
 
 	/** Context variable name */
