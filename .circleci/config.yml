@@ -6,7 +6,7 @@ jobs:
       - image: omp4j/base
     steps:
       - checkout
-      run:
+      - run:
         name: build and test
         command: |
           sbt compile
