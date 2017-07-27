@@ -6,5 +6,6 @@ jobs:
       - image:omp4j/base
     steps:
       - checkout
-      - sbt compile
-      - sbt test
+      - run: |
+        sbt compile
+        sbt test
