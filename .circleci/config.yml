@@ -4,7 +4,6 @@ jobs:
   build:
     docker:
       - image:omp4j/base
-    working_directory: ~/omp4j
     steps:
       - checkout
       - sbt compile
