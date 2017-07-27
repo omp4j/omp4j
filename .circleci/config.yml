@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: omp4j/base
+      - image: omp4j/base:update
     steps:
       - checkout
       - run:
