@@ -49,6 +49,10 @@ Where `<args>` are passed arguments. See [tutorial](http://www.omp4j.org/tutoria
 
 omp4j may be invoked also by using `$ sbt run <args>`, however this option is not suggested. It should be employed only for development purposes since it perform significantly more poorly and the runtime library must be present in the classpath.
 
+### Thread number limitation
+
+Use environment variable OMP4J_MAX_PROC to set a limit to the number of used threads.
+
 ### API reference
 ```
 $ sbt doc
