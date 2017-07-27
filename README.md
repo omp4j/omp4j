@@ -56,7 +56,7 @@ The version of Scala used for running `sbt` is irrelevant as long as `sbt` can b
 `sbt` employs Scala `2.10.3`.
 
 ### Fetching code
-Forking the project as pushing directly to the official repository is forbidden.
+Forking the project is strongly recommended since pushing directly to the official repository is forbidden.
 However, we provide the URL for this repository.
 The URL should be modified accordingly.
 
