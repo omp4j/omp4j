@@ -7,6 +7,6 @@ jobs:
     steps:
       - checkout
       - run: git submodule sync --recursive
-      - run: submodule update --recursive --init
+      - run: git submodule update --recursive --init
       - run: sbt compile
       - run: sbt test
