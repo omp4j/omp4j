@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: omp4j/base:update
+      - image: omp4j/base
     steps:
       - checkout
       - run: git submodule sync --recursive
