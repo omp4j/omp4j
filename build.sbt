@@ -2,7 +2,7 @@ name := "omp4j"
 
 version := "1.3"
 
-scalaVersion := "2.12.2"
+scalaVersion := "2.10.4"
 
 libraryDependencies += "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
 
