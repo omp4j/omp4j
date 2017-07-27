@@ -6,8 +6,7 @@ jobs:
       - image: omp4j/base:update
     steps:
       - checkout
-      - post:
-        - git submodule sync --recursive
-        - git submodule update --recursive --init
+      - run: git submodule sync --recursive
+      - run: submodule update --recursive --init
       - run: sbt compile
       - run: sbt test
