@@ -8,7 +8,7 @@ The described method is for UNIX-like systems. Microsoft Windows are supported t
 
 ### Prerequisites
 - supported JDK (see tested JDKs on [Travis-CI](https://github.com/omp4j/omp4j/blob/master/.travis.yml))
-- Scala (tested version `2.9.2`)
+- Scala (tested version `2.10.3`)
 - sbt (tested version `0.13.5`)
 - git
 
