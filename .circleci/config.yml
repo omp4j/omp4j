@@ -2,8 +2,12 @@ version: 2
 
 jobs:
   build:
-    docker: image:omp4j/base
+    docker:
+      - image: omp4j/base
     steps:
       - checkout
-      - run: sbt compile
-      - run: sbt test
+      run:
+        name: build and test
+        command: |
+          sbt compile
+          sbt test
