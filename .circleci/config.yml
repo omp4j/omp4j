@@ -6,8 +6,5 @@ jobs:
       - image: omp4j/base:update
     steps:
       - checkout
-      - run:
-        name: build and test
-        command: |
-          sbt compile
-          sbt test
+      - run: sbt compile
+      - run: sbt test
